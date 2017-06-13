@@ -49,7 +49,7 @@ category = {'T': 'Temperature',
             'u':'Easterly',    # zonal wind velocity
             'v':'Northerly',    # meridional wind velocity
             'z':'Geopotential', # geopotential on level 1
-            'lgsp' : 'LogPressure',   # log surface pressure
+            'lnsp' : 'LnPressure',   # ln surface pressure
             'Ps':'Pressure',       # Surface pressure from surface level
             'Custom' : 'Custom'}   # for arbitary download
 
@@ -297,7 +297,7 @@ if sel == 'Geopotential':
                     "target": sav_path+os.sep+"model_daily_075_%s_%d_z.nc" % (i,j+1),
                     })
 
-if sel == 'LogPressure':
+if sel == 'LnPressure':
     for i in date_string:
         for j in ind_month:
             server = ECMWFDataServer()
@@ -326,7 +326,7 @@ if sel == 'LogPressure':
                     # Optionally get output in NetCDF format. However, this does not work with the above request due to overlapping timestamps.
                     "format" :  "netcdf",
                     # set an output file name
-                    "target": sav_path+os.sep+"model_daily_075_%s_%d_lgsp.nc" % (i,j+1),
+                    "target": sav_path+os.sep+"model_daily_075_%s_%d_lnsp.nc" % (i,j+1),
                     })
 
 if sel == 'Custom':
