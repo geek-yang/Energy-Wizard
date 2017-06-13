@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+"""
+Copyright Netherlands eScience Center
+
+Function        : Check the reanalysis data
+Author          : Yang Liu
+Date            : 2017.6.12
+Description     : The code aims to check the reanalysis data downloaded from
+                  online archive (eg.ECMWF,NCAR,JRA,MERRA)
+                  It is made for the dataset "ERA-Interim". But it could
+                  be used to deal with other datasets from ECMWF as well
+                  after small adjustment.
+Return Value    : NetCFD4, HDF4, HDF5 data file
+Dependencies    : os, time, numpy, netCDF4, platform
+
+"""
+
+#from scipy.io import netcdf
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+from netCDF4 import Dataset,num2date
+import platform
+import os
+#import h5py
+#from pyhdf.SD import SD,SDC
+#from mpl_toolkits.basemap import Basemap
+
+print platform.architecture()
+print os.path
+
+start_time = time.time()
+
+################################   Input zone  ######################################
+#datapath = "F:\DataBase\MERRA\II\\MERRA2_100.instM_3d_asm_Np.198001.nc4"
+#datapath = "F:\DataBase\SODA\Monthly\\soda3.3.1_mn_ocean_reg_1980.nc"
+#datapath = "F:\DataBase\ORAS\Monthly\\vo_oras4_1m_1979_grid_1x1.nc"
+datapath = "F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1981\\model_daily_075_1981_7_z_logsp.nc"
+#datapath = "F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1980\\model_daily_075_1980_7_u.nc"
+#datapath = "F:\DataBase\ERA_Interim\Subdaily\pressure_daily_075_1979\\pressure_u_daily_075_1979_789.nc"
+####################################################################################
+
+#check the existance of the file
+if not os.path.isfile(datapath):
+    print 'file %s not found' % datapath
+
+#check if the file is readable
+if not os.access(datapath, os.R_OK):
+    print 'file %s not readable' % datapath
+
+# HDF4 tool
+#==============================================================================
+# File = SD(datapath, SDC.READ)
+#
+# print File.info()
+#==============================================================================
+
+# HDF5 tool
+#==============================================================================
+#f = h5py.File(datapath,'r')
+# print("Keys: %s" % f.keys())
+#==============================================================================
+
+# netCDF4 tool
+d = Dataset(datapath)
+
+for k in d.variables:
+    print d.variables['%s' % (k)]
+
+# check the time
+TT = d.variables['time']
+TT_num = TT[:]
+TT_date = num2date(TT_num,TT.units)
+
+print 'There are %d days in total.' % (len(TT_num)/4)
+print 'The starting date is %s, and the ending date is %s' % (TT_date[0],TT_date[-1],)
+
+print("--- %s seconds ---" % (time.time() - start_time))
