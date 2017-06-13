@@ -35,7 +35,7 @@ start_time = time.time()
 #datapath = "F:\DataBase\MERRA\II\\MERRA2_100.instM_3d_asm_Np.198001.nc4"
 #datapath = "F:\DataBase\SODA\Monthly\\soda3.3.1_mn_ocean_reg_1980.nc"
 #datapath = "F:\DataBase\ORAS\Monthly\\vo_oras4_1m_1979_grid_1x1.nc"
-datapath = "F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1981\\model_daily_075_1981_7_z_logsp.nc"
+datapath = "F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1981\\model_daily_075_1981_7_z_lnsp.nc"
 #datapath = "F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1980\\model_daily_075_1980_7_u.nc"
 #datapath = "F:\DataBase\ERA_Interim\Subdaily\pressure_daily_075_1979\\pressure_u_daily_075_1979_789.nc"
 ####################################################################################
