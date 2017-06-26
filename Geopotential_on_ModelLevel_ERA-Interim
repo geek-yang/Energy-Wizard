@@ -22,7 +22,7 @@ variables       : Temperature                       T
 
 """
 import numpy as np
-import time
+import time as tttt
 from netCDF4 import Dataset,num2date
 import os
 import platform
@@ -34,7 +34,7 @@ print platform.architecture()
 print os.path
 
 # calculate the time for the code execution
-start_time = time.time()
+start_time = tttt.time()
 
 ################################   Input zone  ######################################
 # specify data path
@@ -139,14 +139,14 @@ def calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude):
     # define the half level pressure matrix
     p_half_plus = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
     p_half_minus = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
-    # calculate full pressure level
-    level_full = (p_half_plus + p_half_minus) / 2
     # calculate the index of pressure levels
     index_level = np.arange(len(level))
     # calculate the pressure at each half level
     for i in index_level:
         p_half_plus[:,i,:,:] = A[i+1] + B[i+1] * sp
         p_half_minus[:,i,:,:] = A[i] + B[i] * sp
+    # calculate full pressure level
+    level_full = (p_half_plus + p_half_minus) / 2
     # compute the moist temperature (virtual temperature)
     Tv = T * (1 + (R_vap / R_dry - 1) * q)
     # initialize the first half level geopotential
@@ -178,6 +178,7 @@ def calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude):
         # see equation 2.20 in ECMWF IFS 9220
         gz_half = gz_half + ln_p * R_dry * Tv[:,i_inverse,:,:]
     print "Computation of geopotential on each pressure level is finished"
+
     return gz,level_full
 
 # main function
@@ -195,7 +196,44 @@ if __name__=="__main__":
         # extract data
         T,q,z,lnsp,time,level,latitude,longitude = data_extract(datapath_T,datapath_q,datapath_z,datapath_lnsp)
         gz,level_full= calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude)
+        ################################################################################################################
+        print '*******************************************************************'
+        print '****************** create netcdf file******************************'
+        print '*******************************************************************'
         # wrap the geo-potential datasets into netcdf file
+        # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+        data_wrap = Dataset(output_path+os.sep+'model_daily_075_%d_%d_gz.nc' % (year,i),'w',format = 'NETCDF3_64BIT')
+        # create dimensions for netcdf data
+        time_wrap_dim = data_wrap.createDimension('time',len(time))
+        level_wrap_dim = data_wrap.createDimension('level',len(level))
+        lat_wrap_dim = data_wrap.createDimension('latitude',len(latitude))
+        lon_wrap_dim = data_wrap.createDimension('longitude',len(longitude))
+        # create coordinate variables for 4-dimensions
+        time_warp_var = data_wrap.createVariables('time',np.int32,('time',))
+        level_warp_var = data_wrap.createVariables('level',np.float32,('level',))
+        lat_warp_var = data_wrap.createVariables('latitude',np.float32,('latitude',))
+        lon_warp_var = data_wrap.createVariables('longitude',np.float32,('longitude',))
+        # create the actual 4-d variable
+        gz_warp_var = data_wrap.createVariables('gz',np.int16,('time','level','latitude','longitude'))
+        # global attributes
+        data_wrap.description = 'Geopotential calculated on model levels'
+        # variable attributes
+        lat_warp_var.units = 'degree_north'
+        lon_warp_var.units = 'degree_east'
+        level_warp_var.units = 'hPa'
+        gz_warp_var.units = 'm**2 s**-2'
+        time_warp_var.units = 'hours since 1900-01-01 00:00:0.0'
+        time_warp_var.calender = 'gregorian'
+        # writing data
+        lat_warp_var[:] = latitude
+        lon_warp_var[:] = longitude
+        level_warp_var[:] = level_full
+        time_warp_var[:] = time
+        gz_warp_var[:] = gz
+        # close the file
+        data_wrap.close()
+        print "Create netcdf file successfully"
+    print 'Computation of geopotenial on model level for ERA-Interim is complete!!!'
 
+print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
 
-print ("--- %s minutes ---" % ((time.time() - start_time)/60))
