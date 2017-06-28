@@ -97,7 +97,7 @@ def data_extract (datapath_T,datapath_q,datapath_z,datapath_lnsp):
     return T,q,z,lnsp,time,level,latitude,longitude
 
 # compute geopotential on the model level of ERA-Interim
-def calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude):
+def calc_geopotential(T, q, z, lnsp, time, level, latitude, longitude):
     # define the constants
     # gas constant of dry air (J/(kg*K))
     R_dry = 286.9
@@ -177,9 +177,64 @@ def calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude):
         # renew the half level geopotential for next loop step (from p_half_minus level to p_half_plus level)
         # see equation 2.20 in ECMWF IFS 9220
         gz_half = gz_half + ln_p * R_dry * Tv[:,i_inverse,:,:]
-    print "Computation of geopotential on each pressure level is finished"
+    print '*******************************************************************'
+    print "***Computation of geopotential on each pressure level is finished**"
+    print '*******************************************************************'
+    # Take the maximum and minimum of geopotential for the calculation of scaling and offset factor
+    gz_max = np.amax(gz)
+    gz_min = np.amin(gz)
 
-    return gz,level_full
+    return gz,level_full,gz_max,gz_min
+
+# Calculate scale factor and offset for packing data in netcdf
+def compute_scale_and_offset(max_a, min_a, n):
+    # stretch/compress data to the available packed range
+    scale_factor = (max_a - min_a) / (2 ** n - 1)
+    # translate the range to be symmetric about zero
+    add_offset = min_a + 2 ** (n - 1) * scale_factor
+    return (scale_factor, add_offset)
+
+# create netcdf file for geopotential
+def create_netcdf_gz (gz,time,level,latitude,longitude,scale_factor,add_offset,output_name):
+    print '*******************************************************************'
+    print '*********************** create netcdf file*************************'
+    print '*******************************************************************'
+    # wrap the geo-potential datasets into netcdf file
+    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+    data_wrap = Dataset(output_path+os.sep+output_name,'w',format = 'NETCDF3_64BIT')
+    # create dimensions for netcdf data
+    time_wrap_dim = data_wrap.createDimension('time',len(time))
+    level_wrap_dim = data_wrap.createDimension('level',len(level))
+    lat_wrap_dim = data_wrap.createDimension('latitude',len(latitude))
+    lon_wrap_dim = data_wrap.createDimension('longitude',len(longitude))
+    # create coordinate variables for 4-dimensions
+    time_warp_var = data_wrap.createVariable('time',np.int32,('time',))
+    level_warp_var = data_wrap.createVariable('level',np.int32,('level',))
+    lat_warp_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    lon_warp_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
+    # create the actual 4-d variable
+    gz_warp_var = data_wrap.createVariable('gz',np.int16,('time','level','latitude','longitude'))
+    # global attributes
+    data_wrap.description = 'Geopotential calculated on model levels'
+    # variable attributes
+    lat_warp_var.units = 'degree_north'
+    lon_warp_var.units = 'degree_east'
+    level_warp_var.units = 'hPa'
+    gz_warp_var.units = 'm**2 s**-2'
+    # apply the scale factor and offset for packing
+    gz_warp_var.scale_factor = scale_factor
+    gz_warp_var.add_offset = add_offset
+    time_warp_var.units = 'hours since 1900-01-01 00:00:0.0'
+    time_warp_var.calender = 'gregorian'
+    # writing data
+    lat_warp_var[:] = latitude
+    lon_warp_var[:] = longitude
+    level_warp_var[:] = level
+    time_warp_var[:] = time
+    gz_warp_var[:] = gz
+    # close the file
+    data_wrap.close()
+    print "Create netcdf file successfully"
 
 # main function
 
@@ -195,45 +250,15 @@ if __name__=="__main__":
         datapath_lnsp = datapath+os.sep+'model_daily_075_%d_%d_lnsp.nc' % (year,i)
         # extract data
         T,q,z,lnsp,time,level,latitude,longitude = data_extract(datapath_T,datapath_q,datapath_z,datapath_lnsp)
-        gz,level_full= calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude)
-        ################################################################################################################
-        print '*******************************************************************'
-        print '****************** create netcdf file******************************'
-        print '*******************************************************************'
-        # wrap the geo-potential datasets into netcdf file
-        # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-        data_wrap = Dataset(output_path+os.sep+'model_daily_075_%d_%d_gz.nc' % (year,i),'w',format = 'NETCDF3_64BIT')
-        # create dimensions for netcdf data
-        time_wrap_dim = data_wrap.createDimension('time',len(time))
-        level_wrap_dim = data_wrap.createDimension('level',len(level))
-        lat_wrap_dim = data_wrap.createDimension('latitude',len(latitude))
-        lon_wrap_dim = data_wrap.createDimension('longitude',len(longitude))
-        # create coordinate variables for 4-dimensions
-        time_warp_var = data_wrap.createVariables('time',np.int32,('time',))
-        level_warp_var = data_wrap.createVariables('level',np.float32,('level',))
-        lat_warp_var = data_wrap.createVariables('latitude',np.float32,('latitude',))
-        lon_warp_var = data_wrap.createVariables('longitude',np.float32,('longitude',))
-        # create the actual 4-d variable
-        gz_warp_var = data_wrap.createVariables('gz',np.int16,('time','level','latitude','longitude'))
-        # global attributes
-        data_wrap.description = 'Geopotential calculated on model levels'
-        # variable attributes
-        lat_warp_var.units = 'degree_north'
-        lon_warp_var.units = 'degree_east'
-        level_warp_var.units = 'hPa'
-        gz_warp_var.units = 'm**2 s**-2'
-        time_warp_var.units = 'hours since 1900-01-01 00:00:0.0'
-        time_warp_var.calender = 'gregorian'
-        # writing data
-        lat_warp_var[:] = latitude
-        lon_warp_var[:] = longitude
-        level_warp_var[:] = level_full
-        time_warp_var[:] = time
-        gz_warp_var[:] = gz
-        # close the file
-        data_wrap.close()
-        print "Create netcdf file successfully"
+        # calculate geopotential
+        gz,level_full,gz_max,gz_min = calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude)
+        # specify the number of bits for packing
+        n_int = 16
+        # calculate scale and offset factor for saving netcdf file
+        scale_factor, add_offset = compute_scale_and_offset(gz_max, gz_min, n_int)
+        # save geopotential to a netcdf file (lossy compression technique)
+        output_name = 'model_daily_075_%d_%d_gz.nc' % (year,i)
+        create_netcdf_gz(gz,time,level,latitude,longitude,scale_factor,add_offset,output_name)
     print 'Computation of geopotenial on model level for ERA-Interim is complete!!!'
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
-
