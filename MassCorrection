@@ -1,0 +1,418 @@
+#!/usr/bin/env python
+
+"""
+Copyright Netherlands eScience Center
+
+Function        : Mass budget correction - Calculate the barotropic wind correction
+Author          : Yang Liu
+Date            : 2017.7.1
+Last Update     : 2017.7.10
+Description     : The code aims to calculate the barotropic correction to zonal
+                  and meridional wind. These adjustments to the barotropic wind
+                  are employed when correcting the mass budget during the computation
+                  of mass transport or energy transport.
+                  Mass budget correction should be addressed whenever the computation
+                  includes integral of a vertical column of air. The method is firstly
+                  raised by Trenberth (1991).
+                  More information about this method could be found:
+                  http://www.cgd.ucar.edu/cas/catalog/newbudgets/index.html
+
+Return Value    : NetCFD4 data file
+Dependencies    : os, time, numpy, netCDF4, sys
+variables       : Absolute Temperature              T
+                  Specific Humidity                 q
+                  Logarithmic Surface Pressure      lnsp
+                  Zonal Divergent Wind              u
+                  Meridional Divergent Wind         v
+"""
+import numpy as np
+import time as tttt
+from netCDF4 import Dataset,num2date
+import os
+import platform
+import sys
+import logging
+
+# cpT:  [J / kg K] * [K]     = [J / kg]
+# Lvq:  [J / kg] * [kg / kg] = [J / kg]
+# gz in [m2 / s2] = [ kg m2 / kg s2 ] = [J / kg]
+
+# multiply by v: [J / kg] * [m / s] => [J m / kg s]
+# sum over longitudes [J m / kg s] * [ m ] = [J m2 / kg s]
+
+# integrate over pressure: dp: [Pa] = [N m-2] = [kg m2 s-2 m-2] = [kg s-2]
+# [J m2 / kg s] * [Pa] = [J m2 / kg s] * [kg / s2] = [J m2 / s3]
+# and factor 1/g: [J m2 / s3] * [s2 /m2] = [J / s] = [Wat]
+
+# print the system structure and the path of the kernal
+print platform.architecture()
+print os.path
+
+# calculate the time for the code execution
+start_time = tttt.time()
+
+# Redirect all the console output to a file
+sys.stdout = open('F:\DataBase\ERA_Interim\console.out','w')
+
+# logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
+logging.basicConfig(filename = 'F:\DataBase\history.log', filemode = 'w',level = logging.DEBUG,
+                    format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#logging.basicConfig(filename = '/data/Reanalysis/ERA_Interim/Subdaily/Model/history.log', filemode = 'w', level = logging.DEBUG, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# define the constant:
+constant ={'g' : 9.80616,      # gravititional acceleration [m / s2]
+           'R' : 6371009,      # radius of the earth [m]
+           'cp': 1004.64,      # heat capacity of air [J/(Kg*K)]
+           'Lv': 2264670,      # Latent heat of vaporization [J/Kg]
+            }
+
+################################   Input zone  ######################################
+# specify data path
+datapath = 'F:\DataBase\ERA_Interim\Subdaily'
+# datapath = '/project/ERA-Interim/Subdaily/Model/'
+# time of the data, which concerns with the name of input
+# starting time (year)
+start_year = 1981
+# Ending time, if only for 1 year, then it should be the same as starting year
+end_year = 1981
+# specify output path for the netCDF4 file
+output_path = 'F:\DataBase\ERA_Interim\Subdaily'
+####################################################################################
+
+# A and B values for the definition of sigma levelist
+# Since there are 60 model levels, there are 61 half levels, so it is for A and B values
+A = np.array([
+      0.0000000000e+000, 2.0000000000e+001, 3.8425338745e+001, 6.3647796631e+001, 9.5636962891e+001,
+      1.3448330688e+002, 1.8058435059e+002, 2.3477905273e+002, 2.9849584961e+002, 3.7397192383e+002,
+      4.6461816406e+002, 5.7565112305e+002, 7.1321801758e+002, 8.8366040039e+002, 1.0948347168e+003,
+      1.3564746094e+003, 1.6806403809e+003, 2.0822739258e+003, 2.5798886719e+003, 3.1964216309e+003,
+      3.9602915039e+003, 4.9067070313e+003, 6.0180195313e+003, 7.3066328125e+003, 8.7650546875e+003,
+      1.0376125000e+004, 1.2077445313e+004, 1.3775324219e+004, 1.5379804688e+004, 1.6819472656e+004,
+      1.8045183594e+004, 1.9027695313e+004, 1.9755109375e+004, 2.0222203125e+004, 2.0429863281e+004,
+      2.0384480469e+004, 2.0097402344e+004, 1.9584328125e+004, 1.8864750000e+004, 1.7961359375e+004,
+      1.6899468750e+004, 1.5706449219e+004, 1.4411125000e+004, 1.3043218750e+004, 1.1632757813e+004,
+      1.0209500000e+004, 8.8023554688e+003, 7.4388046875e+003, 6.1443164063e+003, 4.9417773438e+003,
+      3.8509133301e+003, 2.8876965332e+003, 2.0637797852e+003, 1.3859125977e+003, 8.5536181641e+002,
+      4.6733349609e+002, 2.1039389038e+002, 6.5889236450e+001, 7.3677425385e+000, 0.0000000000e+000,
+      0.0000000000e+000,],dtype=float)
+B = np.array([
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 7.5823496445e-005,
+      4.6139489859e-004, 1.8151560798e-003, 5.0811171532e-003, 1.1142909527e-002, 2.0677875727e-002,
+      3.4121163189e-002, 5.1690407097e-002, 7.3533833027e-002, 9.9674701691e-002, 1.3002252579e-001,
+      1.6438430548e-001, 2.0247590542e-001, 2.4393314123e-001, 2.8832298517e-001, 3.3515489101e-001,
+      3.8389211893e-001, 4.3396294117e-001, 4.8477154970e-001, 5.3570991755e-001, 5.8616840839e-001,
+      6.3554745913e-001, 6.8326860666e-001, 7.2878581285e-001, 7.7159661055e-001, 8.1125342846e-001,
+      8.4737491608e-001, 8.7965691090e-001, 9.0788388252e-001, 9.3194031715e-001, 9.5182150602e-001,
+      9.6764522791e-001, 9.7966271639e-001, 9.8827010393e-001, 9.9401944876e-001, 9.9763011932e-001,
+      1.0000000000e+000,],dtype=float)
+
+# function for moisture budget and Evaporation minus Precipitation
+def Mass_Correction (datapath,year,month):
+    # Extract data first!
+    print "Start extracting datasets"
+    logging.info("Start extracting variables q,lnsp,u,v for from %d (y) - %d (m)" % (year,month))
+    # for the calculation of tendency, exception should be made due to the time dependency
+    if month == 1:
+        # datapath of q
+        datapath_q_last = datapath +os.sep + 'model_daily_075_%d' % (year-1) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year-1,12)
+        datapath_q = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
+        datapath_q_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month+1)
+        # datapath of surface pressure
+        datapath_lnsp_last = datapath +os.sep + 'model_daily_075_%d' % (year-1) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year-1,12)
+        datapath_lnsp = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
+        datapath_lnsp_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month+1)
+    elif month ==12:
+        # datapath of q
+        datapath_q_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month-1)
+        datapath_q = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
+        datapath_q_next = datapath +os.sep + 'model_daily_075_%d' % (year+1) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year+1,1)
+        # datapath of surface pressure
+        datapath_lnsp_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month-1)
+        datapath_lnsp = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
+        datapath_lnsp_next = datapath +os.sep + 'model_daily_075_%d' % (year+1) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year+1,1)
+    else:
+        # datapath of q
+        datapath_q_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month-1)
+        datapath_q = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
+        datapath_q_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month+1)
+        # datapath of surface pressure
+        datapath_lnsp_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month-1)
+        datapath_lnsp = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
+        datapath_lnsp_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month+1)
+    # for the calculation of divergence, no exception need to be made
+    # datapath of velocity
+    datapath_u = output_path +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_u.nc' % (year,month)
+    datapath_v = output_path +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_v.nc' % (year,month)
+
+    # Extract variables
+    q_last = Dataset(datapath_q_last).variables['q'][-1,:,:,:]
+    q = Dataset(datapath_q).variables['q'][:]
+    q_next = Dataset(datapath_q_next).variables['q'][0,:,:,:]
+    lnsp_last = Dataset(datapath_lnsp_last).variables['lnsp'][-1,:,:]
+    lnsp = Dataset(datapath_lnsp).variables['lnsp'][:]
+    lnsp_next = Dataset(datapath_lnsp_next).variables['lnsp'][0,:,:]
+    u = Dataset(datapath_u).variables['u'][:]
+    v = Dataset(datapath_v).variables['v'][:]
+
+    # validate time and location info
+    time = Dataset(datapath_q).variables['time'][:]
+    level = Dataset(datapath_q).variables['level'][:]
+    latitude = Dataset(datapath_q).variables['latitude'][:]
+    longitude = Dataset(datapath_q).variables['longitude'][:]
+    print '*******************************************************************'
+    print 'There are %d days in this month' % (len(time)/4)
+    print 'The coordinates include %d vertical levels' % (len(level))
+    print 'The grid employs %d points in latitude, and %d points in longitude' % (len(latitude),len(longitude))
+    print '*******************************************************************'
+    print 'Extracting datasets successfully!'
+    logging.info("Extracting variables for time %d (y) - %d (m) successfully!" % (year,month))
+
+    print 'Begin the calculation of precipitable water tendency'
+    # calculate pressure levels
+    sp_last = np.exp(lnsp_last)
+    sp = np.exp(lnsp)
+    sp_next = np.exp(lnsp_next)
+
+    dp_level_start = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # start of the current month
+    dp_level_end = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # end of the current month
+    dp_level_last = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # last day of the last month
+    dp_level_next = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # first day of the next month
+
+    # calculate the index of pressure levels
+    index_level = np.arange(len(level))
+
+####################################################################
+###########     calculate dp based on half level      ##############
+####################################################################
+    # use matrix A and B to calculate dp based on half pressure level
+    for i in index_level:
+        dp_level_start[i,:,:] = (A[i+1] + B[i+1] * sp[0,:,:]) - (A[i] + B[i] * sp[0,:,:])
+        dp_level_end[i,:,:] = (A[i+1] + B[i+1] * sp[-1,:,:]) - (A[i] + B[i] * sp[-1,:,:])
+        dp_level_last[i,:,:] = (A[i+1] + B[i+1] * sp_last) - (A[i] + B[i] * sp_last)
+        dp_level_next[i,:,:] = (A[i+1] + B[i+1] * sp_next) - (A[i] + B[i] * sp_next)
+#####################################################################################
+#####################     calculate dp based on full level      #####################
+#####################################################################################
+    # # use matrix A and B to define full pressure level
+    # for i in index_level:
+    #     dp_level_start[i,:,:] = ((A[i+1] + B[i+1] * sp[0,:,:]) + (A[i] + B[i] * sp[0,:,:])) / 2
+    #     dp_level_end[i,:,:] = ((A[i+1] + B[i+1] * sp[-1,:,:]) + (A[i] + B[i] * sp[-1,:,:])) / 2
+    #     dp_level_last[i,:,:] = ((A[i+1] + B[i+1] * sp_last) + (A[i] + B[i] * sp_last)) / 2
+    #     dp_level_next[i,:,:] = ((A[i+1] + B[i+1] * sp_next) + (A[i] + B[i] * sp_next)) / 2
+    #
+    # # calculate delta pressure based on each level
+    # dp_level_start = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # start of the current month
+    # dp_level_end = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # end of the current month
+    # dp_level_last = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # last day of the last month
+    # dp_level_next = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # first day of the next month
+    # for i in index_level:
+    #     if i == 0:
+    #         dp_level_start[i,:,:] = p_level_start[i,:,:]
+    #         dp_level_end[i,:,:] = p_level_end[i,:,:]
+    #         dp_level_last[i,:,:] = p_level_last[i,:,:]
+    #         dp_level_next[i,:,:] = p_level_next[i,:,:]
+    #     else:
+    #         dp_level_start[i,:,:] = p_level_start[i,:,:] - p_level_start[i-1,:,:]
+    #         dp_level_end[i,:,:] = p_level_end[i,:,:] - p_level_end[i-1,:,:]
+    #         dp_level_last[i,:,:] = p_level_last[i,:,:] - p_level_last[i-1,:,:]
+    #         dp_level_next[i,:,:] = p_level_next[i,:,:] - p_level_next[i-1,:,:]
+#####################################################################################
+
+    # calculte the precipitable water tendency and take the vertical integral
+    moisture_start = np.sum((q[0,:,:,:] * dp_level_start), 0) # start of the current month
+    moisture_end = np.sum((q[-1,:,:,:] * dp_level_end), 0) # end of the current month
+    moisture_last = np.sum((q_last * dp_level_last), 0) # last day of the last month
+    moisture_next = np.sum((q_next * dp_level_next), 0) # first day of the next month
+    # compute the moisture tendency (one day has 86400s)
+    moisture_tendency = ((moisture_end + moisture_next) / 2 - (moisture_last + moisture_start) / 2) / (len(time)/4*86400) / constant['g']
+    print 'The calculation of precipitable water tendency is finished !!'
+
+    # take the mean surface pressure value for the current month and calculate the delta pressure
+    sp_mean = np.mean(sp,0)
+    dp_level = np.zeros((len(level),len(latitude),len(longitude)),dtype = float)
+    for i in index_level:
+        dp_level[i,:,:] = (A[i+1] + B[i+1] * sp_mean) - (A[i] + B[i] * sp_mean)
+#####################################################################################
+#####################     calculate dp based on full level      #####################
+#####################################################################################
+    # dp_level = np.zeros((len(level),len(latitude),len(longitude)),dtype = float)
+    # for i in index_level:
+    #     if i == 0:
+    #         dp_level[i,:,:] = p_level[i,:,:]
+    #     else:
+    #         dp_level[i,:,:] = p_level[i,:,:] - p_level[i-1,:,:]
+    # calculate the verically integrated moisture flux
+#####################################################################################
+    print 'Begin the calculation of divergent verically integrated moisture flux.'
+
+    # calculte the mean moisture flux for a certain month
+    moisture_flux_u = np.mean(u * q, 0) * dp_level / constant['g']
+    moisture_flux_v = np.mean(v * q, 0) * dp_level / constant['g']
+    # take the vertical integral
+    moisture_flux_u_int = np.sum(moisture_flux_u,0)
+    moisture_flux_v_int = np.sum(moisture_flux_v,0)
+    # calculate zonal & meridional grid size on earth
+    # the earth is taken as a perfect sphere, instead of a ellopsoid
+    dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / (len(longitude) - 1)
+    dy = 2 * np.pi * constant['R'] / (len(latitude) - 1)
+    # calculate the divergence of moisture flux
+    div_moisture_flux_u = np.zeros((len(latitude),len(longitude)),dtype = float)
+    div_moisture_flux_v = np.zeros((len(latitude),len(longitude)),dtype = float)
+
+    # zonal moisture flux divergence
+    for i in np.arange(len(latitude)):
+        for j in np.arange(len(longitude)):
+            # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
+            if j == 0:
+                div_moisture_flux_u[i,j] = (moisture_flux_u_int[i,j+1] - moisture_flux_u_int[i,-1]) / (2 * dx[i])
+            elif j == (len(longitude)-1) :
+                div_moisture_flux_u[i,j] = (moisture_flux_u_int[i,0] - moisture_flux_u_int[i,j-1]) / (2 * dx[i])
+            else:
+                div_moisture_flux_u[i,j] = (moisture_flux_u_int[i,j+1] - moisture_flux_u_int[i,j-1]) / (2 * dx[i])
+
+    # meridional moisture flux divergence
+    for i in np.arange(len(latitude)):
+        if i == 0:
+            div_moisture_flux_v[i,:] = 0 #moisture_flux_u_int[i,:] / dy
+        elif i == (len(latitude)-1):
+            div_moisture_flux_v[i,:] = 0 #moisture_flux_u_int[i,:] / dy
+        else:
+            div_moisture_flux_v[i,:] = (moisture_flux_v_int[i+1,:] - moisture_flux_v_int[i-1,:]) / (2 * dy)
+    print 'The calculation of divergent verically integrated moisture flux is finished !!'
+
+    # calculate evaporation minus precipitation
+    E_P =  np.zeros((len(latitude),len(longitude)),dtype = float)
+    E_P = moisture_tendency + div_moisture_flux_u + div_moisture_flux_v
+    print '*******************************************************************'
+    print "******  Computation of E-P on each grid point is finished   *******"
+    print '*******************************************************************'
+    logging.info("Computation of E-P on each grid point is finished!")
+
+    print 'Begin the calculation of surface pressure tendency.'
+    sp_tendency = ((sp[-1,:,:] + sp_next) / 2 - (sp_last + sp[0,:,:]) / 2 ) / (len(time)/4*86400)
+    print 'The calculation of surface pressure tendency is finished !!'
+
+    print 'Begin the calculation of divergent verically integrated mass flux.'
+    # calculte the mean mass flux for a certain month
+    mass_flux_u = np.mean(u, 0) * dp_level / constant['g']
+    mass_flux_v = np.mean(v, 0) * dp_level / constant['g']
+    # take the vertical integral
+    mass_flux_u_int = np.sum(mass_flux_u,0)
+    mass_flux_v_int = np.sum(mass_flux_v,0)
+    # calculate the divergence of moisture flux
+    div_mass_flux_u = np.zeros((len(latitude),len(longitude)),dtype = float)
+    div_mass_flux_v = np.zeros((len(latitude),len(longitude)),dtype = float)
+
+    # zonal mass flux divergence
+    for i in np.arange(len(latitude)):
+        for j in np.arange(len(longitude)):
+            # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
+            if j == 0:
+                div_mass_flux_u[i,j] = (mass_flux_u_int[i,j+1] - mass_flux_u_int[i,-1]) / (2 * dx[i])
+            elif j == (len(longitude)-1) :
+                div_mass_flux_u[i,j] = (mass_flux_u_int[i,0] - mass_flux_u_int[i,j-1]) / (2 * dx[i])
+            else:
+                div_mass_flux_u[i,j] = (mass_flux_u_int[i,j+1] - mass_flux_u_int[i,j-1]) / (2 * dx[i])
+
+    # meridional mass flux divergence
+    for i in np.arange(len(latitude)):
+        if i == 0:
+            div_mass_flux_v[i,:] = 0  #moisture_flux_u_int[i,:] / dy
+        elif i == (len(latitude)-1):
+            div_mass_flux_v[i,:] = 0  #moisture_flux_u_int[i,:] / dy
+        else:
+            div_mass_flux_v[i,:] = (mass_flux_v_int[i+1,:] - mass_flux_v_int[i-1,:]) / (2 * dy)
+
+    print 'The calculation of divergent verically integrated mass flux is finished !!'
+
+    mass_residual = np.zeros((len(latitude),len(longitude)),dtype = float)
+    mass_residual = sp_tendency + constant['g'] * (div_mass_flux_u + div_mass_flux_v) - constant['g'] * E_P
+
+    print '*******************************************************************'
+    print "*** Computation of mass residual on each grid point is finished ***"
+    print '*******************************************************************'
+    logging.info("Computation of mass residual on each grid point is finished!")
+
+    print 'Begin the calculation of barotropic correction wind.'
+    # calculate precipitable water
+    precipitable_water = np.mean(q, 0) * dp_level / constant['g']
+    # take the vertical integral
+    precipitable_water_int = np.sum(precipitable_water,0)
+    # calculate barotropic correction wind
+    uc = np.zeros((len(latitude),len(longitude)),dtype = float)
+    vc = np.zeros((len(latitude),len(longitude)),dtype = float)
+    vc = mass_residual * dy / (sp_mean - constant['g'] * precipitable_water_int)
+    for i in np.arange(len(latitude)):
+        uc[i,:] = mass_residual * dx[i] / (sp_mean[i,:] - constant['g'] * precipitable_water_int[i,:])
+
+    print '********************************************************************************'
+    print "*** Computation of barotropic correction wind on each grid point is finished ***"
+    print '********************************************************************************'
+    logging.info("Computation of barotropic correction wind on each grid point is finished!")
+
+    return uc , vc
+
+# create netcdf file for geopotential
+def create_netcdf_uvc (uc_pool,vc_pool,output_path,year,month):
+    print '*******************************************************************'
+    print '*********************** create netcdf file*************************'
+    print '*******************************************************************'
+    # wrap the geo-potential datasets into netcdf file
+    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+    data_wrap = Dataset(output_path+os.sep+'model_daily_075_%d' % (year) + os.sep +\
+                        'model_daily_075_%d_%d_uvc.nc' % (year,month),'w',format = 'NETCDF3_64BIT')
+    # create dimensions for netcdf data
+    month_wrap_dim = data_wrap.createDimension('month',len(index_month))
+    lat_wrap_dim = data_wrap.createDimension('latitude',len(Lat))
+    lon_wrap_dim = data_wrap.createDimension('longitude',len(Lon))
+    # create coordinate variables for 4-dimensions
+    month_warp_var = data_wrap.createVariable('month',np.int32,('month',))
+    lat_warp_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    lon_warp_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
+    # create the actual 2-d variable
+    uc_warp_var = data_wrap.createVariable('uc',np.float32,('month','latitude','longitude'))
+    vc_warp_var = data_wrap.createVariable('vc',np.float32,('month','latitude','longitude'))
+    # global attributes
+    data_wrap.description = 'Barotropic correction wind for monthly means on each grid point'
+    # variable attributes
+    lat_warp_var.units = 'degree_north'
+    lon_warp_var.units = 'degree_east'
+    uc_warp_var.units = 'm/s'
+    vc_warp_var.units = 'm/s'
+    # writing data
+    lat_warp_var[:] = Lat
+    lon_warp_var[:] = Lon
+    month_warp_var[:] = index_month
+    uc_warp_var[:] = uc_pool
+    vc_warp_var[:] = vc_pool
+    # close the file
+    data_wrap.close()
+    print "Create netcdf file successfully"
+
+if __name__=="__main__":
+    # create the month index
+    period = np.arange(start_year,end_year+1,1)
+    index_month = np.arange(1,13,1)
+    # create matrix to store the barotropic correction wind for each year
+    datapath_lnsp = datapath +os.sep + 'model_daily_075_1980' + os.sep + 'model_daily_075_1980_1_lnsp.nc'
+    keys = Dataset(datapath_lnsp)
+    Lat = keys.variables['latitude'][:]
+    Lon = keys.variables['longitude'][:]
+    uc_pool = np.zeros((len(index_month),len(Lat),len(Lon)),dtype = float)
+    vc_pool = np.zeros((len(index_month),len(Lat),len(Lon)),dtype = float)
+    # loop for calculation
+    for i in period:
+        for j in index_month:
+            uc , vc = Mass_Correction (datapath,i,j)
+            # put the data into the temporary storage for packing later
+            uc_pool[j-1,:,:] = uc
+            vc_pool[j-1,:,:] = vc
+        # create netcdf file for barotropic correction wind
+    create_netcdf_uvc(uc_pool,vc_pool,output_path,i,j)
+    logging.info('Finish the computation in %s minutes' % ((tttt.time() - start_time)/60))
+
+print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
