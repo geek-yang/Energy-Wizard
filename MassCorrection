@@ -259,8 +259,8 @@ def Mass_Correction (datapath,year,month):
     # calculate zonal & meridional grid size on earth
     # the earth is taken as a perfect sphere, instead of a ellopsoid
     dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / (len(longitude) - 1)
-    dx[0] = 0 # adjustment in case of float point fluctuation
-    dx[-1] = 0
+    #dx[0] = 0.0001 # adjustment in case of float point fluctuation
+    #dx[-1] = 0.0001
     dy = np.pi * constant['R'] / (len(latitude) - 1)
     # calculate the divergence of moisture flux
     div_moisture_flux_u = np.zeros((len(latitude),len(longitude)),dtype = float)
@@ -351,7 +351,7 @@ def Mass_Correction (datapath,year,month):
     vc = np.zeros((len(latitude),len(longitude)),dtype = float)
     vc = mass_residual * dy / (sp_mean - constant['g'] * precipitable_water_int)
     vc[0,:] = 0 # Modification at polar points
-    vc[-1,0] = 0
+    vc[-1,:] = 0
     for i in np.arange(len(latitude)):
         uc[i,:] = mass_residual[i,:] * dx[i] / (sp_mean[i,:] - constant['g'] * precipitable_water_int[i,:])
 
@@ -363,14 +363,14 @@ def Mass_Correction (datapath,year,month):
     return uc , vc
 
 # create netcdf file for barotropic correction wind
-def create_netcdf_uvc (uc_pool,vc_pool,output_path,year,month,Lat,Lon,index_month):
+def create_netcdf_uvc (uc_pool,vc_pool,output_path,year,Lat,Lon,index_month):
     print '*******************************************************************'
     print '*********************** create netcdf file*************************'
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
     data_wrap = Dataset(output_path+os.sep+'model_daily_075_%d' % (year) + os.sep +\
-                        'model_daily_075_%d_%d_uvc.nc' % (year,month),'w',format = 'NETCDF3_64BIT')
+                        'model_daily_075_%d_uvc.nc' % (year),'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     month_wrap_dim = data_wrap.createDimension('month',len(index_month))
     lat_wrap_dim = data_wrap.createDimension('latitude',len(Lat))
@@ -421,7 +421,7 @@ if __name__=="__main__":
             uc_pool[j-1,:,:] = uc
             vc_pool[j-1,:,:] = vc
         # create netcdf file for barotropic correction wind
-#   create_netcdf_uvc(uc_pool,vc_pool,output_path,i,j,Lat,Lon,index_month)
+        create_netcdf_uvc(uc_pool,vc_pool,output_path,i,Lat,Lon,index_month)
     logging.info('Finish the computation in %s minutes' % ((tttt.time() - start_time)/60))
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
