@@ -119,32 +119,23 @@ def Mass_Correction (datapath,year,month):
     if month == 1:
         # datapath of q
         datapath_q_last = datapath + os.sep + 'model_daily_075_%d' % (year-1) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year-1,12)
-        datapath_q = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
         datapath_q_next = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month+1)
         # datapath of surface pressure
         datapath_lnsp_last = datapath + os.sep + 'model_daily_075_%d' % (year-1) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year-1,12)
-        datapath_lnsp = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
         datapath_lnsp_next = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month+1)
     elif month == 12:
-        # datapath of q
         datapath_q_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month-1)
-        datapath_q = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
         datapath_q_next = datapath +os.sep + 'model_daily_075_%d' % (year+1) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year+1,1)
-        # datapath of surface pressure
         datapath_lnsp_last = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month-1)
-        datapath_lnsp = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
         datapath_lnsp_next = datapath + os.sep + 'model_daily_075_%d' % (year+1) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year+1,1)
     else:
-        # datapath of q
         datapath_q_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month-1)
-        datapath_q = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
         datapath_q_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month+1)
-        # datapath of surface pressure
         datapath_lnsp_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month-1)
-        datapath_lnsp = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
         datapath_lnsp_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month+1)
 
-    # for the calculation of divergence, no exception need to be made
+    datapath_q = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
+    datapath_lnsp = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
     # datapath of velocity
     datapath_u = output_path +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_u.nc' % (year,month)
     datapath_v = output_path +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_v.nc' % (year,month)
@@ -164,7 +155,9 @@ def Mass_Correction (datapath,year,month):
     level = Dataset(datapath_q).variables['level'][:]
     latitude = Dataset(datapath_q).variables['latitude'][:]
     longitude = Dataset(datapath_q).variables['longitude'][:]
+    date = num2date(time,Dataset(datapath_q).variables['time'].units)
     print '*******************************************************************'
+    print 'The datasets contain information from %d to %d' % (date[0],date[-1])
     print 'There are %d days in this month' % (len(time)/4)
     print 'The coordinates include %d vertical levels' % (len(level))
     print 'The grid employs %d points in latitude, and %d points in longitude' % (len(latitude),len(longitude))

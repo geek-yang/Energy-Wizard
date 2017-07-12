@@ -32,9 +32,12 @@ import logging
 # record the time for downloading the dataset
 start_time = tttt.time()
 
+# Redirect all the console output to a file
+sys.stdout = open('F:\DataBase\ERA_Interim\console.out','w')
+
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 #logging.basicConfig(filename = 'F:\DataBase\history.log', filemode = 'w', level = logging.DEBUG, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.basicConfig(filename = '/data/Reanalysis/ERA_Interim/Model/Subdaily/history.log', filemode = 'w', level = logging.DEBUG, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename = '/data/Reanalysis/ERA_Interim/Subdaily/Model/history.log', filemode = 'w', level = logging.DEBUG, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # credentials of dataset namelist
 levtype = {'model' : 'ml',
            'pressure' : 'pl',}
@@ -58,7 +61,7 @@ param_input = 'z_lnsp'
 levelist_input = 'ml_s'
 # specify saving path
 #sav_path = 'F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1981'
-sav_path = '/data/Reanalysis/ERA_Interim/Model/Subdaily/'
+sav_path = '/data/Reanalysis/ERA_Interim/Subdaily/Model'
 ####################################################################################
 
 # This function generate a series of time for downloading dataset
@@ -123,7 +126,7 @@ def namelist(param,levelist,levtype,date_info,ind_year,ind_month,ind_param):
                     # Optionally get output in NetCDF format. However, this does not work with the above request due to overlapping timestamps.
                     "format" :  "netcdf",
                     # set an output file name
-                    "target": sav_path+os.sep+"%s"+os.sep+"model_daily_075_%s_%d_%s.nc" % (ind_year,ind_year,ind_month,ind_param),}
+                    "target": sav_path+os.sep+"%s" % (ind_year)+os.sep+"model_daily_075_%s_%d_%s.nc" % (ind_year,ind_month,ind_param),}
     return namelist_dict
 
 if __name__=="__main__":
@@ -142,6 +145,6 @@ if __name__=="__main__":
             logging.info("Downloading %d (m) %s (y) variable %s successfully" % (j,i,param_input))
             # record the progress in the history file
     logging.info('Finish Downloading in %s minutes' % ((tttt.time() - start_time)/60))
-    
+
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))

@@ -28,6 +28,7 @@ import os
 import platform
 import math
 import sys
+import logging
 
 # print the system structure and the path of the kernal
 print platform.architecture()
@@ -36,17 +37,35 @@ print os.path
 # calculate the time for the code execution
 start_time = tttt.time()
 
+# set-up logger case
+#logger = logging.getLogger('Geopotential')
+#handler = logging.FileHandler('history.log')
+#formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+#handler.setFormatter(formatter)
+#logger.addHandler(handler)
+#ogger.setLevel(logging.DEBUG)
+
+# logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
+#logging.basicConfig(filename = 'F:\DataBase\history.log', filemode = 'w', level = logging.DEBUG, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename = '/data/Reanalysis/ERA_Interim/Subdaily/Model/history.log', filemode = 'w', level = logging.DEBUG, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ################################   Input zone  ######################################
 # specify data path
-datapath = 'F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1980'
+datapath = 'F:\DataBase\ERA_Interim\Subdaily'
 # time of the data, which concerns with the name of input
-year = 1980
+# starting time (year)
+start_year = 1980
+# Ending time, if only for 1 year, then it should be the same as starting year
+end_year = 1980
 # specify output path for the netCDF4 file
 output_path = 'F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1980'
 ####################################################################################
 
 # Extract all the variables
-def data_extract (datapath_T,datapath_q,datapath_z,datapath_lnsp):
+def data_extract (datapath,year,month):
+    datapath_T = datapath+os.sep+'model_daily_075_%d' % (year)+os.sep+'model_daily_075_%d_%d_T.nc' % (year,month)
+    datapath_q = datapath+os.sep+'model_daily_075_%d' % (year)+os.sep+'model_daily_075_%d_%d_q.nc' % (year,month)
+    datapath_z = datapath+os.sep+'model_daily_075_%d' % (year)+os.sep+'model_daily_075_%d_%d_z.nc' % (year,month)
+    datapath_lnsp = datapath+os.sep+'model_daily_075_%d' % (year)+os.sep+'model_daily_075_%d_%d_lnsp.nc' % (year,month)
     # check the existance of the file (only for one file)
     if not os.path.isfile(datapath_T):
         print 'file %s not found' % datapath_T
@@ -240,25 +259,22 @@ def create_netcdf_gz (gz,time,level,latitude,longitude,scale_factor,add_offset,o
 
 if __name__=="__main__":
     # create the month index
+    period = np.arange(start_year,end_year+1,1)
     index_month = np.arange(1,13,1)
     # extract data, calculate geopotential, write as netcdf4 file
-    for i in index_month:
-        # specify the location of datasets
-        datapath_T = datapath+os.sep+'model_daily_075_%d_%d_T.nc' % (year,i)
-        datapath_q = datapath+os.sep+'model_daily_075_%d_%d_q.nc' % (year,i)
-        datapath_z = datapath+os.sep+'model_daily_075_%d_%d_z.nc' % (year,i)
-        datapath_lnsp = datapath+os.sep+'model_daily_075_%d_%d_lnsp.nc' % (year,i)
-        # extract data
-        T,q,z,lnsp,time,level,latitude,longitude = data_extract(datapath_T,datapath_q,datapath_z,datapath_lnsp)
-        # calculate geopotential
-        gz,level_full,gz_max,gz_min = calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude)
-        # specify the number of bits for packing
-        n_int = 16
-        # calculate scale and offset factor for saving netcdf file
-        scale_factor, add_offset = compute_scale_and_offset(gz_max, gz_min, n_int)
-        # save geopotential to a netcdf file (lossy compression technique)
-        output_name = 'model_daily_075_%d_%d_gz.nc' % (year,i)
-        create_netcdf_gz(gz,time,level,latitude,longitude,scale_factor,add_offset,output_name)
+    for i in period:
+        for i in index_month:
+            # extract data
+            T,q,z,lnsp,time,level,latitude,longitude = data_extract(datapath,i,j)
+            # calculate geopotential
+            gz,level_full,gz_max,gz_min = calc_geopotential(T,q,z,lnsp,time,level,latitude,longitude)
+            # specify the number of bits for packing
+            n_int = 16
+            # calculate scale and offset factor for saving netcdf file
+            scale_factor, add_offset = compute_scale_and_offset(gz_max, gz_min, n_int)
+            # save geopotential to a netcdf file (lossy compression technique)
+            output_name = 'model_daily_075_%d_%d_gz.nc' % (year,i)
+            create_netcdf_gz(gz,time,level,latitude,longitude,scale_factor,add_offset,output_name)
     print 'Computation of geopotenial on model level for ERA-Interim is complete!!!'
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
