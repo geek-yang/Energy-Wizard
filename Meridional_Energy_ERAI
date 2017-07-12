@@ -6,7 +6,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (ERA-Interim)
 Author          : Yang Liu
 Date            : 2017.7.11
-Last Update     : 2017.7.11
+Last Update     : 2017.7.12
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset ERA-Interim
                   from ECMWF. The complete procedure includes the calculation of
@@ -15,7 +15,7 @@ Description     : The code aims to calculate the atmospheric meridional energy
                   reanalysis datasets, with some changes.
 
 Return Value    : NetCFD4 data file
-Dependencies    : os, time, numpy, netCDF4, sys
+Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
 variables       : Absolute Temperature              T
                   Specific Humidity                 q
                   Logarithmic Surface Pressure      lnsp
@@ -29,6 +29,7 @@ import os
 import platform
 import sys
 import logging
+import matplotlib.pyplot as plt
 
 ##########################################################################
 ###########################   Units vacabulory   #########################
@@ -466,16 +467,37 @@ def meridional_energy_transport(T_key,q_key,lnsp_key,v_key,uc,vc,gz):
     return meridional_E, meridional_E_internal, meridional_E_latent, meridional_E_geopotential
 
 # make plots
-def visualization(E_total,E_internal,E_latent,E_geopotential,output_path,Dim_latitude):
+def visualization(E_total,E_internal,E_latent,E_geopotential,output_path,year):
     print "Start making plots for the total meridional energy transport and each component."
     logging.info("Start making plots for the total meridional energy transport and each component.")
-    # take the monthly mean value
+    # calculate monthly mean of total energy transport
     # unit peta = 1E+15
-
-
+    E_total_monthly_mean = np.mean(E_total,0)/1e+15
+    E_internal_monthly_mean = np.mean(E_internal,0)/1e+15
+    E_latent_monthly_mean = np.mean(E_latent,0)/1e+15
+    E_geopotential_monthly_mean = np.mean(E_geopotential,0)/1e+15
+    # take latitude data from benchmark variable
+    Lat = benchmark.variables['latitude'][:]
+    # create a 0 line
+    Reference = np.zeros(len(Lat))
+    # Plot the energy transport against the latitude
+    fig1 = plt.figure()
+    plt.plot(Lat,E_total_monthly_mean,'b-',label='ECMWF')
+    #plt.hold()
+    plt.plot(Lat,Reference,'r--',label='0')
+    plt.title('Total Atmospheric Meridional Energy Transport %d' % (year))
+    #plt.title('Internal Energy Transport')
+    #plt.title('Latent Heat Transport')
+    #plt.title('Geopotential Energy Transport')
+    #plt.legend()
+    plt.xlabel("Laitude")
+    plt.xticks(np.linspace(-90,90,13))
+    plt.ylabel("Meridional Energy Transport (PW)")
+    #plt.show()
+    fig1.savefig(output_path + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'Meridional_Energy_total_%d' (year), dpi = 400)
 
 # save output datasets
-def create_netcdf_uvc (uc_pool,vc_pool,output_path,year,Lat,Lon,index_month):
+def create_netcdf (meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path):
     print '*******************************************************************'
     print '*********************** create netcdf file*************************'
     print '*******************************************************************'
@@ -532,7 +554,6 @@ if __name__=="__main__":
     meridional_E_latent_pool = np.zeros((Dim_year,Dim_month,Dim_latitude),dtype = float)
     meridional_E_geopotential_pool = np.zeros((Dim_year,Dim_month,Dim_latitude),dtype = float)
     #meridional_E_kinetic_pool = np.zeros((Dim_year,Dim_month,Dim_latitude),dtype = float)
-    meridional_E_pool_monthly_mean = np.zeros((Dim_year,Dim_latitude),dtype = float)
     # loop for calculation
     for i in period:
         for j in index_month:
@@ -551,10 +572,10 @@ if __name__=="__main__":
             meridional_E_latent_pool[i,j,:] = meridional_E_latent
             meridional_E_geopotential_pool[i,j,:] = meridional_E_geopotential
             #meridional_E_kinetic_pool[i,j,:] = meridional_E_kinetic
-        # calculate monthly mean of total energy transport
-        meridional_E_pool_monthly_mean[i,:] = np.mean(meridional_E_pool[i,:,:],1)
-        # make plots
-        visualization(meridional_E_pool[i,:,:],meridional_E_internal_pool[i,:,:],meridional_E_latent_pool[i,:,:],meridional_E_geopotential_pool[i,:,:],output_path,Dim_latitude)
+        # make plots for monthly means
+        visualization(meridional_E_pool[i,:,:],meridional_E_internal_pool[i,:,:],meridional_E_latent_pool[i,:,:],meridional_E_geopotential_pool[i,:,:],output_path,i)
+    # save data as netcdf file
+    create_netcdf(meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path)
     print 'Computation of meridional energy transport on model level for ERA-Interim is complete!!!'
     print 'The output is in sleep, safe and sound'!!!'
 
