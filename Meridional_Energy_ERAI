@@ -181,7 +181,7 @@ def mass_correction(q_key, u_key, v_key, lnsp_key, q_next_key, lnsp_last_key, ln
     longitude = q_key.variables['longitude'][:]
     date = num2date(time,q_key.variables['time'].units)
     print '*******************************************************************'
-    print 'The datasets contain information from %d to %d' % (date[0],date[-1])
+    print 'The datasets contain information from %s to %s' % (date[0],date[-1])
     print 'There are %d days in this month' % (len(time)/4)
     print 'The coordinates include %d vertical levels' % (len(level))
     print 'The grid employs %d points in latitude, and %d points in longitude' % (len(latitude),len(longitude))
@@ -326,7 +326,7 @@ def mass_correction(q_key, u_key, v_key, lnsp_key, q_next_key, lnsp_last_key, ln
 
     return uc, vc
 
-def calc_geopotential(T_key, q_key,):
+def calc_geopotential(T_key, q_key, lnsp_key, z_key):
     # extract variables
     print "Start extracting variables for the calculation of geopotential on model level."
     T = T_key.variables['t'][:]
@@ -340,7 +340,7 @@ def calc_geopotential(T_key, q_key,):
     longitude = T_key.variables['longitude'][:]
     date = num2date(time,T_key.variables['time'].units)
     print '*******************************************************************'
-    print 'The datasets contain information from %d to %d' % (date[0],date[-1])
+    print 'The datasets contain information from %s to %s' % (date[0],date[-1])
     print 'There are %d days in this month' % (len(time)/4)
     print 'The coordinates include %d vertical levels' % (len(level))
     print 'The grid employs %d points in latitude, and %d points in longitude' % (len(latitude),len(longitude))
@@ -362,7 +362,7 @@ def calc_geopotential(T_key, q_key,):
         p_half_plus[:,i,:,:] = A[i+1] + B[i+1] * sp
         p_half_minus[:,i,:,:] = A[i] + B[i] * sp
     # calculate full pressure level
-    level_full = (p_half_plus + p_half_minus) / 2
+    #level_full = (p_half_plus + p_half_minus) / 2
     # compute the moist temperature (virtual temperature)
     Tv = T * (1 + (constant['R_vap'] / constant['R_dry'] - 1) * q)
     # initialize the first half level geopotential
@@ -409,7 +409,7 @@ def meridional_energy_transport(T_key,q_key,lnsp_key,v_key,uc,vc,gz):
     #u = u_key.variables['u'][:]
     v = v_key.variables['v'][:]
     # Extract dimension info
-    time = v_key.variables['time'][:]
+    #time = v_key.variables['time'][:]
     level = v_key.variables['level'][:]
     latitude = v_key.variables['latitude'][:]
     longitude = v_key.variables['longitude'][:]
@@ -422,6 +422,8 @@ def meridional_energy_transport(T_key,q_key,lnsp_key,v_key,uc,vc,gz):
     sp_mean = np.mean(sp,0)
     # calculate dp based on mean value of surface pressure
     dp_level = np.zeros((len(level),len(latitude),len(longitude)),dtype = float)
+    # calculate the index of pressure levels
+    index_level = np.arange(len(level))
     for i in index_level:
         dp_level[i,:,:] = (A[i+1] + B[i+1] * sp_mean) - (A[i] + B[i] * sp_mean)
     # calculate each component of total energy
@@ -453,12 +455,12 @@ def meridional_energy_transport(T_key,q_key,lnsp_key,v_key,uc,vc,gz):
     #meridional_E_kinetic = np.zeros(len(latitude),dtype=float)
     meridional_E = np.zeros(len(latitude),dtype=float)
     for i in np.arange(len(latitude)):
-        meridional_E_internal[i] = np.sum((internal_flux_int - correction_internal_flux_int) * dx[i],1)
-        meridional_E_latent[i] = np.sum((latent_flux_int - correction_latent_flux_int) * dx[i],1)
-        meridional_E_geopotential[i] = np.sum((geopotential_flux_int - correction_geopotential_flux_int) * dx[i],1)
+        meridional_E_internal[i] = np.sum((internal_flux_int[i,:] - correction_internal_flux_int[i,:]) * dx[i])
+        meridional_E_latent[i] = np.sum((latent_flux_int[i,:] - correction_latent_flux_int[i,:]) * dx[i])
+        meridional_E_geopotential[i] = np.sum((geopotential_flux_int[i,:] - correction_geopotential_flux_int[i,:]) * dx[i])
         #meridional_E_kinetic[i] = np.sum((kinetic_flux_int - correction_kinetic_flux_int) * dx[i],1)
     # meridional total energy transport
-    meridional_E = meridional_E_internal + meridional_E_latent + meridional_E_geopotential + #meridional_E_kinetic
+    meridional_E = meridional_E_internal + meridional_E_latent + meridional_E_geopotential #+ meridional_E_kinetic
     print '*******************************************************************'
     print "***Computation of meridional energy transport in the atmosphere is finished**"
     print '*******************************************************************'
@@ -497,7 +499,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,output_path,year):
     fig1.savefig(output_path + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'Meridional_Energy_total_%d' (year), dpi = 400)
 
 # save output datasets
-def create_netcdf (meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path):
+def create_netcdf (meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path,year):
     print '*******************************************************************'
     print '*********************** create netcdf file*************************'
     print '*******************************************************************'
@@ -509,29 +511,46 @@ def create_netcdf (meridional_E_pool,meridional_E_internal_pool,meridional_E_lat
     month_wrap_dim = data_wrap.createDimension('month',len(index_month))
     lat_wrap_dim = data_wrap.createDimension('latitude',len(Lat))
     lon_wrap_dim = data_wrap.createDimension('longitude',len(Lon))
-    # create coordinate variables for 4-dimensions
+    # create coordinate variables for 3-dimensions
     month_warp_var = data_wrap.createVariable('month',np.int32,('month',))
     lat_warp_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
     lon_warp_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
-    # create the actual 2-d variable
-    uc_warp_var = data_wrap.createVariable('uc',np.float32,('month','latitude','longitude'))
-    vc_warp_var = data_wrap.createVariable('vc',np.float32,('month','latitude','longitude'))
+    # create the actual 3-d variable
+    #uc_warp_var = data_wrap.createVariable('uc',np.float32,('month','latitude','longitude'))
+    #vc_warp_var = data_wrap.createVariable('vc',np.float32,('month','latitude','longitude'))
+
+    E_total_wrap_var = data_wrap.createVariable('E',np.float32,('month','latitude','longitude'))
+    E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float32,('month','latitude','longitude'))
+    E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float32,('month','latitude','longitude'))
+    E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float32,('month','latitude','longitude'))
     # global attributes
-    data_wrap.description = 'Barotropic correction wind for monthly means on each grid point'
+    data_wrap.description = 'Monthly mean meridional energy transport and each component'
     # variable attributes
     lat_warp_var.units = 'degree_north'
     lon_warp_var.units = 'degree_east'
-    uc_warp_var.units = 'm/s'
-    vc_warp_var.units = 'm/s'
+    #uc_warp_var.units = 'm/s'
+    #vc_warp_var.units = 'm/s'
+    E_total_wrap_var.units = 'peta watt'
+    E_internal_wrap_var.units = 'peta watt'
+    E_latent_wrap_var.units = 'peta watt'
+    E_geopotential_wrap_var.units = 'peta watt'
 
-    uc_warp_var.long_name = 'zonal barotropic correction wind'
-    vc_warp_var.long_name = 'meridional barotropic correction wind'
+    #uc_warp_var.long_name = 'zonal barotropic correction wind'
+    #vc_warp_var.long_name = 'meridional barotropic correction wind'
+    E_total_wrap_var.units = 'atmospheric meridional energy transport'
+    E_internal_wrap_var.units = 'atmospheric meridional internal energy transport'
+    E_latent_wrap_var.units = 'atmospheric meridional latent heat transport'
+    E_geopotential_wrap_var.units = 'atmospheric meridional geopotential transport'
     # writing data
-    lat_warp_var[:] = Lat
-    lon_warp_var[:] = Lon
+    lat_warp_var[:] = benchmark.variables['latitude'][:]
+    lon_warp_var[:] = benchmark.variables['longitude'][:]
     month_warp_var[:] = index_month
-    uc_warp_var[:] = uc_pool
-    vc_warp_var[:] = vc_pool
+    #uc_warp_var[:] = uc_pool
+    #vc_warp_var[:] = vc_pool
+    E_total_wrap_var[:] = meridional_E_pool
+    E_internal_wrap_var[:] = meridional_E_internal_pool
+    E_latent_wrap_var[:] = meridional_E_latent_pool
+    E_geopotential_wrap_var[:] = meridional_E_geopotential_pool
     # close the file
     data_wrap.close()
     print "Create netcdf file successfully"
@@ -577,6 +596,6 @@ if __name__=="__main__":
     # save data as netcdf file
     create_netcdf(meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path)
     print 'Computation of meridional energy transport on model level for ERA-Interim is complete!!!'
-    print 'The output is in sleep, safe and sound'!!!'
+    print 'The output is in sleep, safe and sound!!!'
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
