@@ -162,7 +162,7 @@ def var_key(datapath, year, month):
     logging.info("Retrieving variables for from %d (y) - %d (m) successfully!" % (year,month))
     return T_key, q_key, u_key, v_key, lnsp_key, z_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key
 
-def mass_correction(q_key, u_key, v_key, lnsp_key, q_next_key, lnsp_last_key, lnsp_next_key):
+def mass_correction(q_key, u_key, v_key, lnsp_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key):
     # extract variables
     print "Start extracting variables for mass correction."
     q = q_key.variables['q'][:]
@@ -682,7 +682,7 @@ if __name__=="__main__":
             # get the key of each variable
             T_key, q_key, u_key, v_key, lnsp_key, z_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key = var_key(datapath,i,j)
             # calculate barotropic correction wind based on mass budget correction
-            uc,vc = mass_correction(q_key, u_key, v_key, lnsp_key, q_next_key, lnsp_last_key, lnsp_next_key)
+            uc,vc = mass_correction(q_key, u_key, v_key, lnsp_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key)
             gz = calc_geopotential(T_key, q_key, lnsp_key, z_key)
             meridional_E, meridional_E_internal, meridional_E_latent, meridional_E_geopotential, meridional_E_point, meridional_E_internal_point, meridional_E_latent_point, meridional_E_geopotential_point = meridional_energy_transport(T_key,q_key,lnsp_key,v_key,uc,vc,gz)
             # save the total meridional energy and each component to the data pool

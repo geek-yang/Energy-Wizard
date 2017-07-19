@@ -263,7 +263,7 @@ if __name__=="__main__":
     index_month = np.arange(1,13,1)
     # extract data, calculate geopotential, write as netcdf4 file
     for i in period:
-        for i in index_month:
+        for j in index_month:
             # extract data
             T,q,z,lnsp,time,level,latitude,longitude = data_extract(datapath,i,j)
             # calculate geopotential
@@ -273,7 +273,7 @@ if __name__=="__main__":
             # calculate scale and offset factor for saving netcdf file
             scale_factor, add_offset = compute_scale_and_offset(gz_max, gz_min, n_int)
             # save geopotential to a netcdf file (lossy compression technique)
-            output_name = 'model_daily_075_%d_%d_gz.nc' % (year,i)
+            output_name = 'model_daily_075_%d_%d_gz.nc' % (i,j)
             create_netcdf_gz(gz,time,level,latitude,longitude,scale_factor,add_offset,output_name)
     print 'Computation of geopotenial on model level for ERA-Interim is complete!!!'
 
