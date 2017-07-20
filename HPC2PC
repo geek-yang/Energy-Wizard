@@ -1,0 +1,39 @@
+#!/bin/bash
+# Before executing the code, remember to do dos2unix due to the encoding difference in Linux and Windows
+#----------------------------------------------------------------------------------
+#Copyright Netherlands eScience Center
+#Function        : Copy output files from HPC cloud to the local working directory
+#Author          : Yang Liu
+#Date            : 2017.7.19
+#Description     : The code aims to download the output from HPC cloud to the local.
+#                  working directory. The output is the meridional energy transport
+#                  calculated based on the dataset "ERA-Interim".
+#----------------------------------------------------------------------------------
+# No argument in need! Changes shall be made inside the bash script
+# Changes are to be made inside the input zone below
+#-----------------------   Input zone   -------------------------------------------
+# specify the address of server
+ssh_address=admincentos@145.100.58.21
+# specify the starting year
+start_year=1979
+# specify the ending year
+end_year=1980
+# specify output path on the local machine
+output_path=/mnt/f/DataBase/HPC_out/ERAI/
+#----------------------------------------------------------------------------------
+echo 'Start transfering data from HPC cloud to the local working directory'
+# Loop for downloading dataset
+for ((year=${start_year};year<=${end_year};year++))
+do
+  scp ${ssh_address}:/project/Reanalysis/ERA_Interim/Subdaily/Model/era${year}/model_daily_075_${year}_E_point.nc ${output_path}/point/
+  scp ${ssh_address}:/project/Reanalysis/ERA_Interim/Subdaily/Model/era${year}/model_daily_075_${year}_E_zonal_int.nc ${output_path}/zonal_int/
+  scp ${ssh_address}:/project/Reanalysis/ERA_Interim/Subdaily/Model/era${year}/Meridional_Energy_total_${year}.png ${output_path}/pngs/
+  scp ${ssh_address}:/project/Reanalysis/ERA_Interim/Subdaily/Model/era${year}/Meridional_Energy_internal_${year}.png ${output_path}/pngs/
+  scp ${ssh_address}:/project/Reanalysis/ERA_Interim/Subdaily/Model/era${year}/Meridional_Energy_latent_${year}.png ${output_path}/pngs/
+  scp ${ssh_address}:/project/Reanalysis/ERA_Interim/Subdaily/Model/era${year}/Meridional_Energy_geopotential_${year}.png ${output_path}/pngs/
+  scp ${ssh_address}:/project/Reanalysis/ERA_Interim/Subdaily/Model/era${year}/Meridional_Energy_kinetic_${year}.png ${output_path}/pngs/
+  echo 'Data transfer for the year ${year} is complete!'
+done
+echo '---------------------------------------------------------------------------------'
+echo 'Successfully transfer the output from HPC cloud to the local working directory!!!'
+echo '---------------------------------------------------------------------------------'
