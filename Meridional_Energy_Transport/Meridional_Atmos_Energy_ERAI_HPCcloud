@@ -6,7 +6,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (ERA-Interim)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2017.7.17
-Last Update     : 2017.7.18
+Last Update     : 2017.7.20
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset ERA-Interim
                   from ECMWF. The complete procedure includes the calculation of
@@ -22,6 +22,8 @@ variables       : Absolute Temperature              T
                   Zonal Divergent Wind              u
                   Meridional Divergent Wind         v
                   Surface geopotential              z
+Caveat!!        : The data is from 30 deg north to 90 deg north (Northern Hemisphere).
+                  Attnention should be paid when calculating the meridional grid length (dy).
 """
 import numpy as np
 import time as tttt
@@ -231,10 +233,10 @@ def mass_correction(T_q_key, u_v_key, z_lnsp_key, q_last_key, q_next_key, lnsp_l
     moisture_flux_v_int = np.sum(moisture_flux_v,0)
     # calculate zonal & meridional grid size on earth
     # the earth is taken as a perfect sphere, instead of a ellopsoid
-    dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / (len(longitude) - 1)
+    dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / len(longitude)
     #dx[0] = 0.0001 # adjustment in case of float point fluctuation
     #dx[-1] = 0.0001
-    dy = np.pi * constant['R'] / (len(latitude) - 1)
+    dy = np.pi * constant['R'] / 240
     # calculate the divergence of moisture flux
     div_moisture_flux_u = np.zeros((len(latitude),len(longitude)),dtype = float)
     div_moisture_flux_v = np.zeros((len(latitude),len(longitude)),dtype = float)
@@ -317,7 +319,6 @@ def mass_correction(T_q_key, u_v_key, z_lnsp_key, q_last_key, q_next_key, lnsp_l
     vc = np.zeros((len(latitude),len(longitude)),dtype = float)
     vc = mass_residual * dy / (sp_mean - constant['g'] * precipitable_water_int)
     vc[0,:] = 0 # Modification at polar points
-    vc[-1,:] = 0
     for i in np.arange(len(latitude)):
         uc[i,:] = mass_residual[i,:] * dx[i] / (sp_mean[i,:] - constant['g'] * precipitable_water_int[i,:])
     print '********************************************************************************'
@@ -448,9 +449,8 @@ def meridional_energy_transport(T_q_key, z_lnsp_key, u_v_key, uc, vc, gz):
     correction_kinetic_flux_int = vc * np.sum(np.mean(1/2 *(u**2 + v**2), 0) * dp_level / constant['g'],0)
     # calculate zonal & meridional grid size on earth
     # the earth is taken as a perfect sphere, instead of a ellopsoid
-    dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / (len(longitude) - 1)
+    dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / len(longitude)
     dx[0] = 0
-    dx[-1] = 0
     # take the corrected energy flux at each grid point!
     meridional_E_internal_point = np.zeros((len(latitude),len(longitude)),dtype=float)
     meridional_E_latent_point = np.zeros((len(latitude),len(longitude)),dtype=float)
@@ -511,7 +511,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Total Atmospheric Meridional Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    plt.xticks(np.linspace(-90,90,13))
+    plt.xticks(np.linspace(30,90,13))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig1.savefig(output_path + os.sep + 'era%d' % (year) + os.sep + 'Meridional_Energy_total_%d.png' % (year), dpi = 400)
@@ -524,7 +524,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Internal Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    plt.xticks(np.linspace(-90,90,13))
+    plt.xticks(np.linspace(30,90,13))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig2.savefig(output_path + os.sep + 'era%d' % (year) + os.sep + 'Meridional_Energy_internal_%d.png % (year), dpi = 400)
@@ -537,7 +537,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Latent Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    plt.xticks(np.linspace(-90,90,13))
+    plt.xticks(np.linspace(30,90,13))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig3.savefig(output_path + os.sep + 'era%d' % (year) + os.sep + 'Meridional_Energy_latent_%d.png' % (year), dpi = 400)
@@ -550,7 +550,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Geopotential Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    plt.xticks(np.linspace(-90,90,13))
+    plt.xticks(np.linspace(30,90,13))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig4.savefig(output_path + os.sep + 'era%d' % (year) + os.sep + 'Meridional_Energy_geopotential_%d.png' % (year), dpi = 400)
@@ -563,7 +563,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Kinetic Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    plt.xticks(np.linspace(-90,90,13))
+    plt.xticks(np.linspace(30,90,13))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig5.savefig(output_path + os.sep + 'era%d' % (year) + os.sep + 'Meridional_Energy_kinetic_%d.png' % (year), dpi = 400)
