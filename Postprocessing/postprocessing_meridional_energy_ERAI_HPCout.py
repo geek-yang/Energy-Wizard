@@ -59,6 +59,7 @@ start_time = tttt.time()
 datapath = 'F:\DataBase\HPC_out\ERAI\postprocessing'
 # specify output path for the netCDF4 file
 output_path = 'F:\DataBase\HPC_out\ERAI\postprocessing'
+Lat_num = 60
 ####################################################################################
 print '*******************************************************************'
 print '*********************** extract variables *************************'
@@ -102,7 +103,7 @@ print '*******************************************************************'
 # 60 N total meridional energy transport time series
 fig1 = plt.figure()
 plt.plot(index,T_series_E[40,:]/1000,'b-',label='ECMWF')
-plt.title('Atmospheric Meridional Energy Transport time series at 60 N (1979-2016)' )
+plt.title('Atmospheric Meridional Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
 fig1.set_size_inches(14, 4)
 plt.xlabel("Time")
@@ -110,11 +111,11 @@ plt.xticks(np.linspace(1, 456, 38), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig1.savefig(output_path + os.sep + 'Meridional_Energy_total_time_series_1979_2016.jpg', dpi = 500)
+fig1.savefig(output_path + os.sep + 'Meridional_Energy_%dN_total_time_series_1979_2016.jpg' % (Lat_num), dpi = 500)
 
 fig2 = plt.figure()
 plt.plot(index,T_series_E_internal[40,:]/1000,'b-',label='ECMWF')
-plt.title('Atmospheric Meridional Internal Energy Transport time series at 60 N (1979-2016)' )
+plt.title('Atmospheric Meridional Internal Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
 fig2.set_size_inches(14, 4)
 plt.xlabel("Time")
@@ -122,11 +123,11 @@ plt.xticks(np.linspace(1, 456, 38), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig2.savefig(output_path + os.sep + 'Meridional_Energy_internal_time_series_1979_2016.jpg', dpi = 500)
+fig2.savefig(output_path + os.sep + 'Meridional_Energy_%dN_internal_time_series_1979_2016.jpg' % (Lat_num), dpi = 500)
 
 fig3 = plt.figure()
 plt.plot(index,T_series_E_latent[40,:]/1000,'b-',label='ECMWF')
-plt.title('Atmospheric Meridional Latent Energy Transport time series at 60 N (1979-2016)' )
+plt.title('Atmospheric Meridional Latent Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
 fig3.set_size_inches(14, 4)
 plt.xlabel("Time")
@@ -134,11 +135,11 @@ plt.xticks(np.linspace(1, 456, 38), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig3.savefig(output_path + os.sep + 'Meridional_Energy_latent_time_series_1979_2016.jpg', dpi = 500)
+fig3.savefig(output_path + os.sep + 'Meridional_Energy_%dN_latent_time_series_1979_2016.jpg' % (Lat_num), dpi = 500)
 
 fig4 = plt.figure()
 plt.plot(index,T_series_E_geopotential[40,:]/1000,'b-',label='ECMWF')
-plt.title('Atmospheric Meridional Geopotential Energy Transport time series at 60 N (1979-2016)' )
+plt.title('Atmospheric Meridional Geopotential Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
 fig4.set_size_inches(14, 4)
 plt.xlabel("Time")
@@ -146,11 +147,11 @@ plt.xticks(np.linspace(1, 456, 38), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig4.savefig(output_path + os.sep + 'Meridional_Energy_geopotential_time_series_1979_2016.jpg', dpi = 500)
+fig4.savefig(output_path + os.sep + 'Meridional_Energy_%dN_geopotential_time_series_1979_2016.jpg' % (Lat_num), dpi = 500)
 
 fig5 = plt.figure()
 plt.plot(index,T_series_E_kinetic[40,:]/1000,'b-',label='ECMWF')
-plt.title('Atmospheric Meridional Kinetic Energy Transport time series at 60 N (1979-2016)' )
+plt.title('Atmospheric Meridional Kinetic Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
 fig5.set_size_inches(14, 4)
 plt.xlabel("Time")
@@ -158,7 +159,7 @@ plt.xticks(np.linspace(1, 456, 38), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig5.savefig(output_path + os.sep + 'Meridional_Energy_kinetic_time_series_1979_2016.jpg', dpi = 500)
+fig5.savefig(output_path + os.sep + 'Meridional_Energy_%dN_kinetic_time_series_1979_2016.jpg' % (Lat_num), dpi = 500)
 
 # everything in one plot
 fig6 = plt.figure()
@@ -166,7 +167,7 @@ plt.plot(index,T_series_E_internal[40,:]/1000,'r--',label='cpT')
 plt.plot(index,T_series_E_latent[40,:]/1000,'m-.',label='Lvq')
 plt.plot(index,T_series_E_geopotential[40,:]/1000,'g:',label='gz')
 plt.plot(index,T_series_E[40,:]/1000,'b-',label='total')
-plt.title('Atmospheric Meridional Energy Transport time series at 60 N (1979-2016)' )
+plt.title('Atmospheric Meridional Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 plt.legend()
 fig6.set_size_inches(14, 4)
 plt.xlabel("Time")
@@ -174,7 +175,7 @@ plt.xticks(np.linspace(1, 456, 38), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig6.savefig(output_path + os.sep + 'Meridional_Energy_eachComponent_time_series_1979_2016.jpg', dpi = 500)
+fig6.savefig(output_path + os.sep + 'Meridional_Energy_%dN_eachComponent_time_series_1979_2016.jpg' % (Lat_num), dpi = 500)
 
 print '*******************************************************************'
 print '*********************** time series shades ************************'
@@ -264,13 +265,36 @@ plt.plot(latitude,np.mean(series_E_latent,0)/1000,'m-.',label='Lvq')
 plt.plot(latitude,np.mean(series_E_geopotential,0)/1000,'g:',label='gz')
 plt.plot(latitude,np.mean(series_E,0)/1000,'b-',label='total')
 #plt.plot(latitude,np.mean(T_series_E_kinetic,0)/1000,'b-',label='ECMWF')
-plt.title('Atmospheric Meridional kinetic Energy Transport (1979-2016)' )
+plt.title('Atmospheric Meridional Energy Transport (1979-2016)' )
 plt.legend()
 plt.xlabel("Latitudes")
 #plt.xticks()
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
 fig13.savefig(output_path + os.sep + 'Meridional_Energy_eachComponent_mean_1979_2016.jpg', dpi = 500)
+
+print '*******************************************************************'
+print '************************* wind rose plots *************************'
+print '*******************************************************************'
+
+angle = np.linspace(0, 2 * np.pi, 13)
+# np.repeat
+angle_series = np.tile(angle[:-1],38)
+month_str = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+fig14 = plt.figure()
+plt.axes(polar = True)
+plt.plot(angle_series,T_series_E[40,:]/1000,'b--',label='ECMWF')
+plt.title('Atmospheric Meridional Energy Transport at %d N (1979-2016)' % (Lat_num), y=1.07)
+#plt.legend()
+#fig10.set_size_inches(14, 4)
+#plt.xlabel("Time")
+plt.xticks(angle[:-1], month_str)
+plt.yticks(np.linspace(0,6,7),color='r',size =12)
+#plt.xticks(rotation=60)
+#plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig14.savefig(output_path + os.sep + 'Meridional_Energy_%dN_total_windrose_1979_2016.jpg' % (Lat_num), dpi = 500)
 
 '''
 3. basemap of average over 38 years
