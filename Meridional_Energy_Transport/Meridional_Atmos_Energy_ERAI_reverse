@@ -1,0 +1,724 @@
+#!/usr/bin/env python
+
+"""
+Copyright Netherlands eScience Center
+
+Function        : Quantify atmospheric meridional energy transport (ERA-Interim)
+Author          : Yang Liu
+Date            : 2017.7.11
+Last Update     : 2017.7.14
+Description     : The code aims to calculate the atmospheric meridional energy
+                  transport based on atmospheric reanalysis dataset ERA-Interim
+                  from ECMWF. The complete procedure includes the calculation of
+                  geopotential on model levels, and the mass budget correction.
+                  The procedure is generic and is able to adapt any atmospheric
+                  reanalysis datasets, with some changes.
+
+Return Value    : NetCFD4 data file
+Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
+variables       : Absolute Temperature              T
+                  Specific Humidity                 q
+                  Logarithmic Surface Pressure      lnsp
+                  Zonal Divergent Wind              u
+                  Meridional Divergent Wind         v
+                  Surface Geopotential              z
+Caveat!         : This method is modified based on the mass budget correction given
+                  by Trenberth. Trenberth suggests to calculate monthly mean first
+                  and then take the vertical integral. However, sicne this could
+                  lead to large systematic error at midlatitudes when the time
+                  dependent term plays an important part! (tropical storms). Hence
+                  this code calculates daily variable and takes vertical integral
+                  before taking monthly means.
+Demo            : 1. Change in mass correction function: all the divergent terms
+                  2. Change in the meridional energy transport computation function:
+                     calculation of each component
+"""
+import numpy as np
+import time as tttt
+from netCDF4 import Dataset,num2date
+import os
+import platform
+import sys
+import logging
+import matplotlib.pyplot as plt
+
+##########################################################################
+###########################   Units vacabulory   #########################
+# cpT:  [J / kg K] * [K]     = [J / kg]
+# Lvq:  [J / kg] * [kg / kg] = [J / kg]
+# gz in [m2 / s2] = [ kg m2 / kg s2 ] = [J / kg]
+
+# multiply by v: [J / kg] * [m / s] => [J m / kg s]
+# sum over longitudes [J m / kg s] * [ m ] = [J m2 / kg s]
+
+# integrate over pressure: dp: [Pa] = [N m-2] = [kg m2 s-2 m-2] = [kg s-2]
+# [J m2 / kg s] * [Pa] = [J m2 / kg s] * [kg / s2] = [J m2 / s3]
+# and factor 1/g: [J m2 / s3] * [s2 /m2] = [J / s] = [Wat]
+##########################################################################
+
+# print the system structure and the path of the kernal
+print platform.architecture()
+print os.path
+
+# calculate the time for the code execution
+start_time = tttt.time()
+
+# Redirect all the console output to a file
+#sys.stdout = open('F:\DataBase\ERA_Interim\console.out','w')
+
+# logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
+logging.basicConfig(filename = 'F:\DataBase\ERA_Interim\history.log', filemode = 'w',level = logging.DEBUG,
+                    format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#logging.basicConfig(filename = '/data/Reanalysis/ERA_Interim/Subdaily/Model/history.log', filemode = 'w', level = logging.DEBUG, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# define the constant:
+constant ={'g' : 9.80616,      # gravititional acceleration [m / s2]
+           'R' : 6371009,      # radius of the earth [m]
+           'cp': 1004.64,      # heat capacity of air [J/(Kg*K)]
+           'Lv': 2264670,      # Latent heat of vaporization [J/Kg]
+           'R_dry' : 286.9,    # gas constant of dry air [J/(kg*K)]
+           'R_vap' : 461.5,    # gas constant for water vapour [J/(kg*K)]
+            }
+
+# A and B values for the definition of sigma levelist
+# Since there are 60 model levels, there are 61 half levels, so it is for A and B values
+A = np.array([
+      0.0000000000e+000, 2.0000000000e+001, 3.8425338745e+001, 6.3647796631e+001, 9.5636962891e+001,
+      1.3448330688e+002, 1.8058435059e+002, 2.3477905273e+002, 2.9849584961e+002, 3.7397192383e+002,
+      4.6461816406e+002, 5.7565112305e+002, 7.1321801758e+002, 8.8366040039e+002, 1.0948347168e+003,
+      1.3564746094e+003, 1.6806403809e+003, 2.0822739258e+003, 2.5798886719e+003, 3.1964216309e+003,
+      3.9602915039e+003, 4.9067070313e+003, 6.0180195313e+003, 7.3066328125e+003, 8.7650546875e+003,
+      1.0376125000e+004, 1.2077445313e+004, 1.3775324219e+004, 1.5379804688e+004, 1.6819472656e+004,
+      1.8045183594e+004, 1.9027695313e+004, 1.9755109375e+004, 2.0222203125e+004, 2.0429863281e+004,
+      2.0384480469e+004, 2.0097402344e+004, 1.9584328125e+004, 1.8864750000e+004, 1.7961359375e+004,
+      1.6899468750e+004, 1.5706449219e+004, 1.4411125000e+004, 1.3043218750e+004, 1.1632757813e+004,
+      1.0209500000e+004, 8.8023554688e+003, 7.4388046875e+003, 6.1443164063e+003, 4.9417773438e+003,
+      3.8509133301e+003, 2.8876965332e+003, 2.0637797852e+003, 1.3859125977e+003, 8.5536181641e+002,
+      4.6733349609e+002, 2.1039389038e+002, 6.5889236450e+001, 7.3677425385e+000, 0.0000000000e+000,
+      0.0000000000e+000,],dtype=float)
+B = np.array([
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000,
+      0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 0.0000000000e+000, 7.5823496445e-005,
+      4.6139489859e-004, 1.8151560798e-003, 5.0811171532e-003, 1.1142909527e-002, 2.0677875727e-002,
+      3.4121163189e-002, 5.1690407097e-002, 7.3533833027e-002, 9.9674701691e-002, 1.3002252579e-001,
+      1.6438430548e-001, 2.0247590542e-001, 2.4393314123e-001, 2.8832298517e-001, 3.3515489101e-001,
+      3.8389211893e-001, 4.3396294117e-001, 4.8477154970e-001, 5.3570991755e-001, 5.8616840839e-001,
+      6.3554745913e-001, 6.8326860666e-001, 7.2878581285e-001, 7.7159661055e-001, 8.1125342846e-001,
+      8.4737491608e-001, 8.7965691090e-001, 9.0788388252e-001, 9.3194031715e-001, 9.5182150602e-001,
+      9.6764522791e-001, 9.7966271639e-001, 9.8827010393e-001, 9.9401944876e-001, 9.9763011932e-001,
+      1.0000000000e+000,],dtype=float)
+
+################################   Input zone  ######################################
+# specify data path
+datapath = 'F:\DataBase\ERA_Interim\Subdaily'
+# datapath = '/project/ERA-Interim/Subdaily/Model/'
+# time of the data, which concerns with the name of input
+# starting time (year)
+start_year = 1980
+# Ending time, if only for 1 year, then it should be the same as starting year
+end_year = 1980
+# specify output path for the netCDF4 file
+output_path = 'F:\DataBase\ERA_Interim\Subdaily'
+# benchmark datasets for basic dimensions
+benchmark_path = 'F:\DataBase\ERA_Interim\Subdaily\model_daily_075_1980\model_daily_075_1980_1_z.nc'
+benchmark = Dataset(benchmark_path)
+####################################################################################
+
+def var_key(datapath, year, month):
+    # get the path to each datasets
+    print "Start retrieving datasets"
+    logging.info("Start retrieving variables T,q,u,v,lnsp,z for from %d (y) - %d (m)" % (year,month))
+    datapath_T = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_T.nc' % (year,month)
+    datapath_q = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month)
+    datapath_u = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_u.nc' % (year,month)
+    datapath_v = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_v.nc' % (year,month)
+    datapath_lnsp = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month)
+    datapath_z = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_z.nc' % (year,month)
+    # the options are specifically for the calculation of tendency during mass budget correction
+    # for the calculation of tendency, exception should be made due to the time dependency
+    if month == 1:
+        # datapath of q
+        datapath_q_last = datapath + os.sep + 'model_daily_075_%d' % (year-1) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year-1,12)
+        datapath_q_next = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month+1)
+        # datapath of surface pressure
+        datapath_lnsp_last = datapath + os.sep + 'model_daily_075_%d' % (year-1) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year-1,12)
+        datapath_lnsp_next = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month+1)
+    elif month == 12:
+        datapath_q_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month-1)
+        datapath_q_next = datapath +os.sep + 'model_daily_075_%d' % (year+1) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year+1,1)
+        datapath_lnsp_last = datapath + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month-1)
+        datapath_lnsp_next = datapath + os.sep + 'model_daily_075_%d' % (year+1) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year+1,1)
+    else:
+        datapath_q_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month-1)
+        datapath_q_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_q.nc' % (year,month+1)
+        datapath_lnsp_last = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month-1)
+        datapath_lnsp_next = datapath +os.sep + 'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_%d_lnsp.nc' % (year,month+1)
+
+    # get the variable keys
+    T_key = Dataset(datapath_T)
+    q_key = Dataset(datapath_q)
+    u_key = Dataset(datapath_u)
+    v_key = Dataset(datapath_v)
+    lnsp_key = Dataset(datapath_lnsp)
+    z_key = Dataset(datapath_z)
+    # get the variable keys for the calculation of tendency during mass budget correction
+    q_last_key = Dataset(datapath_q_last)
+    q_next_key = Dataset(datapath_q_next)
+    lnsp_last_key = Dataset(datapath_lnsp_last)
+    lnsp_next_key = Dataset(datapath_lnsp_next)
+    print "Retrieving datasets successfully!"
+    logging.info("Retrieving variables for from %d (y) - %d (m) successfully!" % (year,month))
+    return T_key, q_key, u_key, v_key, lnsp_key, z_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key
+
+def mass_correction(q_key, u_key, v_key, lnsp_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key):
+    # extract variables
+    print "Start extracting variables for mass correction."
+    q = q_key.variables['q'][:]
+    lnsp = lnsp_key.variables['lnsp'][:]
+    u = u_key.variables['u'][:]
+    v = v_key.variables['v'][:]
+    # extract variables for the calculation of tendency
+    q_last = q_last_key.variables['q'][-1,:,:,:]
+    q_next = q_next_key.variables['q'][0,:,:,:]
+    lnsp_last = lnsp_last_key.variables['lnsp'][-1,:,:]
+    lnsp_next = lnsp_next_key.variables['lnsp'][0,:,:]
+    # validate time and location info
+    time = q_key.variables['time'][:]
+    level = q_key.variables['level'][:]
+    latitude = q_key.variables['latitude'][:]
+    longitude = q_key.variables['longitude'][:]
+    date = num2date(time,q_key.variables['time'].units)
+    print '*******************************************************************'
+    print 'The datasets contain information from %s to %s' % (date[0],date[-1])
+    print 'There are %d days in this month' % (len(time)/4)
+    print 'The coordinates include %d vertical levels' % (len(level))
+    print 'The grid employs %d points in latitude, and %d points in longitude' % (len(latitude),len(longitude))
+    print '*******************************************************************'
+    print 'Extracting variables successfully!'
+    logging.info("Extracting variables successfully!")
+
+    print 'Begin the calculation of precipitable water tendency'
+    # calculate pressure levels
+    sp_last = np.exp(lnsp_last)
+    sp = np.exp(lnsp)
+    sp_next = np.exp(lnsp_next)
+
+    dp_level_start = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # start of the current month
+    dp_level_end = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # end of the current month
+    dp_level_last = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # last day of the last month
+    dp_level_next = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # first day of the next month
+    # calculate the index of pressure levels
+    index_level = np.arange(len(level))
+    # use matrix A and B to calculate dp based on half pressure level
+    for i in index_level:
+        dp_level_start[i,:,:] = (A[i+1] + B[i+1] * sp[0,:,:]) - (A[i] + B[i] * sp[0,:,:])
+        dp_level_end[i,:,:] = (A[i+1] + B[i+1] * sp[-1,:,:]) - (A[i] + B[i] * sp[-1,:,:])
+        dp_level_last[i,:,:] = (A[i+1] + B[i+1] * sp_last) - (A[i] + B[i] * sp_last)
+        dp_level_next[i,:,:] = (A[i+1] + B[i+1] * sp_next) - (A[i] + B[i] * sp_next)
+    # calculte the precipitable water tendency and take the vertical integral
+    moisture_start = np.sum((q[0,:,:,:] * dp_level_start), 0) # start of the current month
+    moisture_end = np.sum((q[-1,:,:,:] * dp_level_end), 0) # end of the current month
+    moisture_last = np.sum((q_last * dp_level_last), 0) # last day of the last month
+    moisture_next = np.sum((q_next * dp_level_next), 0) # first day of the next month
+    # compute the moisture tendency (one day has 86400s)
+    moisture_tendency = ((moisture_end + moisture_next)/2 - (moisture_last + moisture_start)/2) / (len(time)/4*86400) / constant['g']
+    print 'The calculation of precipitable water tendency is finished !!'
+
+    # calculate the delta pressure
+    dp_level = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
+    index_time = np.arange(len(time))
+    for i in index_level:
+        dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+    print 'Begin the calculation of divergent verically integrated moisture flux.'
+    # calculte the mean moisture flux for a certain month
+    moisture_flux_u = u * q * dp_level / constant['g']
+    moisture_flux_v = v * q * dp_level / constant['g']
+    # take the vertical integral
+    moisture_flux_u_int = np.sum(moisture_flux_u,1)
+    moisture_flux_v_int = np.sum(moisture_flux_v,1)
+    # calculate zonal & meridional grid size on earth
+    # the earth is taken as a perfect sphere, instead of a ellopsoid
+    dx = 2 * np.pi * constant['R'] * np.cos(2*np.pi*latitude/360) / len(longitude)
+    #dx[0] = 0.0001 # adjustment in case of float point fluctuation
+    #dx[-1] = 0.0001
+    dy = np.pi * constant['R'] / (len(latitude)-1)
+    # calculate the divergence of moisture flux
+    div_moisture_flux_u = np.zeros((len(time),len(latitude),len(longitude)),dtype = float)
+    div_moisture_flux_v = np.zeros((len(time),len(latitude),len(longitude)),dtype = float)
+    ######################## Attnention to the coordinate and symbol #######################
+    # zonal moisture flux divergence
+    for i in np.arange(len(latitude)):
+        for j in np.arange(len(longitude)):
+            # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
+            if j == 0:
+                div_moisture_flux_u[:,i,j] = (moisture_flux_u_int[:,i,j+1] - moisture_flux_u_int[:,i,-1]) / (2 * dx[i])
+            elif j == (len(longitude)-1) :
+                div_moisture_flux_u[:,i,j] = (moisture_flux_u_int[:,i,0] - moisture_flux_u_int[:,i,j-1]) / (2 * dx[i])
+            else:
+                div_moisture_flux_u[:,i,j] = (moisture_flux_u_int[:,i,j+1] - moisture_flux_u_int[:,i,j-1]) / (2 * dx[i])
+    # meridional moisture flux divergence
+    for i in np.arange(len(latitude)):
+        if i == 0:
+            div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i+1,:] - moisture_flux_v_int[:,i,:]) / (2 * dy)
+        elif i == (len(latitude)-1):
+            div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i,:] - moisture_flux_v_int[:,i-1,:]) / (2 * dy)
+        else:
+            div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i+1,:] - moisture_flux_v_int[:,i-1,:]) / (2 * dy)
+    print 'The calculation of divergent verically integrated moisture flux is finished !!'
+
+    # calculate evaporation minus precipitation
+    E_P =  np.zeros((len(latitude),len(longitude)),dtype = float)
+    E_P = moisture_tendency + np.mean(div_moisture_flux_u,0) + np.mean(div_moisture_flux_v,0)
+    print '*******************************************************************'
+    print "******  Computation of E-P on each grid point is finished   *******"
+    print '*******************************************************************'
+    logging.info("Computation of E-P on each grid point is finished!")
+
+    print 'Begin the calculation of surface pressure tendency.'
+    sp_tendency = ((sp[-1,:,:] + sp_next)/2 - (sp_last + sp[0,:,:])/2 ) / (len(time)/4*86400)
+    print 'The calculation of surface pressure tendency is finished !!'
+
+    print 'Begin the calculation of divergent verically integrated mass flux.'
+    # calculte the mean mass flux for a certain month
+    mass_flux_u = u * dp_level / constant['g']
+    mass_flux_v = v * dp_level / constant['g']
+    # take the vertical integral
+    mass_flux_u_int = np.sum(mass_flux_u,1)
+    mass_flux_v_int = np.sum(mass_flux_v,1)
+    # calculate the divergence of moisture flux
+    div_mass_flux_u = np.zeros((len(time),len(latitude),len(longitude)),dtype = float)
+    div_mass_flux_v = np.zeros((len(time),len(latitude),len(longitude)),dtype = float)
+    # zonal mass flux divergence
+    # zonal moisture flux divergence
+    for i in np.arange(len(latitude)):
+        for j in np.arange(len(longitude)):
+            # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
+            if j == 0:
+                div_moisture_flux_u[:,i,j] = (moisture_flux_u_int[:,i,j+1] - moisture_flux_u_int[:,i,-1]) / (2 * dx[i])
+            elif j == (len(longitude)-1) :
+                div_moisture_flux_u[:,i,j] = (moisture_flux_u_int[:,i,0] - moisture_flux_u_int[:,i,j-1]) / (2 * dx[i])
+            else:
+                div_moisture_flux_u[:,i,j] = (moisture_flux_u_int[:,i,j+1] - moisture_flux_u_int[:,i,j-1]) / (2 * dx[i])
+    # meridional mass flux divergence
+    for i in np.arange(len(latitude)):
+        if i == 0:
+            div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i+1,:] - moisture_flux_v_int[:,i,:]) / (2 * dy)
+        elif i == (len(latitude)-1):
+            div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i,:] - moisture_flux_v_int[:,i-1,:]) / (2 * dy)
+        else:
+            div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i+1,:] - moisture_flux_v_int[:,i-1,:]) / (2 * dy)
+    mass_residual = np.zeros((len(latitude),len(longitude)),dtype = float)
+    mass_residual = sp_tendency + constant['g'] * (np.mean(div_mass_flux_u,0) + np.mean(div_mass_flux_v,0)) - constant['g'] * E_P
+    print '*******************************************************************'
+    print "*** Computation of mass residual on each grid point is finished ***"
+    print '*******************************************************************'
+    logging.info("Computation of mass residual on each grid point is finished!")
+    print 'The calculation of divergent verically integrated mass flux is finished !!'
+
+    print 'Begin the calculation of barotropic correction wind.'
+    # calculate precipitable water
+    precipitable_water = q * dp_level / constant['g']
+    # take the vertical integral
+    precipitable_water_int = np.sum(precipitable_water,1)
+    # calculate barotropic correction wind
+    uc = np.zeros((len(latitude),len(longitude)),dtype = float)
+    vc = np.zeros((len(latitude),len(longitude)),dtype = float)
+    vc = mass_residual * dy / (np.mean(sp,0) - constant['g'] * np.mean(precipitable_water_int,0))
+    vc[0,:] = 0 # Modification at polar points
+    vc[-1,:] = 0
+    for i in np.arange(len(latitude)):
+        uc[i,:] = mass_residual[i,:] * dx[i] / (np.mean(sp[:,i,:],0) - constant['g'] * np.mean(precipitable_water_int[:,i,:],0))
+    print '********************************************************************************'
+    print "*** Computation of barotropic correction wind on each grid point is finished ***"
+    print '********************************************************************************'
+    logging.info("Computation of barotropic correction wind on each grid point is finished!")
+
+    return uc, vc
+
+def calc_geopotential(T_key, q_key, lnsp_key, z_key):
+    # extract variables
+    print "Start extracting variables for the calculation of geopotential on model level."
+    T = T_key.variables['t'][:]
+    q = q_key.variables['q'][:]
+    lnsp = lnsp_key.variables['lnsp'][:]
+    z = z_key.variables['z'][:]
+    # validate time and location info
+    time = T_key.variables['time'][:]
+    level = T_key.variables['level'][:]
+    latitude = T_key.variables['latitude'][:]
+    longitude = T_key.variables['longitude'][:]
+    date = num2date(time,T_key.variables['time'].units)
+    print '*******************************************************************'
+    print 'The datasets contain information from %s to %s' % (date[0],date[-1])
+    print 'There are %d days in this month' % (len(time)/4)
+    print 'The coordinates include %d vertical levels' % (len(level))
+    print 'The grid employs %d points in latitude, and %d points in longitude' % (len(latitude),len(longitude))
+    print '*******************************************************************'
+    print 'Extracting variables successfully!'
+    logging.info("Extracting variables successfully!")
+
+    print 'Start calculating geopotential on model level'
+    # calculate the surface pressure
+    # the unit of pressure here is Pa!!!
+    sp = np.exp(lnsp)
+    # define the half level pressure matrix
+    p_half_plus = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
+    p_half_minus = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
+    # calculate the index of pressure levels
+    index_level = np.arange(len(level))
+    # calculate the pressure at each half level
+    for i in index_level:
+        p_half_plus[:,i,:,:] = A[i+1] + B[i+1] * sp
+        p_half_minus[:,i,:,:] = A[i] + B[i] * sp
+    # calculate full pressure level
+    #level_full = (p_half_plus + p_half_minus) / 2
+    # compute the moist temperature (virtual temperature)
+    Tv = T * (1 + (constant['R_vap'] / constant['R_dry'] - 1) * q)
+    # initialize the first half level geopotential
+    gz_half = np.zeros((len(time),len(latitude),len(longitude)),dtype =float)
+    # initialize the full level geopotential
+    gz = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
+    # Calculate the geopotential at each level
+    # The integral should be taken from surface level to the TOA
+    for i in index_level:
+        # reverse the index
+        i_inverse = len(level) - 1 - i
+        # the ln(p_plus/p_minus) is calculated, alpha is defined
+        # an exception lies in the TOA
+        # see equation 2.23 in ECMWF IFS 9220
+        if i_inverse == 0:
+            ln_p = np.log(p_half_plus[:,i_inverse,:,:]/10)
+            alpha = np.log(2)
+        else:
+            ln_p = np.log(p_half_plus[:,i_inverse,:,:]/p_half_minus[:,i_inverse,:,:])
+            delta_p = p_half_plus[:,i_inverse,:,:] - p_half_minus[:,i_inverse,:,:]
+            alpha = 1 - p_half_minus[:,i_inverse,:,:] / delta_p * ln_p
+        # calculate the geopotential of the full level (exclude surface geopotential)
+        # see equation 2.22 in ECMWF IFS 9220
+        gz_full = gz_half + alpha * constant['R_dry'] * Tv[:,i_inverse,:,:]
+        # add surface geopotential to the full level
+        # see equation 2.21 in ECMWF IFS 9220
+        gz[:,i_inverse,:,:] = z + gz_full
+        # renew the half level geopotential for next loop step (from p_half_minus level to p_half_plus level)
+        # see equation 2.20 in ECMWF IFS 9220
+        gz_half = gz_half + ln_p * constant['R_dry'] * Tv[:,i_inverse,:,:]
+    print '*******************************************************************'
+    print "***Computation of geopotential on each pressure level is finished**"
+    print '*******************************************************************'
+    logging.info("Computation of geopotential on model level is finished!")
+
+    return gz
+
+def meridional_energy_transport(T_key,q_key,lnsp_key,v_key,uc,vc,gz):
+    # extract variables
+    print "Start extracting variables for the quantification of meridional energy transport."
+    T = T_key.variables['t'][:]
+    q = q_key.variables['q'][:]
+    lnsp = lnsp_key.variables['lnsp'][:]
+    #u = u_key.variables['u'][:]
+    v = v_key.variables['v'][:]
+    # Extract dimension info
+    time = v_key.variables['time'][:]
+    level = v_key.variables['level'][:]
+    latitude = v_key.variables['latitude'][:]
+    longitude = v_key.variables['longitude'][:]
+    print 'Extracting variables successfully!'
+    logging.info("Extracting variables successfully!")
+
+    print 'Start calculating meridional energy transport on model level'
+    # calculate the mean value of surface pressure level
+    sp = np.exp(lnsp)
+    # calculate dp based on mean value of surface pressure
+    dp_level = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
+    # calculate the index of pressure levels and time
+    index_level = np.arange(len(level))
+    index_time = np.arange(len(time))
+    for i in index_level:
+        dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+    # calculate each component of total energy
+    # Internal Energy cpT
+    internal_flux = constant['cp'] * v * T * dp_level / constant['g']
+    # Latent heat Lq
+    latent_flux = constant['Lv'] * v * q * dp_level / constant['g']
+    # geopotential
+    geopotential_flux = v * gz * dp_level / constant['g']
+    # kinetic energy
+    #kinetic_flux = v * 1/2 *(u**2 + v**2) * dp_level / constant['g']
+    # take the vertical integral and monthly mean
+    internal_flux_int = np.mean(np.sum(internal_flux, 1),0)
+    latent_flux_int = np.mean(np.sum(latent_flux, 1),0)
+    geopotential_flux_int = np.mean(np.sum(geopotential_flux, 1),0)
+    #kinetic_flux_int = np.sum(kinetic_flux, 0)
+    # mass correction component
+    correction_internal_flux_int = vc * np.mean(np.sum(constant['cp'] * T * dp_level / constant['g'],1),0)
+    correction_latent_flux_int = vc * np.mean(np.sum(constant['Lv'] * q * dp_level / constant['g'],1),0)
+    correction_geopotential_flux_int = vc * np.mean(np.sum(gz * dp_level / constant['g'],1),0)
+    #correction_kinetic_flux_int = vc * np.sum(np.mean(1/2 *(u**2 + v**2), 0) * dp_level / constant['g'],0)
+    # calculate zonal & meridional grid size on earth
+    # the earth is taken as a perfect sphere, instead of a ellopsoid
+    dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / len(longitude)
+    dx[0] = 0
+    dx[-1] = 0
+    # take the corrected energy flux at each grid point!
+    meridional_E_internal_point = np.zeros((len(latitude),len(longitude)),dtype=float)
+    meridional_E_latent_point = np.zeros((len(latitude),len(longitude)),dtype=float)
+    meridional_E_geopotential_point = np.zeros((len(latitude),len(longitude)),dtype=float)
+    meridional_E_point = np.zeros((len(latitude),len(longitude)),dtype=float)
+    #!!!!!!!!!!!!!!! The unit is tera-watt (TW) !!!!!!!!!!!!!!!!!!!!!!#
+    for i in np.arange(len(latitude)):
+        meridional_E_internal_point[i,:] = (internal_flux_int[i,:] - correction_internal_flux_int[i,:]) * dx[i]/1e+12
+        meridional_E_latent_point[i,:] = (latent_flux_int[i,:] - correction_latent_flux_int[i,:]) * dx[i]/1e+12
+        meridional_E_geopotential_point[i,:] = (geopotential_flux_int[i,:] - correction_geopotential_flux_int[i,:]) * dx[i]/1e+12
+    meridional_E_point = meridional_E_internal_point + meridional_E_latent_point + meridional_E_geopotential_point
+    # take the zonal integral
+    meridional_E_internal = np.zeros(len(latitude),dtype=float)
+    meridional_E_latent = np.zeros(len(latitude),dtype=float)
+    meridional_E_geopotential = np.zeros(len(latitude),dtype=float)
+    #meridional_E_kinetic = np.zeros(len(latitude),dtype=float)
+    meridional_E = np.zeros(len(latitude),dtype=float)
+    for i in np.arange(len(latitude)):
+        meridional_E_internal[i] = np.sum((internal_flux_int[i,:] - correction_internal_flux_int[i,:]) * dx[i])/1e+12
+        meridional_E_latent[i] = np.sum((latent_flux_int[i,:] - correction_latent_flux_int[i,:]) * dx[i])/1e+12
+        meridional_E_geopotential[i] = np.sum((geopotential_flux_int[i,:] - correction_geopotential_flux_int[i,:]) * dx[i])/1e+12
+        #meridional_E_kinetic[i] = np.sum((kinetic_flux_int - correction_kinetic_flux_int) * dx[i],1)
+    # meridional total energy transport
+    meridional_E = meridional_E_internal + meridional_E_latent + meridional_E_geopotential #+ meridional_E_kinetic
+    print '*****************************************************************************'
+    print "***Computation of meridional energy transport in the atmosphere is finished**"
+    print "************         The result is in tera-watt (1E+12)          ************"
+    print '*****************************************************************************'
+    logging.info("Computation of meridional energy transport on model level is finished!")
+
+    return meridional_E, meridional_E_internal, meridional_E_latent, meridional_E_geopotential, \
+    meridional_E_point, meridional_E_internal_point, meridional_E_latent_point, meridional_E_geopotential_point
+
+# make plots
+def visualization(E_total,E_internal,E_latent,E_geopotential,output_path,year):
+    print "Start making plots for the total meridional energy transport and each component."
+    logging.info("Start making plots for the total meridional energy transport and each component.")
+    # calculate monthly mean of total energy transport
+    # unit change from tera to peta (from 1E+12 to 1E+15)
+    E_total_monthly_mean = np.mean(E_total,0)/1000
+    E_internal_monthly_mean = np.mean(E_internal,0)/1000
+    E_latent_monthly_mean = np.mean(E_latent,0)/1000
+    E_geopotential_monthly_mean = np.mean(E_geopotential,0)/1000
+    # take latitude data from benchmark variable
+    Lat = benchmark.variables['latitude'][:]
+    # create a 0 line
+    Reference = np.zeros(len(Lat))
+
+    # Plot the total meridional energy transport against the latitude
+    fig1 = plt.figure()
+    plt.plot(Lat,E_total_monthly_mean,'b-',label='ECMWF')
+    #plt.hold()
+    plt.plot(Lat,Reference,'r--',label='0')
+    plt.title('Total Atmospheric Meridional Energy Transport %d' % (year))
+    #plt.legend()
+    plt.xlabel("Laitude")
+    plt.xticks(np.linspace(-90,90,13))
+    plt.ylabel("Meridional Energy Transport (PW)")
+    #plt.show()
+    fig1.savefig(output_path + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'Meridional_Energy_total_%d.jpg' % (year), dpi = 400)
+
+    # Plot the meridional internal energy transport against the latitude
+    fig2 = plt.figure()
+    plt.plot(Lat,E_internal_monthly_mean,'b-',label='ECMWF')
+    #plt.hold()
+    plt.plot(Lat,Reference,'r--',label='0')
+    plt.title('Atmospheric Meridional Internal Energy Transport %d' % (year))
+    #plt.legend()
+    plt.xlabel("Laitude")
+    plt.xticks(np.linspace(-90,90,13))
+    plt.ylabel("Meridional Energy Transport (PW)")
+    #plt.show()
+    fig2.savefig(output_path + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'Meridional_Energy_internal_%d.jpg' % (year), dpi = 400)
+
+    # Plot the meridional latent energy transport against the latitude
+    fig3 = plt.figure()
+    plt.plot(Lat,E_latent_monthly_mean,'b-',label='ECMWF')
+    #plt.hold()
+    plt.plot(Lat,Reference,'r--',label='0')
+    plt.title('Atmospheric Meridional Latent Energy Transport %d' % (year))
+    #plt.legend()
+    plt.xlabel("Laitude")
+    plt.xticks(np.linspace(-90,90,13))
+    plt.ylabel("Meridional Energy Transport (PW)")
+    #plt.show()
+    fig3.savefig(output_path + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'Meridional_Energy_latent_%d.jpg' % (year), dpi = 400)
+
+    # Plot the meridional geopotential energy transport against the latitude
+    fig4 = plt.figure()
+    plt.plot(Lat,E_geopotential_monthly_mean,'b-',label='ECMWF')
+    #plt.hold()
+    plt.plot(Lat,Reference,'r--',label='0')
+    plt.title('Atmospheric Meridional Geopotential Energy Transport %d' % (year))
+    #plt.legend()
+    plt.xlabel("Laitude")
+    plt.xticks(np.linspace(-90,90,13))
+    plt.ylabel("Meridional Energy Transport (PW)")
+    #plt.show()
+    fig4.savefig(output_path + os.sep + 'model_daily_075_%d' % (year) + os.sep + 'Meridional_Energy_geopotential_%d.jpg' % (year), dpi = 400)
+    logging.info("The generation of plots for the total meridional energy transport and each component is complete!")
+
+# save output datasets
+def create_netcdf_point (meridional_E_point_pool,meridional_E_internal_point_pool,meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,uc_point_pool,vc_point_pool,output_path,year):
+    print '*******************************************************************'
+    print '*********************** create netcdf file*************************'
+    print '*******************************************************************'
+    logging.info("Start creating netcdf file for total meridional energy transport and each component at each grid point.")
+    # wrap the datasets into netcdf file
+    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+    data_wrap = Dataset(output_path+os.sep+'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_E_point.nc' % (year),'w',format = 'NETCDF3_64BIT')
+    # create dimensions for netcdf data
+    month_wrap_dim = data_wrap.createDimension('month',Dim_month)
+    lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
+    lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
+    # create coordinate variables for 3-dimensions
+    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
+    # create the actual 3-d variable
+    uc_wrap_var = data_wrap.createVariable('uc',np.float32,('month','latitude','longitude'))
+    vc_wrap_var = data_wrap.createVariable('vc',np.float32,('month','latitude','longitude'))
+
+    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('month','latitude','longitude'))
+    E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('month','latitude','longitude'))
+    E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('month','latitude','longitude'))
+    E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('month','latitude','longitude'))
+    # global attributes
+    data_wrap.description = 'Monthly mean meridional energy transport and each component at each grid point'
+    # variable attributes
+    lat_wrap_var.units = 'degree_north'
+    lon_wrap_var.units = 'degree_east'
+    uc_wrap_var.units = 'm/s'
+    vc_wrap_var.units = 'm/s'
+    E_total_wrap_var.units = 'tera watt'
+    E_internal_wrap_var.units = 'tera watt'
+    E_latent_wrap_var.units = 'tera watt'
+    E_geopotential_wrap_var.units = 'tera watt'
+
+    uc_wrap_var.long_name = 'zonal barotropic correction wind'
+    vc_wrap_var.long_name = 'meridional barotropic correction wind'
+    E_total_wrap_var.long_name = 'atmospheric meridional energy transport'
+    E_internal_wrap_var.long_name = 'atmospheric meridional internal energy transport'
+    E_latent_wrap_var.long_name = 'atmospheric meridional latent heat transport'
+    E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
+    # writing data
+    lat_wrap_var[:] = benchmark.variables['latitude'][:]
+    lon_wrap_var[:] = benchmark.variables['longitude'][:]
+    month_wrap_var[:] = index_month
+    uc_wrap_var[:] = uc_point_pool
+    vc_wrap_var[:] = vc_point_pool
+    E_total_wrap_var[:] = meridional_E_point_pool
+    E_internal_wrap_var[:] = meridional_E_internal_point_pool
+    E_latent_wrap_var[:] = meridional_E_latent_point_pool
+    E_geopotential_wrap_var[:] = meridional_E_geopotential_point_pool
+    # close the file
+    data_wrap.close()
+    print "Create netcdf file successfully"
+    logging.info("The generation of netcdf files for the total meridional energy transport and each component on each grid point is complete!!")
+
+# save output datasets
+def create_netcdf_zonal_int (meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path,year):
+    print '*******************************************************************'
+    print '*********************** create netcdf file*************************'
+    print '*******************************************************************'
+    logging.info("Start creating netcdf files for the zonal integral of total meridional energy transport and each component.")
+    # wrap the datasets into netcdf file
+    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+    data_wrap = Dataset(output_path+os.sep+'model_daily_075_%d' % (year) + os.sep + 'model_daily_075_%d_E_zonal_int.nc' % (year),'w',format = 'NETCDF3_64BIT')
+    # create dimensions for netcdf data
+    month_wrap_dim = data_wrap.createDimension('month',Dim_month)
+    lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
+    # create coordinate variables for 3-dimensions
+    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    # create the actual 3-d variable
+    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('month','latitude'))
+    E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('month','latitude'))
+    E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('month','latitude'))
+    E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('month','latitude'))
+    # global attributes
+    data_wrap.description = 'Monthly mean zonal integral of meridional energy transport and each component'
+    # variable attributes
+    lat_wrap_var.units = 'degree_north'
+    E_total_wrap_var.units = 'tera watt'
+    E_internal_wrap_var.units = 'tera watt'
+    E_latent_wrap_var.units = 'tera watt'
+    E_geopotential_wrap_var.units = 'tera watt'
+    E_total_wrap_var.long_name = 'atmospheric meridional energy transport'
+    E_internal_wrap_var.long_name = 'atmospheric meridional internal energy transport'
+    E_latent_wrap_var.long_name = 'atmospheric meridional latent heat transport'
+    E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
+    # writing data
+    lat_wrap_var[:] = benchmark.variables['latitude'][:]
+    month_wrap_var[:] = index_month
+    E_total_wrap_var[:] = meridional_E_pool
+    E_internal_wrap_var[:] = meridional_E_internal_pool
+    E_latent_wrap_var[:] = meridional_E_latent_pool
+    E_geopotential_wrap_var[:] = meridional_E_geopotential_pool
+    # close the file
+    data_wrap.close()
+    print "Create netcdf file successfully"
+    logging.info("The generation of netcdf files for the zonal integral of total meridional energy transport and each component is complete!!")
+
+if __name__=="__main__":
+    # create the month index
+    period = np.arange(start_year,end_year+1,1)
+    index_month = np.arange(1,13,1)
+    # create dimensions for saving data
+    #Dim_level = len(benchmark.variables['level'][:])
+    Dim_latitude = len(benchmark.variables['latitude'][:])
+    Dim_longitude = len(benchmark.variables['longitude'][:])
+    Dim_month = len(index_month)
+    #Dim_year = len(period)
+    # data pool for zonal integral
+    meridional_E_pool = np.zeros((Dim_month,Dim_latitude),dtype = float)
+    meridional_E_internal_pool = np.zeros((Dim_month,Dim_latitude),dtype = float)
+    meridional_E_latent_pool = np.zeros((Dim_month,Dim_latitude),dtype = float)
+    meridional_E_geopotential_pool = np.zeros((Dim_month,Dim_latitude),dtype = float)
+    # data pool for grid point values
+    uc_point_pool = np.zeros((Dim_month,Dim_latitude,Dim_longitude),dtype = float)
+    vc_point_pool = np.zeros((Dim_month,Dim_latitude,Dim_longitude),dtype = float)
+    meridional_E_point_pool = np.zeros((Dim_month,Dim_latitude,Dim_longitude),dtype = float)
+    meridional_E_internal_point_pool = np.zeros((Dim_month,Dim_latitude,Dim_longitude),dtype = float)
+    meridional_E_latent_point_pool = np.zeros((Dim_month,Dim_latitude,Dim_longitude),dtype = float)
+    meridional_E_geopotential_point_pool = np.zeros((Dim_month,Dim_latitude,Dim_longitude),dtype = float)
+    #meridional_E_kinetic_point_pool = np.zeros((Dim_month,Dim_latitude,Dim_longitude),dtype = float)
+    # loop for calculation
+    for i in period:
+        for j in index_month:
+            # get the key of each variable
+            T_key, q_key, u_key, v_key, lnsp_key, z_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key = var_key(datapath,i,j)
+            # calculate barotropic correction wind based on mass budget correction
+            uc,vc = mass_correction(q_key, u_key, v_key, lnsp_key, q_last_key, q_next_key, lnsp_last_key, lnsp_next_key)
+            gz = calc_geopotential(T_key, q_key, lnsp_key, z_key)
+            meridional_E, meridional_E_internal, meridional_E_latent, meridional_E_geopotential, meridional_E_point, meridional_E_internal_point, meridional_E_latent_point, meridional_E_geopotential_point = meridional_energy_transport(T_key,q_key,lnsp_key,v_key,uc,vc,gz)
+            # save the total meridional energy and each component to the data pool
+            meridional_E_pool[j-1,:] = meridional_E
+            meridional_E_internal_pool[j-1,:] = meridional_E_internal
+            meridional_E_latent_pool[j-1,:] = meridional_E_latent
+            meridional_E_geopotential_pool[j-1,:] = meridional_E_geopotential
+            #meridional_E_kinetic_pool[i,j,:] = meridional_E_kinetic
+            # save uc and vc to the data pool
+            uc_point_pool[j-1,:,:] = uc
+            vc_point_pool[j-1,:,:] = vc
+            # save the meridional energy on each grid point to the data pool
+            meridional_E_point_pool[j-1,:,:] = meridional_E_point
+            meridional_E_internal_point_pool[j-1,:,:] = meridional_E_internal_point
+            meridional_E_latent_point_pool[j-1,:,:] = meridional_E_latent_point
+            meridional_E_geopotential_point_pool[j-1,:,:] = meridional_E_geopotential_point
+            # remove variables to save memory
+            del gz
+        # make plots for monthly means
+        visualization(meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path,i)
+        # save data as netcdf file
+        create_netcdf_zonal_int(meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,meridional_E_geopotential_pool,output_path,i)
+        create_netcdf_point(meridional_E_point_pool,meridional_E_internal_point_pool,meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,uc_point_pool,vc_point_pool,output_path,i)
+    print 'Computation of meridional energy transport on model level for ERA-Interim is complete!!!'
+    print 'The output is in sleep, safe and sound!!!'
+
+print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
