@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from HPC cloud (ERA-Interim)
 Author          : Yang Liu
 Date            : 2017.7.23
-Last Update     : 2017.7.24
+Last Update     : 2017.7.29
 Description     : The code aims to postprocess the output from the HPC cloud
                   regarding the computation of atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset ERA-Interim
@@ -26,6 +26,7 @@ import numpy as np
 import time as tttt
 from netCDF4 import Dataset,num2date
 import os
+import seaborn as sns
 import platform
 import logging
 #import matplotlib
@@ -53,7 +54,8 @@ print os.path
 
 # calculate the time for the code execution
 start_time = tttt.time()
-
+# switch on the seaborn effect
+sns.set()
 ################################   Input zone  ######################################
 # specify data path
 datapath = 'F:\DataBase\HPC_out\ERAI\postprocessing'
@@ -166,6 +168,7 @@ fig6 = plt.figure()
 plt.plot(index,T_series_E_internal[40,:]/1000,'r--',label='cpT')
 plt.plot(index,T_series_E_latent[40,:]/1000,'m-.',label='Lvq')
 plt.plot(index,T_series_E_geopotential[40,:]/1000,'g:',label='gz')
+plt.plot(index,T_series_E_kinetic[40,:]/1000,'c:',label='u2')
 plt.plot(index,T_series_E[40,:]/1000,'b-',label='total')
 plt.title('Atmospheric Meridional Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 plt.legend()
@@ -263,6 +266,7 @@ plt.axhline(y=0, color='k',ls='-.')
 plt.plot(latitude,np.mean(series_E_internal,0)/1000,'r--',label='cpT')
 plt.plot(latitude,np.mean(series_E_latent,0)/1000,'m-.',label='Lvq')
 plt.plot(latitude,np.mean(series_E_geopotential,0)/1000,'g:',label='gz')
+plt.plot(latitude,np.mean(series_E_kinetic,0)/1000,'c:',label='u2')
 plt.plot(latitude,np.mean(series_E,0)/1000,'b-',label='total')
 #plt.plot(latitude,np.mean(T_series_E_kinetic,0)/1000,'b-',label='ECMWF')
 plt.title('Atmospheric Meridional Energy Transport (1979-2016)' )
