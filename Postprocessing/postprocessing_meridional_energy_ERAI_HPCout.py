@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from HPC cloud (ERA-Interim)
 Author          : Yang Liu
 Date            : 2017.7.23
-Last Update     : 2017.7.29
+Last Update     : 2017.8.15
 Description     : The code aims to postprocess the output from the HPC cloud
                   regarding the computation of atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset ERA-Interim
@@ -97,6 +97,7 @@ T_series_E_geopotential = np.transpose(series_E_geopotential)
 T_series_E_kinetic = np.transpose(series_E_kinetic)
 
 index = np.arange(1,len(year)*len(month)+1,1)
+index_year = np.arange(1979,1979+len(year)+1,1)
 axis_ref = np.zeros(len(index))
 
 print '*******************************************************************'
@@ -109,7 +110,7 @@ plt.title('Atmospheric Meridional Energy Transport time series at %d N (1979-201
 #plt.legend()
 fig1.set_size_inches(14, 4)
 plt.xlabel("Time")
-plt.xticks(np.linspace(1, 456, 38), year)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -121,7 +122,7 @@ plt.title('Atmospheric Meridional Internal Energy Transport time series at %d N 
 #plt.legend()
 fig2.set_size_inches(14, 4)
 plt.xlabel("Time")
-plt.xticks(np.linspace(1, 456, 38), year)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -133,7 +134,7 @@ plt.title('Atmospheric Meridional Latent Energy Transport time series at %d N (1
 #plt.legend()
 fig3.set_size_inches(14, 4)
 plt.xlabel("Time")
-plt.xticks(np.linspace(1, 456, 38), year)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -145,7 +146,7 @@ plt.title('Atmospheric Meridional Geopotential Energy Transport time series at %
 #plt.legend()
 fig4.set_size_inches(14, 4)
 plt.xlabel("Time")
-plt.xticks(np.linspace(1, 456, 38), year)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -157,7 +158,7 @@ plt.title('Atmospheric Meridional Kinetic Energy Transport time series at %d N (
 #plt.legend()
 fig5.set_size_inches(14, 4)
 plt.xlabel("Time")
-plt.xticks(np.linspace(1, 456, 38), year)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -174,7 +175,7 @@ plt.title('Atmospheric Meridional Energy Transport time series at %d N (1979-201
 plt.legend()
 fig6.set_size_inches(14, 4)
 plt.xlabel("Time")
-plt.xticks(np.linspace(1, 456, 38), year)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -196,7 +197,7 @@ fig7.set_size_inches(14, 4)
 cbar = plt.colorbar()
 cbar.set_label('PW (1E+15)')
 plt.xlabel("Time")
-plt.xticks(np.linspace(1, 456, 38), year)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Latitude (North Hemisphere)")
 plt.show()
