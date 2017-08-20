@@ -117,24 +117,25 @@ def regression (x,y):
     # fill continents, set lake color same as ocean color.
     #m.fillcontinents(color='coral',lake_color='aqua')
     # draw parallels and meridians
-    m.drawparallels(np.arange(60,91,10),labels=[1,1,0,0],fontsize = 8)
-    m.drawmeridians(np.arange(-180,181,60),labels=[0,0,0,1],fontsize = 8)
+    m.drawparallels(np.arange(60,81,10),fontsize = 8)
+    m.drawmeridians(np.arange(0,361,30),labels=[1,1,1,1],fontsize = 8)
     # x,y coordinate - lon, lat
-    xx , yy = np.meshgrid(lon,lat)
+    xx, yy = np.meshgrid(lon,lat)
+    XX, YY = m(xx, yy)
     # define color range for the contourf
     color = np.linspace(-1,1,20)
     # !!!!!take care about the order contourf(Longitude, Latitude, data(Lat,Lon))
-    cs = m.contour(xx,yy,r_value,color,cmap=plt.cm.cubehelix)
+    cs = m.contourf(XX,YY,r_value,color,cmap=plt.cm.cubehelix)
     #cmap = cm.s3pcpn_l
     # add color bar
-    #cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
-    #cbar.set_label('Correlation')
+    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+    cbar.set_label('Correlation')
     # fancy layout of maps
     #m.bluemarble()
     #m.shadedrelief()
     #m.etopo()
-    plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
-    plt.title('Projection of SLP on AMET across 60 N',fontsize = 9)
+    #plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
+    plt.title('Projection of SLP on AMET across 60 N',fontsize = 9, y=1.05)
     plt.show()
     fig1.savefig(output_path + os.sep + "Regression_AMET_ERAI.jpeg",dpi=500)
 
