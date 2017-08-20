@@ -1,0 +1,147 @@
+#!/usr/bin/env python
+"""
+Copyright Netherlands eScience Center
+
+Function        : Regression of climatological variable on AMET (ERA-Interim)
+Author          : Yang Liu
+Date            : 2017.8.18
+Last Update     : 2017.8.19
+Description     : The code aims to explore the assotiation between climatological
+                  variables with atmospheric meridional energy transport (AMET).
+                  The statistical method employed here is linear regression. A
+                  number of fields (SST, SLP, Sea ice, geopotential, etc.),
+                  corresponding to the preexisting natural modes of variability,
+                  will be projected on meridional energy transport. This will enhance
+                  our understanding of climate change.
+
+Return Value    : Map of correlation
+Dependencies    : os, time, numpy, scipy, netCDF4, matplotlib, basemap
+variables       : Sea Surface Temperature                       SST
+                  Sea Level Pressure                            SLP
+                  Sea Ice Concentration                         ci
+                  Geopotential                                  gz
+                  Atmospheric meridional energy transport       AMET
+Caveat!!        : The input data of AMET is from 30 deg north to 90 deg north (Northern Hemisphere).
+"""
+
+import numpy as np
+import scipy as sp
+from scipy import stats
+import time as tttt
+from netCDF4 import Dataset,num2date
+import os
+import seaborn as sns
+import platform
+import logging
+#import matplotlib
+# Generate images without having a window appear
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, cm
+
+# print the system structure and the path of the kernal
+print platform.architecture()
+print os.path
+
+# calculate the time for the code execution
+start_time = tttt.time()
+# switch on the seaborn effect
+sns.set()
+
+################################   Input zone  ######################################
+# specify data path
+# AMET
+datapath_AMET = 'F:\DataBase\HPC_out\ERAI\postprocessing'
+# target climatological variables
+datapath_y = "F:\DataBase\ERA_Interim\Monthly"
+# specify output path for figures
+output_path = 'C:\Yang\PhD\Computation and Modeling\Reproduction of Trenberth and Caron\Figures\Regression'
+# the threshold ( index of latitude) of the AMET
+lat_AMET = 40 # at 60 N
+# the range ( index of latitude) of the projection field
+lat_y = 40
+####################################################################################
+print '*******************************************************************'
+print '*********************** extract variables *************************'
+print '*******************************************************************'
+dataset_AMET = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
+dataset_y = Dataset(datapath_y + os.sep + 'surface_monthly_regress_variables_197901-201612.nc')
+for k in dataset_AMET.variables:
+    print dataset_AMET.variables['%s' % (k)]
+
+for l in dataset_y.variables:
+    print dataset_y.variables['%s' % (l)]
+
+# extract atmospheric meridional energy transport
+# dimension (year,month,latitude)
+E = dataset_AMET.variables['E'][:,:,lat_AMET]
+# extract variables from 20N to 90 N
+# sea level pressure
+SLP = dataset_y.variables['msl'][:,0:lat_y+1,:]
+# sea surface temperature
+SST = dataset_y.variables['sst'][:,0:lat_y+1,:]
+# sea ice cover
+ci = dataset_y.variables['ci'][:,0:lat_y+1,:]
+# longitude
+lon = dataset_y.variables['longitude'][:]
+# latitude
+lat = dataset_y.variables['latitude'][0:lat_y+1]
+
+print 'The type of SLP is', type(SLP)
+print 'The type of SST is', type(SST)
+print 'The type of ci is', type(ci)
+
+print '*******************************************************************'
+print '************************** regression *****************************'
+print '*******************************************************************'
+
+# reshape the matrix
+E_series = E.reshape(456)
+
+def regression (x,y):
+    # create an array to store the correlation coefficient
+    r_value = np.zeros((lat_y+1,len(lon)),dtype = float)
+    p_value = np.zeros((lat_y+1,len(lon)),dtype = float)
+    for i in np.arange(lat_y+1):
+        for j in np.arange(len(lon)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            _,_,r_value[i,j],p_value[i,j],_ = stats.linregress(x,y[:,i,j])
+    # visualization through basemap
+    fig1 = plt.figure()
+    # setup north polar stereographic basemap
+    # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+    # lon_0 is at 6 o'clock
+    m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
+    # draw coastlines
+    m.drawcoastlines()
+    # fill continents, set lake color same as ocean color.
+    #m.fillcontinents(color='coral',lake_color='aqua')
+    # draw parallels and meridians
+    m.drawparallels(np.arange(60,91,10),labels=[1,1,0,0],fontsize = 8)
+    m.drawmeridians(np.arange(-180,181,60),labels=[0,0,0,1],fontsize = 8)
+    # x,y coordinate - lon, lat
+    xx , yy = np.meshgrid(lon,lat)
+    # define color range for the contourf
+    color = np.linspace(-1,1,20)
+    # !!!!!take care about the order contourf(Longitude, Latitude, data(Lat,Lon))
+    cs = m.contour(xx,yy,r_value,color,cmap=plt.cm.cubehelix)
+    #cmap = cm.s3pcpn_l
+    # add color bar
+    #cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+    #cbar.set_label('Correlation')
+    # fancy layout of maps
+    #m.bluemarble()
+    #m.shadedrelief()
+    #m.etopo()
+    plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
+    plt.title('Projection of SLP on AMET across 60 N',fontsize = 9)
+    plt.show()
+    fig1.savefig(output_path + os.sep + "Regression_AMET_ERAI.jpeg",dpi=500)
+
+    return r_value, p_value
+
+
+if __name__=="__main__":
+    r_matrix, p_matrix = regression(E_series,SLP)
+
+print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
