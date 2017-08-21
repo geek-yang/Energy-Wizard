@@ -115,32 +115,39 @@ def regression (x,y):
     # draw coastlines
     m.drawcoastlines()
     # fill continents, set lake color same as ocean color.
-    #m.fillcontinents(color='coral',lake_color='aqua')
+    # m.fillcontinents(color='coral',lake_color='aqua')
     # draw parallels and meridians
-    m.drawparallels(np.arange(60,81,10),fontsize = 8)
-    m.drawmeridians(np.arange(0,361,30),labels=[1,1,1,1],fontsize = 8)
+    m.drawparallels(np.arange(60,81,10),fontsize = 7)
+    m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
     # x,y coordinate - lon, lat
     xx, yy = np.meshgrid(lon,lat)
     XX, YY = m(xx, yy)
     # define color range for the contourf
     color = np.linspace(-1,1,20)
-    # !!!!!take care about the order contourf(Longitude, Latitude, data(Lat,Lon))
-    cs = m.contourf(XX,YY,r_value,color,cmap=plt.cm.cubehelix)
-    #cmap = cm.s3pcpn_l
+    # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+    cs = m.contourf(XX,YY,r_value,color,cmap='coolwarm')
     # add color bar
     cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
-    cbar.set_label('Correlation')
+    cbar.ax.tick_params(labelsize=8)
+    #cbar.set_ticks(np.arange(-1,1.1,0.2))
+    #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
+    cbar.set_label('Correlation',fontsize = 8)
     # fancy layout of maps
     #m.bluemarble()
     #m.shadedrelief()
     #m.etopo()
+    # label of contour lines on the map
     #plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
+    # draw significance stippling on the map
+    # locate the indices of p_value matrix where p<0.05
+    i, j = np.where(p_value>=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    m.scatter(XX[i,j],YY[i,j],2,marker='.',color='g',alpha=0.5, edgecolor='none') # alpha bleding factor with map
     plt.title('Projection of SLP on AMET across 60 N',fontsize = 9, y=1.05)
     plt.show()
     fig1.savefig(output_path + os.sep + "Regression_AMET_ERAI.jpeg",dpi=500)
 
     return r_value, p_value
-
 
 if __name__=="__main__":
     r_matrix, p_matrix = regression(E_series,SLP)
