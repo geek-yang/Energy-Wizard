@@ -1,0 +1,18 @@
+#!/bin/bash
+#----------------------------------------------------------------------------------
+#Copyright Netherlands eScience Center
+#Function        : Download MERRA 2 reanalysis data through wget
+#Author          : Yang Liu
+#Date            : 2017.8.22
+#Description     : The code aims to download the MERRA 2 reanalysis data through wget.
+#Caveat!         : Before executing the code, read the download instruction first!
+#
+# Download instruction
+# https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Download%20Data%20Files%20from%20HTTP%20Service%20with%20wget
+#----------------------------------------------------------------------------------
+# No argument in need!
+# Remember to change th4e url links file before executing the code!
+# The url links are generated on the webpage below after specify all the attributes
+# https://disc.sci.gsfc.nasa.gov/daac-bin/FTPSubset2.pl
+#-----------------------   Input zone   -------------------------------------------
+wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --keep-session-cookies --content-disposition -i MERRA2_1980.dat
