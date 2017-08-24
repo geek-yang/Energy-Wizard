@@ -1,0 +1,272 @@
+#!/usr/bin/env python
+"""
+Copyright Netherlands eScience Center
+
+Function        : Regression of climatological variable on AMET (ERA-Interim) with whitening
+Author          : Yang Liu
+Date            : 2017.8.18
+Last Update     : 2017.8.24
+Description     : The code aims to explore the assotiation between climatological
+                  variables with atmospheric meridional energy transport (AMET).
+                  The statistical method employed here is linear regression. A
+                  number of fields (SST, SLP, Sea ice, geopotential, etc.),
+                  corresponding to the preexisting natural modes of variability,
+                  will be projected on meridional energy transport. This will enhance
+                  our understanding of climate change. Notice that the time series
+                  of input data are not whitened (the seasonal cycles are removed)
+
+Return Value    : Map of correlation
+Dependencies    : os, time, numpy, scipy, netCDF4, matplotlib, basemap
+variables       : Sea Surface Temperature                       SST
+                  Sea Level Pressure                            SLP
+                  Sea Ice Concentration                         ci
+                  Geopotential                                  gz
+                  Atmospheric meridional energy transport       AMET
+Caveat!!        : The input data of AMET is from 30 deg north to 90 deg north (Northern Hemisphere).
+"""
+
+import numpy as np
+import scipy as sp
+from scipy import stats
+import time as tttt
+from netCDF4 import Dataset,num2date
+import os
+import seaborn as sns
+import platform
+import logging
+#import matplotlib
+# Generate images without having a window appear
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, cm
+
+# print the system structure and the path of the kernal
+print platform.architecture()
+print os.path
+
+# calculate the time for the code execution
+start_time = tttt.time()
+# switch on the seaborn effect
+sns.set()
+
+################################   Input zone  ######################################
+# specify data path
+# AMET
+datapath_AMET = 'F:\DataBase\HPC_out\ERAI\postprocessing'
+# target climatological variables
+datapath_y = "F:\DataBase\ERA_Interim\Monthly"
+# specify output path for figures
+output_path = 'C:\Yang\PhD\Computation and Modeling\Reproduction of Trenberth and Caron\Figures\Regression'
+# the threshold ( index of latitude) of the AMET
+lat_AMET = 40 # at 60 N
+# the range ( index of latitude) of the projection field
+lat_y = 94 # upto 20 N
+####################################################################################
+print '*******************************************************************'
+print '*********************** extract variables *************************'
+print '*******************************************************************'
+dataset_AMET = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
+dataset_y = Dataset(datapath_y + os.sep + 'surface_monthly_regress_variables_197901-201612.nc')
+for k in dataset_AMET.variables:
+    print dataset_AMET.variables['%s' % (k)]
+
+for l in dataset_y.variables:
+    print dataset_y.variables['%s' % (l)]
+
+# extract atmospheric meridional energy transport
+# dimension (year,month,latitude)
+E = dataset_AMET.variables['E'][:,:,lat_AMET]
+# extract variables from 20N to 90 N
+# sea level pressure
+SLP = dataset_y.variables['msl'][:,0:lat_y+1,:]
+# sea surface temperature
+SST = dataset_y.variables['sst'][:,0:lat_y+1,:]
+# sea ice cover
+ci = dataset_y.variables['ci'][:,0:lat_y+1,:]
+# longitude
+lon = dataset_y.variables['longitude'][:]
+# latitude
+lat = dataset_y.variables['latitude'][0:lat_y+1]
+# time (number of months)
+time = dataset_y.variables['time'][:]
+
+print 'The type of SLP is', type(SLP)
+print 'The type of SST is', type(SST)
+print 'The type of ci is', type(ci)
+
+# '*******************************************************************'
+# '*************************** whitening *****************************'
+# '*******************************************************************'
+
+# remove the seasonal cycling
+def whiten_y(original):
+    month_ind = np.arange(12)
+    seasonal_mean = np.zeros((12,lat_y+1,len(lon)))
+    original_white = np.zeros(original.shape)
+    for i in month_ind:
+        # calculate the monthly mean (seasonal cycling)
+        seasonal_mean[i,:,:] = np.mean(original[i:-1:12,:,:],axis=0)
+        # remove seasonal mean
+        original_white[i:-1:12,:,:] = original[i:-1:12,:,:] - seasonal_mean[i,:,:]
+
+    return original_white
+
+def whiten_AMET(ori_E):
+    month_ind = np.arange(12)
+    seansonal_cycle = np.mean(ori_E,axis=0)
+    ori_E_white = np.zeros(ori_E.shape)
+    for i in month_ind:
+        ori_E_white[:,i] = ori_E[:,i] - seansonal_cycle[i]
+
+    # plot the AMET after removing seasonal cycle
+    ori_E_white_series = ori_E_white.reshape(456)
+    index = np.arange(1,457,1)
+    index_year = np.arange(1979,2017,1)
+
+    fig1 = plt.figure()
+    plt.plot(index,ori_E_white_series/1000,'b-',label='ECMWF')
+    plt.title('Atmospheric Meridional Energy Transport Anomaly at 60N (1979-2016)')
+    #plt.legend()
+    fig1.set_size_inches(14, 4)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 456, 39), index_year)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig1.savefig(output_path + os.sep + 'AMET_60N_total_time_series_1979_2016_white.jpg', dpi = 500)
+
+    return ori_E_white
+
+# '*******************************************************************'
+# '*************************** tendency ******************************'
+# '*******************************************************************'
+
+def tendency_y(field):
+    index_year = np.arange(1,457,1)
+    # create an array to store the slope coefficient and residual
+    a = np.zeros((lat_y+1,len(lon)),dtype = float)
+    b = np.zeros((lat_y+1,len(lon)),dtype = float)
+    # the least square fit equation is y = ax + b
+    # np.lstsq solves the equation ax=b, a & b are the input
+    # thus the input file should be reformed for the function
+    # we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+    A = np.vstack([index_year,np.ones(len(index_year))]).T
+    # start the least square fitting
+    for i in np.arange(lat_y+1):
+        for j in np.arange(len(lon)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            a[i,j], b[i,j] = np.linalg.lstsq(A,field[:,i,j])[0]
+    # visualization through basemap
+    fig2 = plt.figure()
+    # setup north polar stereographic basemap
+    # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+    # lon_0 is at 6 o'clock
+    m = Basemap(projection='npstere',boundinglat=19.5,round=True,lon_0=0,resolution='l')
+    # draw coastlines
+    m.drawcoastlines()
+    # fill continents, set lake color same as ocean color.
+    # m.fillcontinents(color='coral',lake_color='aqua')
+    # draw parallels and meridians
+    m.drawparallels(np.arange(20,81,20),fontsize = 7)
+    m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+    # x,y coordinate - lon, lat
+    xx, yy = np.meshgrid(lon,lat)
+    XX, YY = m(xx, yy)
+    # define color range for the contourf
+    color = np.linspace(-5,5,21)
+    # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+    cs = m.contourf(XX,YY,a*12,color,cmap='coolwarm')
+    # add color bar
+    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+    cbar.ax.tick_params(labelsize=8)
+    #cbar.set_ticks(np.arange(-1,1.1,0.2))
+    #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
+    cbar.set_label('Pa/year',fontsize = 8)
+    plt.title('Tendency of SLP on AMET across 60 N',fontsize = 9, y=1.05)
+    plt.show()
+    fig2.savefig(output_path + os.sep + "Tendency_ERAI_SLP.jpeg",dpi=500)
+
+# '*******************************************************************'
+# '************************** regression *****************************'
+# '*******************************************************************'
+
+def regression (x,y):
+    # create an array to store the correlation coefficient
+    slope = np.zeros((lat_y+1,len(lon)),dtype = float)
+    r_value = np.zeros((lat_y+1,len(lon)),dtype = float)
+    p_value = np.zeros((lat_y+1,len(lon)),dtype = float)
+    for i in np.arange(lat_y+1):
+        for j in np.arange(len(lon)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(x/1000,y[:,i,j])
+    # visualization through basemap
+    fig3 = plt.figure()
+    # setup north polar stereographic basemap
+    # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+    # lon_0 is at 6 o'clock
+    m = Basemap(projection='npstere',boundinglat=19.5,round=True,lon_0=0,resolution='l')
+    # draw coastlines
+    m.drawcoastlines()
+    # fill continents, set lake color same as ocean color.
+    # m.fillcontinents(color='coral',lake_color='aqua')
+    # draw parallels and meridians
+    m.drawparallels(np.arange(20,81,20),fontsize = 7)
+    m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+    # x,y coordinate - lon, lat
+    xx, yy = np.meshgrid(lon,lat)
+    XX, YY = m(xx, yy)
+    # define color range for the contourf
+    color = np.linspace(-1,1,21)
+    # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+    cs = m.contourf(XX,YY,slope,color,cmap='coolwarm')
+    # add color bar
+    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+    cbar.ax.tick_params(labelsize=8)
+    #cbar.set_ticks(np.arange(-1,1.1,0.2))
+    #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
+    cbar.set_label('Pa/PW',fontsize = 8)
+    # fancy layout of maps
+    #m.bluemarble()
+    #m.shadedrelief()
+    #m.etopo()
+    # label of contour lines on the map
+    #plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
+    # draw significance stippling on the map
+    # locate the indices of p_value matrix where p<0.05
+    i, j = np.where(p_value>=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    m.scatter(XX[i,j],YY[i,j],2,marker='.',color='g',alpha=0.5, edgecolor='none') # alpha bleding factor with map
+    plt.title('Projection of SLP on AMET across 60 N',fontsize = 9, y=1.05)
+    plt.show()
+    fig3.savefig(output_path + os.sep + "Regression_AMET_ERAI.jpeg",dpi=500)
+
+    #return r_value, p_value
+
+if __name__=="__main__":
+    # start
+    print '*******************************************************************'
+    print '*************************** whitening *****************************'
+    print '*******************************************************************'
+    # remove the seasonal cycle of given field
+    SLP_white = whiten_y(SLP)
+    # remove seasonal cycle of AMET
+    E_white = whiten_AMET(E)
+    print '*******************************************************************'
+    print '*************************** tendency ******************************'
+    print '*******************************************************************'
+    # calculate the tendency of a certain variable
+    tendency_y(SLP_white)
+    print '*******************************************************************'
+    print '************************** regression *****************************'
+    print '*******************************************************************'
+    # reshape the matrix
+    E_series = E.reshape(456)
+    E_white_series = E_white.reshape(456)
+    # regress SLP on AMET 60N without removing seasonal cycling
+    regression(E_series,SLP)
+    # regress SLP on AMET 60N after removing seasonal cycling
+    regression(E_white_series,SLP_white)
+
+
+
+print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
