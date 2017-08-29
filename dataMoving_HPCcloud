@@ -1,0 +1,36 @@
+#!/bin/bash
+#-----------------------------------------------------------
+#Function	: Copy output files to a certain directory
+#Author		: Yang Liu
+#Date		: 2017.7.31
+#Description	: This script works for the output files
+		  from calculation of meridional energy
+		  transport.
+#-----------------------------------------------------------
+#--------------------  Input zone   ------------------------
+# specify the starting date
+start_year=1979
+# specify the ending year
+end_year=2016
+# specify input path
+inputpath=/project/Reanalysis/ERA_Interim/Subdaily/Model
+outputpath=/project/Reanalysis/ERA_Interim/Subdaily/Model/HPC_Output
+#-----------------------------------------------------------
+word_pre='Finish downloading data for the year'
+echo 'Starting moving data'
+for ((year=${start_year}; year<=${end_year}; year++))
+do
+  mv ${inputpath}/era${year}/model_daily_075_${year}_E_point.nc ${outputpath}/point/
+  mv ${inputpath}/era${year}/model_daily_075_${year}_E_zonal_int.nc ${outputpath}/zonal_int/
+  mv ${inputpath}/era${year}/Meridional_Energy_total_${year}.png ${outputpath}/pngs/
+  mv ${inputpath}/era${year}/Meridional_Energy_internal_${year}.png ${outputpath}/pngs/
+  mv ${inputpath}/era${year}/Meridional_Energy_latent_${year}.png ${outputpath}/pngs/
+  mv ${inputpath}/era${year}/Meridional_Energy_geopotential_${year}.png ${outputpath}/pngs/
+  mv ${inputpath}/era${year}/Meridional_Energy_kinetic_${year}.png ${outputpath}/pngs/
+  word_feed=${word_pre}$year
+  echo ${word_feed}
+done
+echo '--------------------------------------------------------------'
+echo 'Successfully move data to the named directory!!!'
+echo '--------------------------------------------------------------'
+
