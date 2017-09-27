@@ -6,7 +6,7 @@ Copyright Netherlands eScience Center
 Function        : OMET on v grid(ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.19
-Last Update     : 2017.9.25
+Last Update     : 2017.9.27
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4
                   from ECMWF. Since the mass budget imbalance exists in oceanic
@@ -195,16 +195,20 @@ def u_v_angle_adjust(u_key, v_key):
     u_vgrid = np.zeros((len(index_month),level,jj,ji),dtype=float)
     # calculate the exception
     u_vgrid[:,:,-1,0] = (u[:,:,-1,-1] + u[:,:,-1,0])/2
-    u_vgrid[:,:,-1,1:] = (u[:,:,-1,0:ji] + u[:,:,-1,1:])/2
+    u_vgrid[:,:,-1,1:] = (u[:,:,-1,0:-2] + u[:,:,-1,1:])/2
     for i in np.arange(jj-1):
         for j in np.arange(ji):
             if j == 0:
-                u_vgrid[:,:,i,j] = ()(u[:,:,i,-1] + u[:,:,i,0])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2
+                u_vgrid[:,:,i,j] = ((u[:,:,i,-1] + u[:,:,i,0])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2)/2
             else:
-                u_vgrid[:,:,i,j] = (u[:,:,i,j-1] + u[:,:,i,j])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2
+                u_vgrid[:,:,i,j] = ((u[:,:,i,j-1] + u[:,:,i,j])/2 + (u[:,:,i+1,j-1] + u[:,:,i+1,j])/2)/2
+    # calculate the angle change (longitude) with respect to the threshold
+    # create the output array
+    u_uniform = np.zeros(v.shape,dtype=float)
+    v_uniform = np.zeros(v.shape,dtype=float)
+    #
 
-        else:
-            u_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i-1,:])/2
+
     return u_uniform, v_uniform,
 
 
@@ -412,7 +416,7 @@ def regridding(E_ori):
     weights = np.ones(cube_ori.shape)
     # interpolate from ORCA grid to rectilinear grid through bilinear interpolation
     # The method uses point in cell interpolation and then perform the bilinear interpolation
-    # based on distance and weight 
+    # based on distance and weight
     cube_interpolate = iris.experimental.regrid.regrid_weighted_curvilinear_to_rectilinear(cube_ori,weights,aux_cube)
     ##################################################################################################
     # Unfortunately, normal iris modules can not handle the curvilinear grid, only the
