@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from HPC cloud (ERA-Interim)
 Author          : Yang Liu
 Date            : 2017.7.23
-Last Update     : 2017.8.15
+Last Update     : 2017.7.24
 Description     : The code aims to postprocess the output from the HPC cloud
                   regarding the computation of atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset ERA-Interim
@@ -33,6 +33,7 @@ import logging
 # Generate images without having a window appear
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, cm
 
 ##########################################################################
 ###########################   Units vacabulory   #########################
@@ -66,35 +67,71 @@ Lat_num = 60
 print '*******************************************************************'
 print '*********************** extract variables *************************'
 print '*******************************************************************'
+# zonal integral
 dataset = Dataset(datapath + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
+# spacial distribution
+dataset_point = Dataset(datapath + os.sep + 'model_daily_075_1979_2016_E_point.nc')
+
 for k in dataset.variables:
     print dataset.variables['%s' % (k)]
 
+# zonal integral
 E = dataset.variables['E'][:]
 E_internal = dataset.variables['E_cpT'][:]
 E_latent = dataset.variables['E_Lvq'][:]
 E_geopotential = dataset.variables['E_gz'][:]
 E_kinetic = dataset.variables['E_uv2'][:]
 
+# spacial distribution
+E_point = dataset_point.variables['E'][:]
+#E_point_internal = dataset_point.variables['E_cpT'][:]
+#E_point_latent = dataset_point.variables['E_Lvq'][:]
+#E_point_geopotential = dataset_point.variables['E_gz'][:]
+#E_point_kinetic = dataset_point.variables['E_uv2'][:]
+
 year = dataset.variables['year'][:]
 month = dataset.variables['month'][:]
 latitude = dataset.variables['latitude'][:]
+longitude = dataset_point.variables['longitude'][:]
 
 print '*******************************************************************'
 print '****************** prepare variables for plot *********************'
 print '*******************************************************************'
+# remove seasonal cycles
+# zonal integral
+E_seasonal_cycle = np.mean(E,0)
+month_ind = np.arange(12)
+E_white = np.zeros(E.shape)
+for i in month_ind:
+    for j in np.arange(len(year)):
+        E_white[j,i,:] = E[j,i,:] - E_seasonal_cycle[i,:]
+# spacial distribution
+E_point_seasonal_cycle = np.mean(E_point,0)
+E_point_white = np.zeros(E_point.shape)
+for i in month_ind:
+    for j in np.arange(len(year)):
+        E_point_white[j,i,:,:] = E_point[j,i,:,:] - E_point_seasonal_cycle[i,:,:]
+
 # reshape the array into time series
+# original signals
 series_E = E.reshape(len(year)*len(month),len(latitude))
 series_E_internal = E_internal.reshape(len(year)*len(month),len(latitude))
 series_E_latent = E_latent.reshape(len(year)*len(month),len(latitude))
 series_E_geopotential = E_geopotential.reshape(len(year)*len(month),len(latitude))
 series_E_kinetic = E_kinetic.reshape(len(year)*len(month),len(latitude))
+# whiten signals
+series_E_white = E_white.reshape(len(year)*len(month),len(latitude))
+series_E_point_white = E_point_white.reshape(len(year)*len(month),len(latitude),len(longitude))
 
+# transpose
+# original signals
 T_series_E = np.transpose(series_E)
 T_series_E_internal = np.transpose(series_E_internal)
 T_series_E_latent = np.transpose(series_E_latent)
 T_series_E_geopotential = np.transpose(series_E_geopotential)
 T_series_E_kinetic = np.transpose(series_E_kinetic)
+# whiten signals
+T_series_E_white = np.transpose(series_E_white)
 
 index = np.arange(1,len(year)*len(month)+1,1)
 index_year = np.arange(1979,1979+len(year)+1,1)
@@ -287,6 +324,7 @@ angle = np.linspace(0, 2 * np.pi, 13)
 angle_series = np.tile(angle[:-1],38)
 month_str = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
+# wind rose of time series
 fig14 = plt.figure()
 plt.axes(polar = True)
 plt.plot(angle_series,T_series_E[40,:]/1000,'b--',label='ECMWF')
@@ -301,11 +339,127 @@ plt.yticks(np.linspace(0,6,7),color='r',size =12)
 plt.show()
 fig14.savefig(output_path + os.sep + 'Meridional_Energy_%dN_total_windrose_1979_2016.jpg' % (Lat_num), dpi = 500)
 
-'''
-3. basemap of average over 38 years
-4. basemap variance
-5. basemap stand deviation
-6. basemap cumulative
+# wind rose of time series after removing seasonal cycles
 
-'''
+fig15 = plt.figure()
+plt.axes(polar = True)
+plt.plot(angle_series,T_series_E_white[40,:]/1000,'b--',label='ECMWF')
+plt.title('Atmospheric Meridional Energy Transport anomaly at %d N (1979-2016)' % (Lat_num), y=1.07)
+#plt.legend()
+#fig10.set_size_inches(14, 4)
+#plt.xlabel("Time")
+plt.xticks(angle[:-1], month_str)
+plt.yticks(np.linspace(-1,1,11),color='r',size =12)
+#plt.xticks(rotation=60)
+#plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig15.savefig(output_path + os.sep + 'Meridional_Energy_%dN_total_windrose_white_1979_2016.jpg' % (Lat_num), dpi = 500)
+
+print '*******************************************************************'
+print '********************** spacial distribution ***********************'
+print '*******************************************************************'
+
+# spacial distribution of AMET - mean of 38 years
+fig16 = plt.figure()
+# setup north polar stereographic basemap
+# resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+# lon_0 is at 6 o'clock
+m = Basemap(projection='npstere',boundinglat=30,round=True,lon_0=0,resolution='l')
+# draw coastlines
+m.drawcoastlines()
+# fill continents, set lake color same as ocean color.
+# m.fillcontinents(color='coral',lake_color='aqua')
+# draw parallels and meridians
+# location labels=[left,right,top,bottom]
+m.drawparallels(np.arange(30,91,30),fontsize = 7)
+m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+# x,y coordinate - lon, lat
+xx, yy = np.meshgrid(longitude,latitude)
+XX, YY = m(xx, yy)
+# define color range for the contourf
+color = np.linspace(-1,1,11)
+# !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+cs = m.contourf(XX,YY,np.mean(np.mean(E_point,1),0)/1000,color,cmap='coolwarm')
+# add color bar
+cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+cbar.ax.tick_params(labelsize=8)
+cbar.set_label('Peta Watt',fontsize = 8)
+plt.title('Mean Meridional Energy Transport (1979-2016)',fontsize = 9, y=1.05)
+plt.show()
+fig16.savefig(output_path + os.sep + "Map_AMET_ERAI_mean.jpeg",dpi=500)
+
+# spacial distribution of AMET - mean of the anomaly of 38 years
+# !!!!!!! The result is 0 !!!!!!
+fig17 = plt.figure()
+# setup north polar stereographic basemap
+# resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+# lon_0 is at 6 o'clock
+m = Basemap(projection='npstere',boundinglat=30,round=True,lon_0=0,resolution='l')
+# draw coastlines
+m.drawcoastlines()
+# fill continents, set lake color same as ocean color.
+# m.fillcontinents(color='coral',lake_color='aqua')
+# draw parallels and meridians
+# location labels=[left,right,top,bottom]
+m.drawparallels(np.arange(30,91,30),fontsize = 7)
+m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+# x,y coordinate - lon, lat
+xx, yy = np.meshgrid(longitude,latitude)
+XX, YY = m(xx, yy)
+# define color range for the contourf
+color = np.linspace(-1,1,11)
+# !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+cs = m.contourf(XX,YY,np.mean(np.mean(E_point_white,1),0)/1000,color,cmap='coolwarm')
+# add color bar
+cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+cbar.ax.tick_params(labelsize=8)
+cbar.set_label('Peta Watt',fontsize = 8)
+plt.title('Mean Meridional Energy Transport Anomaly (1979-2016)',fontsize = 9, y=1.05)
+plt.show()
+fig17.savefig(output_path + os.sep + "Map_AMET_ERAI_anomaly_mean.jpeg",dpi=500)
+
+# spacial distribution of AMET - trend of the anomaly of 38 years
+# calculate trend
+# create an array to store the slope coefficient and residual
+a = np.zeros((len(latitude),len(longitude)),dtype = float)
+b = np.zeros((len(latitude),len(longitude)),dtype = float)
+# the least square fit equation is y = ax + b
+# np.lstsq solves the equation ax=b, a & b are the input
+# thus the input file should be reformed for the function
+# we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+A = np.vstack([index,np.ones(len(index))]).T
+# start the least square fitting
+for i in np.arange(len(latitude)):
+    for j in np.arange(len(longitude)):
+        # return value: coefficient matrix a and b, where a is the slope
+        a[i,j], b[i,j] = np.linalg.lstsq(A,series_E_point_white[:,i,j]/1000)[0]
+
+fig18 = plt.figure()
+# setup north polar stereographic basemap
+# resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+# lon_0 is at 6 o'clock
+m = Basemap(projection='npstere',boundinglat=30,round=True,lon_0=0,resolution='l')
+# draw coastlines
+m.drawcoastlines()
+# fill continents, set lake color same as ocean color.
+# m.fillcontinents(color='coral',lake_color='aqua')
+# draw parallels and meridians
+# location labels=[left,right,top,bottom]
+m.drawparallels(np.arange(30,91,30),fontsize = 7)
+m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+# x,y coordinate - lon, lat
+xx, yy = np.meshgrid(longitude,latitude)
+XX, YY = m(xx, yy)
+# define color range for the contourf
+color = np.linspace(-0.1,0.1,11)
+# !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+cs = m.contourf(XX,YY,a*12*10,color,cmap='coolwarm')
+# add color bar
+cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+cbar.ax.tick_params(labelsize=8)
+cbar.set_label('PW/decade',fontsize = 8)
+plt.title('Trend of AMET anomaly (1979-2016)',fontsize = 9, y=1.05)
+plt.show()
+fig18.savefig(output_path + os.sep + "Map_AMET_ERAI_anomaly_trend.jpeg",dpi=500)
+
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
