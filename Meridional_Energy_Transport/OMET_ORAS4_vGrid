@@ -3,7 +3,7 @@
 """
 Copyright Netherlands eScience Center
 
-Function        : Quantify OMET on v grid(ORAS4)
+Function        : OMET on v grid(ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.19
 Last Update     : 2017.9.25
@@ -136,8 +136,11 @@ def var_coordinate(datapath):
     nav_lon = mesh_mask_key.variables['nav_lon'][:]
     nav_lev = mesh_mask_key.variables['nav_lev'][:]
     # lat-lon coordinate of V grid
-    v_lat = mesh_mask_key.variables['gphiv'][0,:,:]
-    v_lon = mesh_mask_key.variables['glamv'][0,:,:]
+    gphiv = mesh_mask_key.variables['gphiv'][0,:,:] # lat from -78 to -89
+    glamv = mesh_mask_key.variables['glamv'][0,:,:] # lon from -179 to 179
+    # lat-lon coordinate of U grid
+    gphiu = mesh_mask_key.variables['gphiu'][0,:,:] # lat from -78 to -89
+    glamu = mesh_mask_key.variables['glamu'][0,:,:] # lon from -179 to 179
     # land-sea mask
     tmask = mesh_mask_key.variables['tmask'][0,:,:,:]
     #umask = mesh_mask_key.variables['umask'][0,:,:,:]
@@ -151,7 +154,8 @@ def var_coordinate(datapath):
     e2v = mesh_mask_key.variables['e2v'][0,:,:]
     # take the bathymetry
     mbathy = mesh_mask_key.variables['mbathy'][0,:,:]
-    # comparison between variables
+    # Here the coordinate and mask from coordinates_grid_T/U/V are the same with
+    # those from mesh_mask
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
     #tmask_grid_T = grid_T_key.variables['tmask'][:]
@@ -168,7 +172,44 @@ def var_coordinate(datapath):
     #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % \
     #       np.array_equal(tmask,tmask_grid_T)
 
-    return nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, v_lat, v_lon, mbathy
+    return nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, gphiu, glamu, mbathy
+
+def u_v_angle_adjust(u_key, v_key):
+    '''
+    Get the meridional and zonal component from u & v field following i-j coordinate
+    The entire procedure includes:
+    1. Interpolate u field on v grid
+    2. Calculate meridional and zonal component of u and v from the change of longitude, respectively
+    3. Take the meridional and zonal composite seperately and form the new velocity field
+    !!! The angle adjustment of u and v field is a must do! The velocity fields on ORCA grid
+        just follow the i-j coordinate, and the interpolation (nearest-neighbor / bilinear) make no
+        change to the velocity field.
+    '''
+    # extract variables
+    u = u_key.variables['uo'][:]
+    v = v_key.variables['vo'][:]
+    # the grid start to distorot after lat_ind 185
+    threshold = np.arange(186,292)
+    # create matrix for u and v after adjustment
+    # interpolate u on v grid
+    u_vgrid = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    # calculate the exception
+    u_vgrid[:,:,-1,0] = (u[:,:,-1,-1] + u[:,:,-1,0])/2
+    u_vgrid[:,:,-1,1:] = (u[:,:,-1,0:ji] + u[:,:,-1,1:])/2
+    for i in np.arange(jj-1):
+        for j in np.arange(ji):
+            if j == 0:
+                u_vgrid[:,:,i,j] = ()(u[:,:,i,-1] + u[:,:,i,0])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2
+            else:
+                u_vgrid[:,:,i,j] = (u[:,:,i,j-1] + u[:,:,i,j])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2
+
+        else:
+            u_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i-1,:])/2
+    return u_uniform, v_uniform,
+
+
+
+
 
 def stream_function(v_key):
     #dominant equation for stream function
@@ -254,20 +295,7 @@ def mass_correction(u_key, v_key):
             dz[i] = nav_lev[i]
         else:
             dz[i] = nav_lev[i] - nav_lev[i-1]
-    # interpolate u on v grid
-    u_vgrid = np.zeros((len(index_month),level,jj,ji),dtype=float)
-    # calculate the exception
-    u_vgrid[:,:,-1,0] = (u[:,:,-1,-1] + u[:,:,-1,0])/2
-    u_vgrid[:,:,-1,1:] = (u[:,:,-1,0:ji] + u[:,:,-1,1:])/2
-    for i in np.arange(jj-1):
-        for j in np.arange(ji):
-            if j == 0:
-                u_vgrid[:,:,i,j] = ()(u[:,:,i,-1] + u[:,:,i,0])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2
-            else:
-                u_vgrid[:,:,i,j] = (u[:,:,i,j-1] + u[:,:,i,j])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2
 
-        else:
-            u_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i-1,:])/2
 
     # calculate the mass flux
     mass_flux_u = np.zeros((len(index_month),level,jj,ji),dtype=float)
@@ -348,7 +376,7 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
     print '*****************************************************************************'
     return Internal_E_int
 
-def interpolation(E_ori):
+def regridding(E_ori):
     # use Iris lib for interpolation/regridding
     # support NetCDF
     iris.FUTURE.netcdf_promote = True
@@ -383,7 +411,8 @@ def interpolation(E_ori):
     # create a weight matrix for regridding
     weights = np.ones(cube_ori.shape)
     # interpolate from ORCA grid to rectilinear grid through bilinear interpolation
-
+    # The method uses point in cell interpolation and then perform the bilinear interpolation
+    # based on distance and weight 
     cube_interpolate = iris.experimental.regrid.regrid_weighted_curvilinear_to_rectilinear(cube_ori,weights,aux_cube)
     ##################################################################################################
     # Unfortunately, normal iris modules can not handle the curvilinear grid, only the
@@ -489,7 +518,7 @@ if __name__=="__main__":
         # take the average for the entire year first (interpolation is only possible for 2D)
         E_avg = np.mean(E_point,0)
         # start the interpolation
-        cube_interpolate,E_uniform,y_coord = interpolation(E_avg)
+        cube_interpolate,E_uniform,y_coord = regridding(E_avg)
         # calculate the stokes stream function and plot
         #psi = stream_function(v_key)
         # visualization

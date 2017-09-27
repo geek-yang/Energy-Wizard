@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (ERA-Interim) with whitening
 Author          : Yang Liu
 Date            : 2017.8.18
-Last Update     : 2017.8.24
+Last Update     : 2017.9.11
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -75,7 +75,7 @@ for l in dataset_y.variables:
 
 # extract atmospheric meridional energy transport
 # dimension (year,month,latitude)
-E = dataset_AMET.variables['E'][:,:,lat_AMET]
+E = dataset_AMET.variables['E'][:,:,lat_AMET]/1000 # from Tera Watt to Peta Watt
 # extract variables from 20N to 90 N
 # sea level pressure
 SLP = dataset_y.variables['msl'][:,0:lat_y+1,:]
@@ -94,6 +94,13 @@ print 'The type of SLP is', type(SLP)
 print 'The type of SST is', type(SST)
 print 'The type of ci is', type(ci)
 
+# take the time series of E
+E_series = E.reshape(456)
+
+# mask information of SST and ci
+#mask_SST = numpy.ma.getmask(SST[0,:,:])
+#mask_ci = numpy.ma.getmask(ci[0,:,:])
+
 # '*******************************************************************'
 # '*************************** whitening *****************************'
 # '*******************************************************************'
@@ -111,7 +118,8 @@ def whiten_y(original):
 
     return original_white
 
-def whiten_AMET(ori_E):
+def whiten_AMET_FFT(ori_E):
+    # remove seasonal cycle
     month_ind = np.arange(12)
     seansonal_cycle = np.mean(ori_E,axis=0)
     ori_E_white = np.zeros(ori_E.shape)
@@ -123,25 +131,125 @@ def whiten_AMET(ori_E):
     index = np.arange(1,457,1)
     index_year = np.arange(1979,2017,1)
 
-    fig1 = plt.figure()
-    plt.plot(index,ori_E_white_series/1000,'b-',label='ECMWF')
+    fig01 = plt.figure()
+    plt.plot(index,ori_E_white_series,'b-',label='ECMWF')
     plt.title('Atmospheric Meridional Energy Transport Anomaly at 60N (1979-2016)')
     #plt.legend()
-    fig1.set_size_inches(14, 4)
+    fig01.set_size_inches(14, 4)
     plt.xlabel("Time")
     plt.xticks(np.linspace(0, 456, 39), index_year)
     plt.xticks(rotation=60)
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
-    fig1.savefig(output_path + os.sep + 'AMET_60N_total_time_series_1979_2016_white.jpg', dpi = 500)
+    fig01.savefig(output_path + os.sep + 'AMET_60N_total_time_series_1979_2016_white.jpg', dpi = 500)
+
+    # Fast Fourier Transform
+    # original AMET
+    ori_E_series = ori_E.reshape(456)
+    FFT_E = np.fft.fft(ori_E_series)
+    freq_FFT_E = np.fft.fftfreq(len(FFT_E),d=1)
+    mag_FFT_E = abs(FFT_E)
+    # Anomaly
+    FFT_E_white = np.fft.fft(ori_E_white_series)
+    freq_FFT_E_white = np.fft.fftfreq(len(FFT_E_white),d=1)
+    mag_FFT_E_white = abs(FFT_E_white)
+
+    # Plot the anomaly of AMET in Frequency domain
+    fig02 = plt.figure()
+    plt.plot(freq_FFT_E[0:200],mag_FFT_E[0:200],'b-',label='ECMWF')
+    plt.title('Fourier Transform of AMET at 60N (1979-2016)')
+    #plt.legend()
+    fig02.set_size_inches(14, 4)
+    plt.xlabel("Times per month")
+    #plt.xticks(np.linspace(0, 456, 39), index_year)
+    #plt.xticks(rotation=60)
+    plt.ylabel("Power spectrum density (PW^2/month)")
+    plt.show()
+    fig02.savefig(output_path + os.sep + 'FFT_AMET_60N_1979_2016.jpg', dpi = 500)
+
+    fig03 = plt.figure()
+    plt.plot(freq_FFT_E_white[0:200],mag_FFT_E_white[0:200],'b-',label='ECMWF')
+    plt.title('Fourier Transform of AMET Anomaly at 60N (1979-2016)')
+    #plt.legend()
+    fig03.set_size_inches(14, 4)
+    plt.xlabel("Times per month")
+    #plt.xticks(np.linspace(0, 456, 39), index_year)
+    #plt.xticks(rotation=60)
+    plt.ylabel("Power spectrum density (PW^2/month)")
+    plt.show()
+    fig03.savefig(output_path + os.sep + 'FFT_AMET_60N_1979_2016_white.jpg', dpi = 500)
 
     return ori_E_white
 
+def running_AMET_FFT(ori_E_series):
+    # define the running window for the running mean
+    window = 60
+    # calculate the running mean and sum
+    ori_E_running_mean = np.zeros(len(ori_E_series)-window+1)
+    ori_E_running_sum = np.zeros(len(ori_E_series)-window+1)
+    for i in np.arange(len(ori_E_series)-window+1):
+        ori_E_running_mean[i] = np.mean(ori_E_series[i:i+window])
+        ori_E_running_sum[i] = np.sum(ori_E_series[i:i+window])
+
+    # index of years for plot
+    index = np.arange(1,457,1)
+    index_year = np.arange(1979,2017,1)
+    # Plot the anomaly of AMET in Frequency domain
+    fig11 = plt.figure()
+    plt.plot(index,ori_E_series,'b--',label='time series')
+    plt.plot(index[window-1:],ori_E_running_mean,'r-',linewidth=2.0,label='running mean')
+    plt.title('Running mean of AMET at 60N with a window of %d months (1979-2016)' % (window))
+    #plt.title('Running mean of AMET anomalies at 60N with a window of %d months (1979-2016)' % (window))
+    #plt.legend()
+    fig11.set_size_inches(14, 4)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 456, 39), index_year)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig11.savefig(output_path + os.sep + 'running_mean_AMET_60N_window_%d_comp.jpg' % (window), dpi = 500)
+    #fig11.savefig(output_path + os.sep + 'running_mean_sum' + os.sep + 'running_mean_AMET_anomaly_60N_window_%d_comp.jpg' % (window), dpi = 500)
+
+    # fig12 = plt.figure()
+    # plt.plot(index,ori_E_running_sum,'b-',label='ECMWF')
+    # #plt.title('Running sum of AMET at 60N with a window of %d months (1979-2016)' % (window))
+    # plt.title('Running sum of AMET anomalies at 60N with a window of %d months (1979-2016)' % (window))
+    # #plt.legend()
+    # fig12.set_size_inches(14, 4)
+    # plt.xlabel("Time")
+    # plt.xticks(np.linspace(0, 456, 39), index_year)
+    # plt.xticks(rotation=60)
+    # plt.ylabel("Meridional Energy Transport (PW)")
+    # plt.show()
+    # #fig12.savefig(output_path + os.sep + 'running_sum_AMET_60N_window_%d.jpg' % (window), dpi = 500)
+    # fig12.savefig(output_path + os.sep + 'running_mean_sum' + os.sep + 'running_sum_AMET_anomaly_60N_window_%d.jpg' % (window), dpi = 500)
+
+    # Fast Fourier Transform
+    # FFT_E = np.fft.fft(ori_E_running_mean)
+    # freq_FFT_E = np.fft.fftfreq(len(FFT_E),d=1)
+    # mag_FFT_E = abs(FFT_E)
+    #
+    # # Plot the running mean of AMET in Frequency domain
+    # fig22 = plt.figure()
+    # plt.plot(freq_FFT_E[0:200],mag_FFT_E[0:200],'b-',label='ECMWF')
+    # plt.title('Fourier Transform of running mean (%d) of AMET anomalies at 60N (1979-2016)' % (window))
+    # #plt.legend()
+    # fig22.set_size_inches(14, 4)
+    # plt.xlabel("Times per month")
+    # #plt.xticks(np.linspace(0, 456, 39), index_year)
+    # #plt.xticks(rotation=60)
+    # plt.ylabel("Power spectrum density (PW^2/month)")
+    # plt.show()
+    # fig22.savefig(output_path + os.sep + 'running_mean_sum' + os.sep + 'FFT_running_mean_%d_AMET_anomaly_60N_1979_2016.jpg' % (window), dpi = 500)
+
+
+    return ori_E_running_mean, ori_E_running_sum
+
 # '*******************************************************************'
-# '*************************** tendency ******************************'
+# '**************************** trend ********************************'
 # '*******************************************************************'
 
-def tendency_y(field):
+def trend_y(field):
     index_year = np.arange(1,457,1)
     # create an array to store the slope coefficient and residual
     a = np.zeros((lat_y+1,len(lon)),dtype = float)
@@ -154,14 +262,14 @@ def tendency_y(field):
     # start the least square fitting
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
-            # return value: slope, intercept, r_value, p_value, stderr
+            # return value: coefficient matrix a and b, where a is the slope
             a[i,j], b[i,j] = np.linalg.lstsq(A,field[:,i,j])[0]
     # visualization through basemap
     fig2 = plt.figure()
     # setup north polar stereographic basemap
     # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
     # lon_0 is at 6 o'clock
-    m = Basemap(projection='npstere',boundinglat=19.5,round=True,lon_0=0,resolution='l')
+    m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
     m.drawcoastlines()
     # fill continents, set lake color same as ocean color.
@@ -173,7 +281,8 @@ def tendency_y(field):
     xx, yy = np.meshgrid(lon,lat)
     XX, YY = m(xx, yy)
     # define color range for the contourf
-    color = np.linspace(-5,5,21)
+    #color = np.linspace(-1,1,21)
+    color = np.linspace(-5,5,21) # for SLP
     # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
     cs = m.contourf(XX,YY,a*12,color,cmap='coolwarm')
     # add color bar
@@ -181,10 +290,16 @@ def tendency_y(field):
     cbar.ax.tick_params(labelsize=8)
     #cbar.set_ticks(np.arange(-1,1.1,0.2))
     #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
+    #cbar.set_label('concentration/year',fontsize = 8)
+    #cbar.set_label('K/year',fontsize = 8)
     cbar.set_label('Pa/year',fontsize = 8)
-    plt.title('Tendency of SLP on AMET across 60 N',fontsize = 9, y=1.05)
+    plt.title('Trend of SLP (1979-2016)',fontsize = 9, y=1.05)
+    #plt.title('Trend of SST (1979-2016)',fontsize = 9, y=1.05)
+    #plt.title('Trend of the Sea Ice Cover (1979-2016)',fontsize = 9, y=1.05)
     plt.show()
-    fig2.savefig(output_path + os.sep + "Tendency_ERAI_SLP.jpeg",dpi=500)
+    fig2.savefig(output_path + os.sep + "Trend_ERAI_SLP.jpeg",dpi=500)
+    #fig2.savefig(output_path + os.sep + "Trend_ERAI_SST.jpeg",dpi=500)
+    #fig2.savefig(output_path + os.sep + "Trend_ERAI_Ice.jpeg",dpi=500)
 
 # '*******************************************************************'
 # '************************** regression *****************************'
@@ -192,39 +307,39 @@ def tendency_y(field):
 
 def regression (x,y):
     # create an array to store the correlation coefficient
-    slope = np.zeros((lat_y+1,len(lon)),dtype = float)
-    r_value = np.zeros((lat_y+1,len(lon)),dtype = float)
-    p_value = np.zeros((lat_y+1,len(lon)),dtype = float)
-    for i in np.arange(lat_y+1):
+    slope = np.zeros((lat_AMET+1,len(lon)),dtype = float)
+    r_value = np.zeros((lat_AMET+1,len(lon)),dtype = float)
+    p_value = np.zeros((lat_AMET+1,len(lon)),dtype = float)
+    for i in np.arange(lat_AMET+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(x/1000,y[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(x,y[:,i,j])
     # visualization through basemap
     fig3 = plt.figure()
     # setup north polar stereographic basemap
     # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
     # lon_0 is at 6 o'clock
-    m = Basemap(projection='npstere',boundinglat=19.5,round=True,lon_0=0,resolution='l')
+    m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
     m.drawcoastlines()
     # fill continents, set lake color same as ocean color.
     # m.fillcontinents(color='coral',lake_color='aqua')
     # draw parallels and meridians
-    m.drawparallels(np.arange(20,81,20),fontsize = 7)
+    m.drawparallels(np.arange(60,81,10),fontsize = 7)
     m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
     # x,y coordinate - lon, lat
-    xx, yy = np.meshgrid(lon,lat)
+    xx, yy = np.meshgrid(lon,lat[0:lat_AMET+1])
     XX, YY = m(xx, yy)
     # define color range for the contourf
     color = np.linspace(-1,1,21)
     # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
-    cs = m.contourf(XX,YY,slope,color,cmap='coolwarm')
+    cs = m.contourf(XX,YY,r_value,color,cmap='coolwarm')
     # add color bar
     cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
     cbar.ax.tick_params(labelsize=8)
     #cbar.set_ticks(np.arange(-1,1.1,0.2))
     #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
-    cbar.set_label('Pa/PW',fontsize = 8)
+    cbar.set_label('Correlation',fontsize = 8)
     # fancy layout of maps
     #m.bluemarble()
     #m.shadedrelief()
@@ -233,39 +348,65 @@ def regression (x,y):
     #plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
     # draw significance stippling on the map
     # locate the indices of p_value matrix where p<0.05
-    i, j = np.where(p_value>=0.05)
+    i, j = np.where(p_value<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2,marker='.',color='g',alpha=0.5, edgecolor='none') # alpha bleding factor with map
-    plt.title('Projection of SLP on AMET across 60 N',fontsize = 9, y=1.05)
+    #plt.title('Projection of SLP on AMET across 60 N (no seasonal cycle)',fontsize = 9, y=1.05)
+    #plt.title('Projection of SST on AMET across 60 N (no seasonal cycle)',fontsize = 9, y=1.05)
+    plt.title('Projection of Sea Ice Cover on AMET across 60 N (no seasonal cycle)',fontsize = 9, y=1.05)
+    #plt.title('Projection of SLP on AMET across 60 N',fontsize = 9, y=1.05)
+    #plt.title('Projection of SST on AMET across 60 N',fontsize = 9, y=1.05)
+    #plt.title('Projection of Sea Ice Cover on AMET across 60 N',fontsize = 9, y=1.05)
     plt.show()
-    fig3.savefig(output_path + os.sep + "Regression_AMET_ERAI.jpeg",dpi=500)
+    #fig3.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI_white.jpeg",dpi=500)
+    #fig3.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI_white.jpeg",dpi=500)
+    fig3.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI_white.jpeg",dpi=500)
+    #fig3.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI.jpeg",dpi=500)
+    #fig3.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI.jpeg",dpi=500)
+    #fig3.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI.jpeg",dpi=500)
 
     #return r_value, p_value
 
 if __name__=="__main__":
     # start
     print '*******************************************************************'
-    print '*************************** whitening *****************************'
+    print '**************** whitening and Fourier Transform ******************'
     print '*******************************************************************'
     # remove the seasonal cycle of given field
-    SLP_white = whiten_y(SLP)
+    #SLP_white = whiten_y(SLP)
+    #SST_white = whiten_y(SST)
+    #ci_white = whiten_y(ci)
     # remove seasonal cycle of AMET
-    E_white = whiten_AMET(E)
+    E_white = whiten_AMET_FFT(E)
+    E_white_series = E_white.reshape(456)
     print '*******************************************************************'
-    print '*************************** tendency ******************************'
+    print '************************ running mean/sum *************************'
+    print '*******************************************************************'
+    # running mean of original signal
+    E_running_mean, E_running_sum = running_AMET_FFT(E_series)
+    # running mean of anaomaly
+    #E_running_mean, E_running_sum = running_AMET_FFT(E_white_series)
+    print '*******************************************************************'
+    print '****************************** trend ******************************'
     print '*******************************************************************'
     # calculate the tendency of a certain variable
-    tendency_y(SLP_white)
+    # trend anomaly
+    #trend_y(SLP_white)
+    #trend_y(SST_white)
+    #trend_y(ci_white)
+    # trend time series
+
     print '*******************************************************************'
     print '************************** regression *****************************'
     print '*******************************************************************'
-    # reshape the matrix
-    E_series = E.reshape(456)
-    E_white_series = E_white.reshape(456)
     # regress SLP on AMET 60N without removing seasonal cycling
-    regression(E_series,SLP)
+    #regression(E_series,SLP)
+    #regression(E_series,SST)
+    #regression(E_series,ci)
     # regress SLP on AMET 60N after removing seasonal cycling
-    regression(E_white_series,SLP_white)
+    #regression(E_white_series,SLP_white[:,0:lat_AMET+1,:])
+    #regression(E_white_series,SST_white[:,0:lat_AMET+1,:])
+    #regression(E_white_series,ci_white[:,0:lat_AMET+1,:])
 
 
 
