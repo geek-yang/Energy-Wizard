@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (ERA-Interim) with whitening
 Author          : Yang Liu
 Date            : 2017.8.18
-Last Update     : 2017.9.11
+Last Update     : 2017.9.27
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -81,8 +81,10 @@ E = dataset_AMET.variables['E'][:,:,lat_AMET]/1000 # from Tera Watt to Peta Watt
 SLP = dataset_y.variables['msl'][:,0:lat_y+1,:]
 # sea surface temperature
 SST = dataset_y.variables['sst'][:,0:lat_y+1,:]
+mask_SST = np.ma.getmaskarray(SST[0,:,:])
 # sea ice cover
 ci = dataset_y.variables['ci'][:,0:lat_y+1,:]
+mask_ci = np.ma.getmaskarray(ci[0,:,:])
 # longitude
 lon = dataset_y.variables['longitude'][:]
 # latitude
@@ -331,9 +333,13 @@ def regression (x,y):
     xx, yy = np.meshgrid(lon,lat[0:lat_AMET+1])
     XX, YY = m(xx, yy)
     # define color range for the contourf
-    color = np.linspace(-1,1,21)
+    #color = np.linspace(-0.3,0.3,13) # SST_white
+    #color = np.linspace(-0.3,0.3,13) # ci_white
+    color = np.linspace(-0.5,0.5,11) # SLP_white
     # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
-    cs = m.contourf(XX,YY,r_value,color,cmap='coolwarm')
+    cs = m.contourf(XX,YY,r_value,color,cmap='coolwarm') # SLP_white
+    #cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci[0:lat_AMET+1,:],r_value),color,cmap='coolwarm') # ci_white
+    #cs = m.contourf(XX,YY,np.ma.masked_where(mask_SST[0:lat_AMET+1,:],r_value),color,cmap='coolwarm') # SST_white
     # add color bar
     cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
     cbar.ax.tick_params(labelsize=8)
@@ -347,20 +353,20 @@ def regression (x,y):
     # label of contour lines on the map
     #plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
     # draw significance stippling on the map
-    # locate the indices of p_value matrix where p<0.05
+    # locate the indices of p_value matrix where p<0.05 (99.5% confident)
     i, j = np.where(p_value<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2,marker='.',color='g',alpha=0.5, edgecolor='none') # alpha bleding factor with map
-    #plt.title('Projection of SLP on AMET across 60 N (no seasonal cycle)',fontsize = 9, y=1.05)
-    #plt.title('Projection of SST on AMET across 60 N (no seasonal cycle)',fontsize = 9, y=1.05)
-    plt.title('Projection of Sea Ice Cover on AMET across 60 N (no seasonal cycle)',fontsize = 9, y=1.05)
-    #plt.title('Projection of SLP on AMET across 60 N',fontsize = 9, y=1.05)
-    #plt.title('Projection of SST on AMET across 60 N',fontsize = 9, y=1.05)
-    #plt.title('Projection of Sea Ice Cover on AMET across 60 N',fontsize = 9, y=1.05)
+    plt.title('Regression of SLP anomaly on AMET anomaly across 60 N ',fontsize = 9, y=1.05)
+    #plt.title('Regression of SST anomaly on AMET anomaly across 60 N ',fontsize = 9, y=1.05)
+    #plt.title('Regression of Sea Ice Concentration anomaly on AMET anomaly across 60 N',fontsize = 9, y=1.05)
+    #plt.title('Regression of SLP on AMET across 60 N',fontsize = 9, y=1.05)
+    #plt.title('Regression of SST on AMET across 60 N',fontsize = 9, y=1.05)
+    #plt.title('Regression of Sea Ice Cover on AMET across 60 N',fontsize = 9, y=1.05)
     plt.show()
-    #fig3.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI_white.jpeg",dpi=500)
+    fig3.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI_white.jpeg",dpi=500)
     #fig3.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI_white.jpeg",dpi=500)
-    fig3.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI_white.jpeg",dpi=500)
+    #fig3.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI_white.jpeg",dpi=500)
     #fig3.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI.jpeg",dpi=500)
     #fig3.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI.jpeg",dpi=500)
     #fig3.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI.jpeg",dpi=500)
@@ -373,7 +379,7 @@ if __name__=="__main__":
     print '**************** whitening and Fourier Transform ******************'
     print '*******************************************************************'
     # remove the seasonal cycle of given field
-    #SLP_white = whiten_y(SLP)
+    SLP_white = whiten_y(SLP)
     #SST_white = whiten_y(SST)
     #ci_white = whiten_y(ci)
     # remove seasonal cycle of AMET
@@ -383,7 +389,7 @@ if __name__=="__main__":
     print '************************ running mean/sum *************************'
     print '*******************************************************************'
     # running mean of original signal
-    E_running_mean, E_running_sum = running_AMET_FFT(E_series)
+    #E_running_mean, E_running_sum = running_AMET_FFT(E_series)
     # running mean of anaomaly
     #E_running_mean, E_running_sum = running_AMET_FFT(E_white_series)
     print '*******************************************************************'
@@ -404,7 +410,7 @@ if __name__=="__main__":
     #regression(E_series,SST)
     #regression(E_series,ci)
     # regress SLP on AMET 60N after removing seasonal cycling
-    #regression(E_white_series,SLP_white[:,0:lat_AMET+1,:])
+    regression(E_white_series,SLP_white[:,0:lat_AMET+1,:])
     #regression(E_white_series,SST_white[:,0:lat_AMET+1,:])
     #regression(E_white_series,ci_white[:,0:lat_AMET+1,:])
 
