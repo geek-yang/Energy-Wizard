@@ -6,7 +6,7 @@ Copyright Netherlands eScience Center
 Function        : OMET on v grid(ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.19
-Last Update     : 2017.9.27
+Last Update     : 2017.9.29
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4
                   from ECMWF. Since the mass budget imbalance exists in oceanic
@@ -99,6 +99,9 @@ output_path_fig = 'C:\Yang\PhD\Computation and Modeling\Blue Action\OMET\ORAS4'
 # benchmark datasets for basic dimensions
 #benchmark_path = 'F:\DataBase\ORAS\ORAS4\Monthly\model\\thetao_oras4_1m_1979_grid_T.nc'
 #benchmark = Dataset(benchmark_path)
+# switch for algorithm
+# use adjusted velocity field? 1 = yes , 0 = no
+switch = 1
 ####################################################################################
 
 def var_key(datapath, year):
@@ -169,8 +172,7 @@ def var_coordinate(datapath):
     #vmask_grid_V = grid_V_key.variables['vmask'][:]
 
     #Comparison
-    #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % \
-    #       np.array_equal(tmask,tmask_grid_T)
+    #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % np.array_equal(tmask,tmask_grid_T)
 
     return nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, gphiu, glamu, mbathy
 
@@ -195,7 +197,7 @@ def u_v_angle_adjust(u_key, v_key):
     u_vgrid = np.zeros((len(index_month),level,jj,ji),dtype=float)
     # calculate the exception
     u_vgrid[:,:,-1,0] = (u[:,:,-1,-1] + u[:,:,-1,0])/2
-    u_vgrid[:,:,-1,1:] = (u[:,:,-1,0:-2] + u[:,:,-1,1:])/2
+    u_vgrid[:,:,-1,1:] = (u[:,:,-1,0:-1] + u[:,:,-1,1:])/2
     for i in np.arange(jj-1):
         for j in np.arange(ji):
             if j == 0:
@@ -206,14 +208,18 @@ def u_v_angle_adjust(u_key, v_key):
     # create the output array
     u_uniform = np.zeros(v.shape,dtype=float)
     v_uniform = np.zeros(v.shape,dtype=float)
-    #
+    # before threshold (no deformation of grid)
+    u_uniform[:,:,:186,:] = u_vgrid[:,:,:186,:] # u is already on V grid
+    v_uniform[:,:,:186,:] = v[:,:,:186,:]
+    # adjust the velocity field at deformation latitudes
+    # take longitude of lon[185] as reference
+    # positive direction of u is east, v is north, respectively
+    for i in threshold:
+        for j in np.arange(ji):
+            u_uniform[:,:,i,j] = u_vgrid[:,:,i,j] * np.cos(2*np.pi*(glamv[i,j]-glamv[185,j])/360) + v[:,:,i,j] * np.sin(2*np.pi*(glamv[i,j]-glamv[185,j])/360)
+            v_uniform[:,:,i,j] = - u_vgrid[:,:,i,j] * np.sin(2*np.pi*(glamv[i,j]-glamv[185,j])/360) + v[:,:,i,j] * np.cos(2*np.pi*(glamv[i,j]-glamv[185,j])/360)
 
-
-    return u_uniform, v_uniform,
-
-
-
-
+    return u_uniform, v_uniform
 
 def stream_function(v_key):
     #dominant equation for stream function
@@ -286,11 +292,20 @@ def stream_function(v_key):
 
     return psi
 
-def mass_correction(u_key, v_key):
+def mass_correction(u_key, v_key, u_uni, v_uni):
+    '''
+    This function is used to correct the mass budget.
+    '''
     # correct the mass budget
     # extract variables
-    u = u_key.variables['uo'][:]
-    v = v_key.variables['vo'][:]
+    # choose to use
+    if switch == 1:
+        u_util = u_uni
+        v_util = v_uni
+    else:
+        u_util = u_key.variables['uo'][:]
+        v_util = v_key.variables['vo'][:]
+
     # calculate the mass residual based on continuity equation (divergence free for incompressible fluid)
     # calculate the depth level matrix
     dz = np.zeros(nav_lev.shape)
@@ -299,7 +314,6 @@ def mass_correction(u_key, v_key):
             dz[i] = nav_lev[i]
         else:
             dz[i] = nav_lev[i] - nav_lev[i-1]
-
 
     # calculate the mass flux
     mass_flux_u = np.zeros((len(index_month),level,jj,ji),dtype=float)
@@ -340,13 +354,23 @@ def mass_correction(u_key, v_key):
 
     return uc, vc
 
-def meridional_energy_transport(theta_key, s_key, u_key, v_key):
+def meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, u_uni, v_uni):
+    '''
+    This function is used to correct the mass budget.
+    '''
+    # correct the mass budget
     # extract variables
+    # choose to use adjusted velocity or original velocity
     print "Start extracting variables for the quantification of meridional energy transport."
+    if switch == 1:
+        u_util = u_uni
+        v_util = v_uni
+    else:
+        u_util = u_key.variables['uo'][:]
+        v_util = v_key.variables['vo'][:]
+    # extract scalor variables
     theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
-    #u = u_key.variables['uo'][:]
-    v = v_key.variables['vo'][:]
-    zos = zos_key.variables['zos'][:]
+    #zos = zos_key.variables['zos'][:]
 
     print 'Extracting variables successfully!'
     #logging.info("Extracting variables successfully!")
@@ -366,10 +390,10 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
     for i in index_month:
         for j in np.arange(level):
             if j == 0:
-                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v_util[i,j,:,:] *\
                                            T_vgrid[i,j,:,:] * e1v * nav_lev[j]
             else:
-                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v_util[i,j,:,:] *\
                                            T_vgrid[i,j,:,:] * e1v *(nav_lev[j]-nav_lev[j-1])
     # take the vertical integral
     Internal_E_int = np.zeros((len(index_month),jj,ji))
@@ -385,8 +409,8 @@ def regridding(E_ori):
     # support NetCDF
     iris.FUTURE.netcdf_promote = True
     # prepare the cube
-    latitude = iris.coords.AuxCoord(v_lat,standard_name='latitude',units='degrees')
-    longitude = iris.coords.AuxCoord(v_lon,standard_name='longitude',units='degrees')
+    latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+    longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
     cube_ori = iris.cube.Cube(E_ori,long_name='Oceanic Meridional Energy Transport',
                               var_name='OMET',units='TW',
                               aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
@@ -437,8 +461,8 @@ def regrid_visualization(E,mask):
     #E_mask = np.ma.masked_values(E,mask)
     E_mask = np.ma.masked_where(mask == 0, E)
     # define the cube for the use of iris package
-    latitude = iris.coords.AuxCoord(v_lat,standard_name='latitude',units='degrees')
-    longitude = iris.coords.AuxCoord(v_lon,standard_name='longitude',units='degrees')
+    latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+    longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
     cube_E = iris.cube.Cube(E_mask,long_name='Oceanic Meridional Energy Transport',
                             var_name='OMET',units='PW',aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
     print cube_E
@@ -448,7 +472,7 @@ def regrid_visualization(E,mask):
     # choose the projection map type
     projection = ccrs.PlateCarree()
     # Transform cube to target projection
-    cube_regrid, extent = s(cube_E, projection, nx=360, ny=180)
+    cube_regrid, extent = iris.analysis.cartography.project(cube_E, projection, nx=360, ny=180)
     print cube_regrid
     fig2 = plt.figure()
     fig2.suptitle('ORCA1 Data Projected to PlateCarree')
@@ -488,7 +512,7 @@ def zonal_int_plot(E_point_interpolation,y_coord):
     plt.xlabel("Latitude")
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
-    fig3.savefig(output_path_fig + os.sep + 'v_grid' + os.sep + 'OMET_ORAS4_globe_interpolate.jpg',dpi = 500)
+    #fig3.savefig(output_path_fig + os.sep + 'v_grid' + os.sep + 'OMET_ORAS4_globe_interpolate.jpg',dpi = 500)
 
     return E_zonal_int
 
@@ -501,7 +525,7 @@ if __name__=="__main__":
     jj = 292
     level = 42
     # extract the mesh_mask and coordinate information
-    nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, v_lat, v_lon, mbathy = var_coordinate(datapath)
+    nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, gphiu, glamu, mbathy = var_coordinate(datapath)
     # calculate the maximum depth from bathymetry
     # attention! We should not mask the depth array for the sake of following computation
     # max_bathy = np.zeros((jj,ji),dtype = float)
@@ -516,8 +540,12 @@ if __name__=="__main__":
     for i in period:
         # get the key of each variable
         theta_key, s_key, u_key, v_key, zos_key = var_key(datapath, i)
+        # map velocity field from i-j coordinate on to zonal-meridional coordinate
+        u_uni, v_uni = u_v_angle_adjust(u_key, v_key)
+        # mass budget correction
+        #uc, vc = mass_correction(u_key, v_key, u_uni, v_uni)
         # calculate the meridional energy transport in the ocean
-        E_point = meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key)
+        E_point = meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, u_uni, v_uni)
         OMET_E_pool_point[i-1980,:,:,:] = E_point
         # take the average for the entire year first (interpolation is only possible for 2D)
         E_avg = np.mean(E_point,0)
