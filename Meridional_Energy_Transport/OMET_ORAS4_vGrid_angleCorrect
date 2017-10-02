@@ -1,20 +1,16 @@
 #!/usr/bin/env python
-
 """
 Copyright Netherlands eScience Center
-
 Function        : OMET on v grid(ORAS4)
 Author          : Yang Liu
-Date            : 2017.9.19
-Last Update     : 2017.9.29
+Date            : 2017.10.2
+Last Update     : 2017.10.2
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4
-                  from ECMWF. Since the mass budget imbalance exists in oceanic
-                  reanalysis products. The complete computaiton is accomplished
+                  from ECMWF. The complete computaiton is accomplished
                   on model level (original ORCA1_z42 grid). All the interpolations
                   are made on the V grid. The procedure is generic and is able
                   to adapt any ocean reanalysis datasets, with some changes.
-
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, logging
 variables       : Potential Temperature                     Theta
@@ -23,7 +19,6 @@ variables       : Potential Temperature                     Theta
                   Sea Surface Height                        ssh
                   Zonal Grid Spacing Scale Factors          e1
                   Meridional Grid Spacing Scale Factors     e2
-
 Caveat!!        : The full dataset is from 1958. However, a quality report from
                   Magdalena from ECMWF indicates the quality of data for the first
                   two decades are very poor. Hence we use the data from 1979. which
@@ -204,6 +199,9 @@ def u_v_angle_adjust(u_key, v_key):
                 u_vgrid[:,:,i,j] = ((u[:,:,i,-1] + u[:,:,i,0])/2 + (u[:,:,i+1,-1] + u[:,:,i+1,0])/2)/2
             else:
                 u_vgrid[:,:,i,j] = ((u[:,:,i,j-1] + u[:,:,i,j])/2 + (u[:,:,i+1,j-1] + u[:,:,i+1,j])/2)/2
+    # mask the zonal velocity on V grid
+    for i in np.arange(len(index_month)):
+        u_vgrid[i,:,:,:] = u_vgrid[i,:,:,:] * vmask
     # calculate the angle change (longitude) with respect to the threshold
     # create the output array
     u_uniform = np.zeros(v.shape,dtype=float)
@@ -221,57 +219,111 @@ def u_v_angle_adjust(u_key, v_key):
 
     return u_uniform, v_uniform
 
-def stream_function(v_key):
+def stream_function(v_key,v_patch):
+    '''
+    This function is used to calculate the mass transport.
+    '''
+    # extract variables
+    # choose to use
+    if switch == 1:
+        v_util = v_patch
+    else:
+        v_util = v_key.variables['vo'][:]
     #dominant equation for stream function
     # psi = e1v(m) * rho(kg/m3) * v(m/s) * dz(m) = (kg/s)
-    # extract variables
-    #u = u_key.variables['uo'][:]
-    v = v_key.variables['vo'][:]
     # define the stream function psi
     psi = np.zeros((len(index_month),level,jj,ji),dtype=float)
     # expand the grid size matrix e1v to avoid more loops
-    e1v_comp = np.repeat(e1v[np.newaxis,:,:],level,0)
-    e1v_comp = np.repeat(e1v_comp[np.newaxis,:,:,:],len(index_month),0)
+    e1v_3D = np.repeat(e1v[np.newaxis,:,:],level,0)
+    e1v_comp = np.repeat(e1v_3D[np.newaxis,:,:,:],len(index_month),0)
     # choose the integration order
     int_order = 1  # 1 - from sea bottom to sea surface 2 from sea surfaca to sea bottom
     if int_order == 1:
         # take the integral from sea botton to the surface
         for i in (level - np.arange(level) -1 ):
             if i == 0:
-                psi[:,i,:,:] = e1v_comp[:,i,:,:] * constant['rho'] * v[:,i,:,:] * nav_lev[i] + psi[:,i-1,:,:]
+                psi[:,i,:,:] = e1v_comp[:,i,:,:] * v_util[:,i,:,:] * nav_lev[i] + psi[:,i-1,:,:]
             elif i == level -1:
-                psi[:,i,:,:] = e1v_comp[:,i,:,:] * constant['rho'] * v[:,i,:,:] * (nav_lev[i] - nav_lev[i-1])
+                psi[:,i,:,:] = e1v_comp[:,i,:,:] * v_util[:,i,:,:] * (nav_lev[i] - nav_lev[i-1])
             else:
-                psi[:,i,:,:] = e1v_comp[:,i,:,:] * constant['rho'] * v[:,i,:,:] * (nav_lev[i] - nav_lev[i-1]) + psi[:,i-1,:,:]
+                psi[:,i,:,:] = e1v_comp[:,i,:,:] * v_util[:,i,:,:] * (nav_lev[i] - nav_lev[i-1]) + psi[:,i-1,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi[:,i,:,:] = e1v_comp[:,i,:,:] * constant['rho'] * v[:,i,:,:] * nav_lev[i]
+                psi[:,i,:,:] = e1v_comp[:,i,:,:] * v_util[:,i,:,:] * nav_lev[i]
             else:
-                psi[:,i,:,:] = e1v_comp[:,i,:,:] * constant['rho'] * v[:,i,:,:] * (nav_lev[i] - nav_lev[i-1]) + psi[:,i-1,:,:]
+                psi[:,i,:,:] = e1v_comp[:,i,:,:] * v_util[:,i,:,:] * (nav_lev[i] - nav_lev[i-1]) + psi[:,i-1,:,:]
     # take the mean value over the entire year
     psi_mean = np.mean(psi,0)
-    # interpolation through projection on Mercator map
-    psi_regird = np.zeros((level,180,360))  # the shape is the target projection size
+    # enable the suppot for NetCDF file
     iris.FUTURE.netcdf_promote = True
-    # choose the projection type
-    projection = ccrs.PlateCarree()
-    latitude = iris.coords.AuxCoord(v_lat,standard_name='latitude',units='degrees')
-    longitude = iris.coords.AuxCoord(v_lon,standard_name='longitude',units='degrees')
-    # define the cube for the use of iris package
-    for i in np.arange(level):
-        cube_psi = iris.cube.Cube(psi_mean[i,:,:],long_name='Stokes Stream Function',
-                              var_name='psi',units='kg/s',aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
-        # Transform cube to target projection
-        cube_psi_regrid, extent = iris.analysis.cartography.project(cube_psi, projection, nx=360, ny=180)
-        psi_regird[i,:,:] = cube_psi_regrid.data
-        # get the projection coordinate
-        if i == 0:
-            print cube_psi_regrid
-            proj_y_coord = cube_psi_regrid.coord('projection_y_coordinate').points
-            proj_x_coord = cube_psi_regrid.coord('projection_x_coordinate').points
-    psi_stream = np.sum(psi_regird,2)/1e+9 # the unit is chnaged
+    # choose interpolation method
+    method_int = 1 # ! 1 = bilinear interpolation ! 2 = nearest neghbour interpolation
+    if method_int == 1:
+        # define an array to save the output
+        psi_regird = np.zeros((level,181,361))  # the shape is the target projection size
+        # prepare the cube
+        latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+        longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
+        # choose the coordinate system for Cube (for regrid module)
+        coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+        # create grid_cube for regridding, this is a dummy cube with desired grid
+        lat_grid = np.linspace(-90, 90, 181)
+        lon_grid = np.linspace(-180, 180, 361)
+        # define the auxillary cube for regridding
+        lat_aux = iris.coords.DimCoord(lat_grid, standard_name='latitude',
+                                       units='degrees_north', coord_system='GeogCS')
+        lon_aux = iris.coords.DimCoord(lon_grid, standard_name='longitude',
+                                       units='degrees_east', coord_system='GeogCS')
+        dummy_data = np.zeros((len(lat_grid), len(lon_grid)))
+        aux_cube = iris.cube.Cube(dummy_data,dim_coords_and_dims=[(lat_aux, 0), (lon_aux, 1)])
+        # Feed cube with coordinate system
+        aux_cube.coord('latitude').guess_bounds()
+        aux_cube.coord('longitude').guess_bounds()
+        aux_cube.coord('latitude').coord_system = coord_sys
+        aux_cube.coord('longitude').coord_system = coord_sys
+        # create a weight matrix for regridding
+        weights = np.ones(psi_mean[0,:,:].shape)
+        # interpolate on each layer
+        for i in np.arange(level):
+            cube_psi = iris.cube.Cube(psi_mean[i,:,:],long_name='Stokes Stream Function',
+                                      var_name='psi',units='m3/s',aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
+            # Feed cube with coordinate system
+            cube_psi.coord('latitude').coord_system = coord_sys
+            cube_psi.coord('longitude').coord_system = coord_sys
+            #print cube_psi
+            # interpolate from ORCA grid to rectilinear grid through bilinear interpolation
+            # The method uses point in cell interpolation and then perform the bilinear interpolation
+            # based on distance and weight
+            cube_psi_regrid = iris.experimental.regrid.regrid_weighted_curvilinear_to_rectilinear(cube_psi,weights,aux_cube)
+            # save data to the deifned matrix
+            psi_regird[i,:,:] = cube_psi_regrid.data
+            if i == 0:
+                print cube_psi_regrid
+                proj_y_coord = cube_psi_regrid.coord('latitude').points
+                proj_x_coord = cube_psi_regrid.coord('longitude').points
+    else:
+        # interpolation through projection on Mercator map
+        psi_regird = np.zeros((level,180,360))  # the shape is the target projection size
+        # choose the projection type
+        projection = ccrs.PlateCarree()
+        latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+        longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
+        # define the cube for the use of iris package
+        for i in np.arange(level):
+            cube_psi = iris.cube.Cube(psi_mean[i,:,:],long_name='Stokes Stream Function',
+                                      var_name='psi',units='m3/s',aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
+            # Transform cube to target projection
+            cube_psi_regrid, extent = iris.analysis.cartography.project(cube_psi, projection, nx=360, ny=180)
+            psi_regird[i,:,:] = cube_psi_regrid.data
+            # get the projection coordinate
+            if i == 0:
+                print cube_psi_regrid
+                proj_y_coord = cube_psi_regrid.coord('projection_y_coordinate').points
+                proj_x_coord = cube_psi_regrid.coord('projection_x_coordinate').points
+    # interpolation complete
+    psi_stream = np.sum(psi_regird,2)/1e+6 # the unit is changed to Sv
 
     fig0 = plt.figure()
 
@@ -284,7 +336,7 @@ def stream_function(v_key):
     plt.xticks(np.linspace(-90,90,13))
     plt.ylabel("Ocean Depth")
     cbar = plt.colorbar(orientation='horizontal')
-    cbar.set_label('Transport of mass 1E+9 kg/s')
+    cbar.set_label('Transport of mass Sv (1E+6 m3/s)')
     #invert the y axis
     plt.gca().invert_yaxis()
     plt.show()
@@ -292,69 +344,7 @@ def stream_function(v_key):
 
     return psi
 
-def mass_correction(u_key, v_key, u_uni, v_uni):
-    '''
-    This function is used to correct the mass budget.
-    '''
-    # correct the mass budget
-    # extract variables
-    # choose to use
-    if switch == 1:
-        u_util = u_uni
-        v_util = v_uni
-    else:
-        u_util = u_key.variables['uo'][:]
-        v_util = v_key.variables['vo'][:]
-
-    # calculate the mass residual based on continuity equation (divergence free for incompressible fluid)
-    # calculate the depth level matrix
-    dz = np.zeros(nav_lev.shape)
-    for i in np.arange(len(nav_lev)):
-        if i == 0:
-            dz[i] = nav_lev[i]
-        else:
-            dz[i] = nav_lev[i] - nav_lev[i-1]
-
-    # calculate the mass flux
-    mass_flux_u = np.zeros((len(index_month),level,jj,ji),dtype=float)
-    mass_flux_v = np.zeros((len(index_month),level,jj,ji),dtype=float)
-    for i in np.arange(level):
-            mass_flux_u[:,i,:,:] = u[:,i,:,:] * dz[i]
-            mass_flux_v[:,i,:,:] = v[:,i,:,:] * dz[i]
-    # take the vertical integral
-    mass_flux_u_int = np.sum(mass_flux_u,1)
-    mass_flux_v_int = np.sum(mass_flux_v,1)
-    # calculate the divergence of flux
-    div_mass_flux_u = np.zeros((len(index_month),jj,ji),dtype=float)
-    div_mass_flux_v = np.zeros((len(index_month),jj,ji),dtype=float)
-
-    for i in np.arange(len(index_month)):
-        for j in np.arange(ji):
-            if j == 0:
-                div_mass_flux_u[i,:,j] = (mass_flux_u_int[i,:,j] - mass_flux_u_int[i,:,-1]) / e1t[:,j]
-            else:
-                div_mass_flux_u[i,:,j] = (mass_flux_u_int[i,:,j] - mass_flux_u_int[i,:,j-1]) / e1t[:,j]
-
-    for i in np.arange(len(index_month)):
-        for j in np.arange(jj):
-            if j == 0:
-                div_mass_flux_v[i,j,:] = mass_flux_v_int[i,j,:] / e2t[j,:]
-            else:
-                div_mass_flux_v[i,j,:] = (mass_flux_v_int[i,j,:] - mass_flux_v_int[i,j-1,:]) / e2t[j,:]
-    # define the mass transport matrix at each grid point
-    mass_residual = np.zeros((len(index_month),jj,ji),dtype=float)
-    # calculate the mass residual based on continuity equation
-    mass_residual = div_mass_flux_u + div_mass_flux_v
-    # create the velocity correction matrix
-    uc = np.zeros((len(index_month),jj,ji),dtype=float)
-    vc = np.zeros((len(index_month),jj,ji),dtype=float)
-    for i in np.arange(len(index_month)):
-        uc[i,:,:] = mass_residual[i,:,:] * e1t / bathymetry * surface_mask
-        vc[i,:,:] = mass_residual[i,:,:] * e2t / bathymetry * surface_mask
-
-    return uc, vc
-
-def meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, u_uni, v_uni):
+def meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, v_patch):
     '''
     This function is used to correct the mass budget.
     '''
@@ -363,15 +353,14 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, u_uni, 
     # choose to use adjusted velocity or original velocity
     print "Start extracting variables for the quantification of meridional energy transport."
     if switch == 1:
-        u_util = u_uni
-        v_util = v_uni
+        #u_util = u_uni
+        v_util = v_patch
     else:
-        u_util = u_key.variables['uo'][:]
+        #u_util = u_key.variables['uo'][:]
         v_util = v_key.variables['vo'][:]
     # extract scalor variables
     theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
     #zos = zos_key.variables['zos'][:]
-
     print 'Extracting variables successfully!'
     #logging.info("Extracting variables successfully!")
     # calculate the meridional velocity at T grid
@@ -404,75 +393,74 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, u_uni, 
     print '*****************************************************************************'
     return Internal_E_int
 
-def regridding(E_ori):
+def regridding(E_ori, mask):
+    E_mask = np.ma.masked_where(mask == 0, E_ori)
     # use Iris lib for interpolation/regridding
     # support NetCDF
     iris.FUTURE.netcdf_promote = True
-    # prepare the cube
-    latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
-    longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
-    cube_ori = iris.cube.Cube(E_ori,long_name='Oceanic Meridional Energy Transport',
-                              var_name='OMET',units='TW',
-                              aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
-    # choose the coordinate system for Cube (for regrid module)
-    coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
-    # Feed cube with coordinate system
-    cube_ori.coord('latitude').coord_system = coord_sys
-    cube_ori.coord('longitude').coord_system = coord_sys
-    print cube_ori
-    # create grid_cube for regridding, this is a dummy cube with desired grid
-    lat_grid = np.linspace(-90, 90, 181)
-    lon_grid = np.linspace(-180, 181, 361)
-    # interpolate_points = [('latitude', np.linspace(-90, 90, 181)),
-    #                       ('longitude', np.linspace(-180, 181, 361))]
-    lat_aux = iris.coords.DimCoord(lat_grid, standard_name='latitude',
-                                    units='degrees_north', coord_system='GeogCS')
-    lon_aux = iris.coords.DimCoord(lon_grid, standard_name='longitude',
-                                    units='degrees_east', coord_system='GeogCS')
-    dummy_data = np.zeros((len(lat_grid), len(lon_grid)))
-    aux_cube = iris.cube.Cube(dummy_data,dim_coords_and_dims=[(lat_aux, 0), (lon_aux, 1)])
-    # Feed cube with coordinate system
-    aux_cube.coord('latitude').guess_bounds()
-    aux_cube.coord('longitude').guess_bounds()
-    aux_cube.coord('latitude').coord_system = coord_sys
-    aux_cube.coord('longitude').coord_system = coord_sys
-    # create a weight matrix for regridding
-    weights = np.ones(cube_ori.shape)
-    # interpolate from ORCA grid to rectilinear grid through bilinear interpolation
-    # The method uses point in cell interpolation and then perform the bilinear interpolation
-    # based on distance and weight
-    cube_interpolate = iris.experimental.regrid.regrid_weighted_curvilinear_to_rectilinear(cube_ori,weights,aux_cube)
-    ##################################################################################################
-    # Unfortunately, normal iris modules can not handle the curvilinear grid, only the
-    #cube_interpolate = iris.analysis.interpolate.linear(cube_ori, interpolate_points)
-    #cube_interpolate = iris.cube.Cube.interpolate(cube_ori,interpolate_points,iris.analysis.Linear())
-    #cube_interpolate = cube_ori.interpolate(interpolate_points,iris.analysis.Linear())
-    #cube_interpolate = iris.analysis.interpolate.regrid(cube_ori, aux_cube, mode = 'linear')
-    ###################################################################################################
-
-    print cube_interpolate
-    E_interpolate = cube_interpolate.data
-    y_coord = cube_interpolate.coord('latitude').points
-
-    return cube_interpolate, E_interpolate, y_coord
-
-def regrid_visualization(E,mask):
-    # mask E for visualization
-    #E_mask = np.ma.masked_values(E,mask)
-    E_mask = np.ma.masked_where(mask == 0, E)
-    # define the cube for the use of iris package
-    latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
-    longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
-    cube_E = iris.cube.Cube(E_mask,long_name='Oceanic Meridional Energy Transport',
+    # choose interpolation method
+    method_int = 1 # ! 1 = bilinear interpolation ! 2 = nearest neghbour interpolation
+    if method_int == 1:
+        # prepare the cube
+        latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+        longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
+        cube_ori = iris.cube.Cube(E_mask,long_name='Oceanic Meridional Energy Transport',
+                                  var_name='OMET',units='TW',
+                                  aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
+        # choose the coordinate system for Cube (for regrid module)
+        coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+        # Feed cube with coordinate system
+        cube_ori.coord('latitude').coord_system = coord_sys
+        cube_ori.coord('longitude').coord_system = coord_sys
+        print cube_ori
+        # create grid_cube for regridding, this is a dummy cube with desired grid
+        lat_grid = np.linspace(-90, 90, 181)
+        lon_grid = np.linspace(-180, 180, 361)
+        # interpolate_points = [('latitude', np.linspace(-90, 90, 181)),
+        #                       ('longitude', np.linspace(-180, 181, 361))]
+        lat_aux = iris.coords.DimCoord(lat_grid, standard_name='latitude',
+                                       units='degrees_north', coord_system='GeogCS')
+        lon_aux = iris.coords.DimCoord(lon_grid, standard_name='longitude',
+                                       units='degrees_east', coord_system='GeogCS')
+        dummy_data = np.zeros((len(lat_grid), len(lon_grid)))
+        aux_cube = iris.cube.Cube(dummy_data,dim_coords_and_dims=[(lat_aux, 0), (lon_aux, 1)])
+        # Feed cube with coordinate system
+        aux_cube.coord('latitude').guess_bounds()
+        aux_cube.coord('longitude').guess_bounds()
+        aux_cube.coord('latitude').coord_system = coord_sys
+        aux_cube.coord('longitude').coord_system = coord_sys
+        # create a weight matrix for regridding
+        weights = np.ones(cube_ori.shape)
+        # interpolate from ORCA grid to rectilinear grid through bilinear interpolation
+        # The method uses point in cell interpolation and then perform the bilinear interpolation
+        # based on distance and weight
+        cube_regrid = iris.experimental.regrid.regrid_weighted_curvilinear_to_rectilinear(cube_ori,weights,aux_cube)
+        ##################################################################################################
+        # Unfortunately, normal iris modules can not handle the curvilinear grid, only the
+        #cube_interpolate = iris.analysis.interpolate.linear(cube_ori, interpolate_points)
+        #cube_interpolate = iris.cube.Cube.interpolate(cube_ori,interpolate_points,iris.analysis.Linear())
+        #cube_interpolate = cube_ori.interpolate(interpolate_points,iris.analysis.Linear())
+        #cube_interpolate = iris.analysis.interpolate.regrid(cube_ori, aux_cube, mode = 'linear')
+        ###################################################################################################
+    else:
+        # define the cube for the use of iris package
+        latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+        longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
+        cube_ori = iris.cube.Cube(E_mask,long_name='Oceanic Meridional Energy Transport',
                             var_name='OMET',units='PW',aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
-    print cube_E
-    # regridding plotting through Iris
-    # support NetCDF
-    iris.FUTURE.netcdf_promote = True
-    # choose the projection map type
-    projection = ccrs.PlateCarree()
-    # Transform cube to target projection
-    cube_regrid, extent = iris.analysis.cartography.project(cube_E, projection, nx=360, ny=180)
+        print cube_ori
+        # choose the projection map type
+        projection = ccrs.PlateCarree()
+        # Transform cube to target projection
+        cube_regrid, extent = iris.analysis.cartography.project(cube_ori, projection, nx=360, ny=180)
+    # interpolation complete!!
+    print cube_regrid
+    E_regrid = cube_regrid.data
+    y_coord = cube_regrid.coord('latitude').points
+
+    return cube_regrid, E_regrid, y_coord
+
+def visualization(cube_regrid):
     print cube_regrid
     fig2 = plt.figure()
     fig2.suptitle('ORCA1 Data Projected to PlateCarree')
@@ -500,9 +488,9 @@ def regrid_visualization(E,mask):
     fig2.savefig(output_path_fig + os.sep + 'v_grid' + os.sep + 'OMET_ORAS4.jpg',dpi = 500)
 
     # extract the interpolated values from cube
-    E_interpolation = cube_regrid.data
+    #E_interpolation = cube_regrid.data
 
-    return E_interpolation
+    #return E_interpolation
 
 def zonal_int_plot(E_point_interpolation,y_coord):
     # take the zonal means
@@ -512,7 +500,7 @@ def zonal_int_plot(E_point_interpolation,y_coord):
     plt.xlabel("Latitude")
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
-    #fig3.savefig(output_path_fig + os.sep + 'v_grid' + os.sep + 'OMET_ORAS4_globe_interpolate.jpg',dpi = 500)
+    fig3.savefig(output_path_fig + os.sep + 'v_grid' + os.sep + 'OMET_ORAS4_zonal_int.jpg',dpi = 500)
 
     return E_zonal_int
 
@@ -520,7 +508,7 @@ if __name__=="__main__":
     # create the year index
     period = np.arange(start_year,end_year+1,1)
     index_month = np.arange(12)
-    # ORCA1_z42 infor (Madec and Imbard 1996)
+    # ORCA1_z42 info (Madec and Imbard 1996)
     ji = 362
     jj = 292
     level = 42
@@ -528,11 +516,12 @@ if __name__=="__main__":
     nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, gphiu, glamu, mbathy = var_coordinate(datapath)
     # calculate the maximum depth from bathymetry
     # attention! We should not mask the depth array for the sake of following computation
-    # max_bathy = np.zeros((jj,ji),dtype = float)
-    # for i in np.arange(jj):
-    #     for j in np.arange(ji):
-    #         counter = mbathy[i,j]
-    #         max_bathy[i,j] = nav_lev[counter]
+    max_bathy = np.zeros((jj,ji),dtype = float)
+    for i in np.arange(jj):
+        for j in np.arange(ji):
+            counter = mbathy[i,j]
+            max_bathy[i,j] = nav_lev[counter]
+    surface_mask = vmask[0,:,:]
     #create a data pool to save the OMET for each year and month
     OMET_E_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
     #OMET_E_pool_zonal_int = np.zeros((len(period),12,jj,ji),dtype = float)
@@ -542,21 +531,19 @@ if __name__=="__main__":
         theta_key, s_key, u_key, v_key, zos_key = var_key(datapath, i)
         # map velocity field from i-j coordinate on to zonal-meridional coordinate
         u_uni, v_uni = u_v_angle_adjust(u_key, v_key)
-        # mass budget correction
-        #uc, vc = mass_correction(u_key, v_key, u_uni, v_uni)
+        # calculate the stokes stream function and plot
+        psi = stream_function(v_key,v_uni)
         # calculate the meridional energy transport in the ocean
-        E_point = meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, u_uni, v_uni)
-        OMET_E_pool_point[i-1980,:,:,:] = E_point
+        E_point = meridional_energy_transport(theta_key, s_key, u_key, v_key, zos_key, v_uni)
+        #OMET_E_pool_point[i-1980,:,:,:] = E_point
         # take the average for the entire year first (interpolation is only possible for 2D)
         E_avg = np.mean(E_point,0)
         # start the interpolation
-        cube_interpolate,E_uniform,y_coord = regridding(E_avg)
-        # calculate the stokes stream function and plot
-        #psi = stream_function(v_key)
+        cube_regrid, E_regrid, y_coord= regridding(E_avg,vmask[0,:,:])
         # visualization
-        # Tri-Polar Grid Projected plotting through Iris and Cartopy (nearest neighbour interpolation)
-        #E_point_interpolation = regrid_visualization(E_point_mean,vmask[0,:,:])
+        # Tri-Polar Grid Projected plotting through Iris and Cartopy
+        visualization(cube_regrid)
         # plot the meridional energy transport in the ocean
-        E_zonal_int = zonal_int_plot(E_uniform,y_coord)
+        E_zonal_int = zonal_int_plot(E_regrid,y_coord)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
