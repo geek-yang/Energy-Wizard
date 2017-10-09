@@ -202,9 +202,9 @@ def stream_function(v_key,e1v):
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * e3t_0[i]
+                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i]
             else:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * e3t_0[i] + psi[:,i-1,:,:]
+                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi[:,i-1,:,:]
     # take the mean value over the entire year
     psi_mean = np.mean(psi,0)
     psi_stream = np.sum(psi_mean,2)/1e+6 # the unit is changed to Sv
@@ -238,25 +238,22 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
     #logging.info("Extracting variables successfully!")
     # calculate the meridional velocity at T grid
     T_vgrid = np.zeros((len(index_month),level,jj,ji),dtype=float)
-    # prepare e2v matrix
-    #e2v_comp = np.repeat(e2v[np.newaxis,:,:],level,0)
-    #e2v_comp = np.repeat(e2v_comp[np.newaxis,:,:,:],len(index_month),0)
     # Interpolation of T on V grid through Nearest-Neighbor method
     for i in np.arange(jj):
         if i == jj-1:
             T_vgrid[:,:,i,:] = theta[:,:,i,:]
         else:
-            T_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i-1,:])/2
+            T_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i+1,:])/2
     # calculate heat flux at each grid point
     Internal_E_flux = np.zeros((len(index_month),level,jj,ji),dtype=float)
     for i in index_month:
         for j in np.arange(level):
             if j == 0:
                 Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                      T_vgrid[i,j,:,:] * e1v * e3t_0[i] * vmask[j,:,:]
+                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
             else:
                 Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                      T_vgrid[i,j,:,:] * e1v * e3t_0[i] * vmask[j,:,:]
+                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
     # take the vertical integral
     Internal_E_int = np.zeros((len(index_month),jj,ji))
     Internal_E_int = np.sum(Internal_E_flux,1)/1e+12
@@ -369,7 +366,7 @@ def visualization(cube_regrid):
     #ax.ylabels_left = False
     gl.yformatter = LATITUDE_FORMATTER
     # plot with Iris quickplot pcolormesh
-    qplt.pcolormesh(cube_regrid,cmap='coolwarm')
+    qplt.pcolormesh(cube_regrid/1000,cmap='coolwarm')
     iplt.show()
     fig2.savefig(output_path_fig + os.sep + 'v_grid' + os.sep + 'OMET_ORAS4.jpg',dpi = 500)
 
