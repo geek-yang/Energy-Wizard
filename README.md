@@ -13,23 +13,22 @@ Ocean<br />
 ORAS4         (ECMWF           EU)<br />
 GLORYS2V4     (Mercator Ocean  Fr)<br />
 SODA          (TAMU & UM       US)<br />
-<br />
 
 The codes can be categorized by functions:
 1. Data handling (incl. downloading from online database, preprocessing, etc.)
 2. Post-processing and analysis
 <br />
-<br />
+
 This tool is capable of batch work. It is written for super-computer and cloud.
 <br />
-<br />
-Structure of toolkit:
+
+Structure of toolkit:<br />
 /Dataset_Downloader<br />
 Download and manage dataset from server.<br />
 /Meridional_Energy_Transport<br />
 Calculate Meridional Energy Transport from Atmospheric or Oceanic reanalysis data.<br />
 /Postprocessing<br />
-Postprocess the result (AMET & OMET) and analyze the result
+Postprocess the result (AMET & OMET) and analyze the result<br />
 /Test<br />
 Conceptual algorithm and functions to deal with certain problems.<br />
 
