@@ -85,4 +85,11 @@ done
 echo 'Complete downloading Salinity on model level (ORCA)!'
 #-----------#-----------#------------#
 # Finish downloading the entire dataset
+#-----------#-----------#------------#
+# download mesh_mask.nc
+wget ftp://ftp-icdc.cen.uni-hamburg.de/EASYInit/ORA-S4/orca1_coordinates/coordinates_grid_T.nc
+wget ftp://ftp-icdc.cen.uni-hamburg.de/EASYInit/ORA-S4/orca1_coordinates/coordinates_grid_U.nc
+wget ftp://ftp-icdc.cen.uni-hamburg.de/EASYInit/ORA-S4/orca1_coordinates/coordinates_grid_V.nc
+wget ftp://ftp-icdc.cen.uni-hamburg.de/EASYInit/ORA-S4/orca1_coordinates/mesh_mask.nc
+# Mission complete!
 echo 'Finish downloading the entire dataset ORAS4 on model level (ORCA)!'
