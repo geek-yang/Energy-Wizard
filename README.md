@@ -1,24 +1,35 @@
 # Energy-Wizard
 This is a toolkit specifically for working with atmospheric and oceanic reanalysis products. The aim is to quantify the meridional energy transport in the atmosphere (AMET) and ocean (OMET). This toolkit contains a list of codes to deal with the state of the art atmospheric & oceanic reanalysis dataset:
+<br />
+<br />
+Atmosphere\
+ERA-Interim   (ECMWF           EU)<br />
+MERRA2        (NASA            US)<br />
+JRA55         (JMA             JP)<br />
+NCEPR2        (NCEP/NCAR       US)<br />
+<br />
 
-Atmosphere
-ERA-Interim   (ECMWF           EU)
-MERRA2        (NASA            US)
-JRA55         (JMA             JP)
-NCEPR2        (NCEP/NCAR       US)
-
-Ocean
-ORAS4         (ECMWF           EU)
-GLORYS2V4     (Mercator Ocean  Fr)
-SODA          (TAMU & UM       US)
+Ocean<br />
+ORAS4         (ECMWF           EU)<br />
+GLORYS2V4     (Mercator Ocean  Fr)<br />
+SODA          (TAMU & UM       US)<br />
+<br />
 
 The codes can be categorized by functions:
 1. Data handling (incl. downloading from online database, preprocessing, etc.)
 2. Post-processing and analysis
-
+<br />
+<br />
 This tool is capable of batch work. It is written for super-computer and cloud.
-
+<br />
+<br />
 Structure of toolkit:
-/Downloader
-Download and manage dataset from server.
-/
+/Dataset_Downloader<br />
+Download and manage dataset from server.<br />
+/Meridional_Energy_Transport<br />
+Calculate Meridional Energy Transport from Atmospheric or Oceanic reanalysis data.<br />
+/Postprocessing<br />
+Postprocess the result (AMET & OMET) and analyze the result
+/Test<br />
+Conceptual algorithm and functions to deal with certain problems.<br />
+
