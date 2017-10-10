@@ -6,7 +6,7 @@ Atmosphere\
 ERA-Interim   (ECMWF           EU)<br />
 MERRA2        (NASA            US)<br />
 JRA55         (JMA             JP)<br />
-NCEPR2        (NCEP/NCAR       US)<br />+
+NCEP R2       (NCEP/NCAR       US)<br />
 
 Ocean<br />
 ORAS4         (ECMWF           EU)<br />
