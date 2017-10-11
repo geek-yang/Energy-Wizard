@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.18
-Last Update     : 2017.10.9
+Last Update     : 2017.10.11
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4 from ECMWF.
                   The complete computaiton is accomplished on model level (original ORCA1_z42 grid).
@@ -200,7 +200,7 @@ def stream_function(v_key,e1v):
             if i == level -1:
                 psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i]
             else:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi[:,i-1,:,:]
+                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi[:,i+1,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
@@ -254,10 +254,6 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
     Internal_E_flux = np.zeros((len(index_month),level,jj,ji),dtype=float)
     for i in index_month:
         for j in np.arange(level):
-            if j == 0:
-                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
-            else:
                 Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
                                            T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
     # take the vertical integral
@@ -281,7 +277,7 @@ def zonal_int_plot(E_point,year):
     plt.xlabel("Latitude")
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
-    fig3.savefig(output_path + os.sep + 'zonal' + os.sep + 'OMET_ORAS4_zonal_int_%d.jpg' % (year),dpi = 500)
+    fig3.savefig(output_path + os.sep + 'zonal' + os.sep + 'OMET_ORAS4_zonal_int_%d.png' % (year),dpi = 500)
 
     return E_zonal_int
 
@@ -391,7 +387,7 @@ def visualization(cube_regrid,year):
     # plot with Iris quickplot pcolormesh
     qplt.pcolormesh(cube_regrid,cmap='coolwarm')
     iplt.show()
-    fig2.savefig(output_path + os.sep + 'lat-lon' + os.sep + 'OMET_ORAS4_lat-lon_%d.jpg' % (year),dpi = 500)
+    fig2.savefig(output_path + os.sep + 'lat-lon' + os.sep + 'OMET_ORAS4_lat-lon_%d.png' % (year),dpi = 500)
 
     # extract the interpolated values from cube
     #E_interpolation = cube_regrid.data

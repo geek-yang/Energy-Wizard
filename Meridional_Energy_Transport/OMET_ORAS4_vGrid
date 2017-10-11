@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.18
-Last Update     : 2017.10.9
+Last Update     : 2017.10.11
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4 from ECMWF.
                   The complete computaiton is accomplished on model level (original ORCA1_z42 grid).
@@ -98,9 +98,6 @@ end_year = 1980
 # specify output path for the netCDF4 file
 output_path_fig = 'C:\Yang\PhD\Computation and Modeling\Blue Action\OMET\ORAS4'
 #output_path = '/project/Reanalysis/ERA_Interim/Subdaily/Model'
-# benchmark datasets for basic dimensions
-#benchmark_path = 'F:\DataBase\ORAS\ORAS4\Monthly\model\\thetao_oras4_1m_1979_grid_T.nc'
-#benchmark = Dataset(benchmark_path)
 ####################################################################################
 
 def var_key(datapath, year):
@@ -153,6 +150,8 @@ def var_coordinate(datapath):
     mbathy = mesh_mask_key.variables['mbathy'][0,:,:]
     # depth of each layer
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
+    # depth of partial cells
+    e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
@@ -170,7 +169,7 @@ def var_coordinate(datapath):
     #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % \
     #       np.array_equal(tmask,tmask_grid_T)
 
-    return nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0
+    return nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps
 
 def stream_function(v_key,e1v):
     '''
@@ -187,6 +186,8 @@ def stream_function(v_key,e1v):
     # expand the grid size matrix e1v to avoid more loops
     e1v_3D = np.repeat(e1v[np.newaxis,:,:],level,0)
     e1v_4D = np.repeat(e1v_3D[np.newaxis,:,:,:],len(index_month),0)
+    # expand the partial cell scale factor adjustment matrix
+    e3t_adjust_4D = np.repeat(e3t_adjust[np.newaxis,:,:,:],len(index_month),0)
     # increase the dimension of vmask
     vmask_4D = np.repeat(vmask[np.newaxis,:,:,:],len(index_month),0)
     # choose the integration order
@@ -195,9 +196,11 @@ def stream_function(v_key,e1v):
         # take the integral from sea botton to the surface
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i]
+                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] #+\
+                               #e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
             else:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi[:,i-1,:,:]
+                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi[:,i-1,:,:] #+\
+                               #e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
@@ -246,12 +249,15 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
             T_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i+1,:])/2
     # calculate heat flux at each grid point
     Internal_E_flux = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    partial = 0 # switch for the partial cells 1 = include & 0 = exclude
     for i in index_month:
         for j in np.arange(level):
-            if j == 0:
+            if partial == 1: # include partial cells
                 Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
-            else:
+                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:] +\
+                                           constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                                           T_vgrid[i,j,:,:] * e1v * e3t_adjust[j,:,:] * vmask[j,:,:]
+            else: # exclude partial cells
                 Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
                                            T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
     # take the vertical integral
@@ -344,6 +350,8 @@ def regridding(E_ori, mask):
     return cube_regrid, E_regrid, y_coord
 
 def visualization(cube_regrid):
+    # support NetCDF
+    iris.FUTURE.netcdf_promote = True
     print cube_regrid
     fig2 = plt.figure()
     fig2.suptitle('ORCA1 Data Projected to PlateCarree')
@@ -384,11 +392,19 @@ if __name__=="__main__":
     jj = 292
     level = 42
     # extract the mesh_mask and coordinate information
-    nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0 = var_coordinate(datapath)
+    nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps = var_coordinate(datapath)
+    # construct partialer depth matrix
+    # include the partial cell to the layers above, due to the presence of variabels (t,u,v)
+    e3t_adjust = np.zeros((level,jj,ji),dtype = float)
+    for i in np.arange(1,level,1):
+        for j in np.arange(jj):
+            for k in np.arange(ji):
+                if i == mbathy[j,k]:
+                    e3t_adjust[i-1,j,k] = e3t_ps[j,k]
     #create a data pool to save the OMET for each year and month
     E_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
     E_pool_zonal_int = np.zeros((len(period),12,jj),dtype = float)
-    E_pool_point_regrid = np.zeros((len(period),12,180,360),dtype = float)
+    E_pool_point_regrid = np.zeros((len(period),180,360),dtype = float)
     # loop for calculation
     for i in period:
         # get the key of each variable
@@ -402,7 +418,7 @@ if __name__=="__main__":
         E_point_mean = np.mean(E_point,0)
         # regridding for visualization
         cube_regrid, E_regrid, y_coord = regridding(E_point_mean, vmask[0,:,:])
-        E_pool_point_regrid[i-1980,:,:,:] = E_regrid
+        E_pool_point_regrid[i-1980,:,:] = E_regrid
         #visualization
         visualization(cube_regrid)
         # plot the meridional energy transport in the ocean
