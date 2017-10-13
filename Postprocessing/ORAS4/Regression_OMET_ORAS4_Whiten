@@ -1,0 +1,248 @@
+#!/usr/bin/env python
+"""
+Copyright Netherlands eScience Center
+
+Function        : Regression of climatological variable on OMET (ORAS4) with whitening
+Author          : Yang Liu
+Date            : 2017.10.13
+Last Update     : 2017.10.15
+Description     : The code aims to explore the assotiation between climatological
+                  variables with oceanic meridional energy transport (OMET).
+                  The statistical method employed here is linear regression. A
+                  number of fields (SST, SLP, Sea ice, geopotential, etc.),
+                  corresponding to the pre-existing natural modes of variability,
+                  will be projected on meridional energy transport. This will enhance
+                  our understanding of climate change. Notice that the time series
+                  of input data will be whitened (the seasonal cycles are removed)
+
+Return Value    : Map of correlation
+Dependencies    : os, time, numpy, scipy, netCDF4, matplotlib, basemap
+variables       : Sea Surface Temperature                       SST
+                  Sea Level Pressure                            SLP
+                  Sea Ice Concentration                         ci
+                  Oceanic meridional energy transport           OMET
+Caveat!!        : The input data of OMET is from 30 deg north to 90 deg north (Northern Hemisphere).
+"""
+
+import numpy as np
+import scipy as sp
+from scipy import stats
+import time as tttt
+from netCDF4 import Dataset,num2date
+import os
+import seaborn as sns
+import platform
+import logging
+#import matplotlib
+# Generate images without having a window appear
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, cm
+
+# print the system structure and the path of the kernal
+print platform.architecture()
+print os.path
+
+# calculate the time for the code execution
+start_time = tttt.time()
+# switch on the seaborn effect
+sns.set()
+
+################################   Input zone  ######################################
+# specify data path
+# OMET
+datapath_OMET = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
+# target climatological variables
+#datapath_y = "F:\DataBase\ERA_Interim\Monthly"
+# specify output path for figures
+output_path = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
+# the threshold ( index of latitude) of the OMET
+lat_OMET = 233 # at 60 N
+# the range ( index of latitude) of the projection field
+#lat_y = 94 # upto 20 N
+####################################################################################
+print '*******************************************************************'
+print '*********************** extract variables *************************'
+print '*******************************************************************'
+# ORCA1_z42 grid infor (Madec and Imbard 1996)
+ji = 362
+jj = 292
+level = 42
+# zonal integral
+dataset_OMET = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
+#dataset_y = Dataset(datapath_y + os.sep + 'surface_monthly_regress_variables_197901-201612.nc')
+for k in dataset_OMET.variables:
+    print dataset_OMET.variables['%s' % (k)]
+
+# for l in dataset_y.variables:
+#     print dataset_y.variables['%s' % (l)]
+
+# extract atmospheric meridional energy transport
+# dimension (year,month,latitude)
+E = dataset_OMET.variables['E'][21:,:,lat_OMET]/1000 # from Tera Watt to Peta Watt # start from 1979
+
+# print 'The type of SLP is', type(SLP)
+# print 'The type of SST is', type(SST)
+# print 'The type of ci is', type(ci)
+
+# take the time series of E
+E_series = E.reshape(432)
+
+# '*******************************************************************'
+# '*************************** whitening *****************************'
+# '*******************************************************************'
+
+def whiten_OMET_FFT(ori_E):
+    # remove seasonal cycle
+    month_ind = np.arange(12)
+    seansonal_cycle = np.mean(ori_E,axis=0)
+    ori_E_white = np.zeros(ori_E.shape)
+    for i in month_ind:
+        ori_E_white[:,i] = ori_E[:,i] - seansonal_cycle[i]
+
+    # plot the OMET after removing seasonal cycle
+    ori_E_white_series = ori_E_white.reshape(432)
+    index = np.arange(1,433,1)
+    index_year = np.arange(1979,2014,1)
+
+    fig01 = plt.figure()
+    plt.plot(index,ori_E_white_series,'b-',label='ORAS4')
+    plt.title('Oceanic Meridional Energy Transport Anomaly at 60N (1979-2014)')
+    #plt.legend()
+    fig01.set_size_inches(14, 4)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 432, 37), index_year)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig01.savefig(output_path + os.sep + 'OMET_ORAS4_60N_total_time_series_1979_2014_white.jpg', dpi = 500)
+
+    # Fast Fourier Transform
+    # original OMET
+    ori_E_series = ori_E.reshape(432)
+    FFT_E = np.fft.fft(ori_E_series)
+    freq_FFT_E = np.fft.fftfreq(len(FFT_E),d=1)
+    mag_FFT_E = abs(FFT_E)
+    # Anomaly
+    FFT_E_white = np.fft.fft(ori_E_white_series)
+    freq_FFT_E_white = np.fft.fftfreq(len(FFT_E_white),d=1)
+    mag_FFT_E_white = abs(FFT_E_white)
+
+    # Plot the anomaly of OMET in Frequency domain
+    fig02 = plt.figure()
+    plt.plot(freq_FFT_E[0:200],mag_FFT_E[0:200],'b-',label='ORAS4')
+    plt.title('Fourier Transform of OMET at 60N (1979-2014)')
+    #plt.legend()
+    fig02.set_size_inches(14, 4)
+    plt.xlabel("Times per month")
+    #plt.xticks(np.linspace(0, 456, 39), index_year)
+    #plt.xticks(rotation=60)
+    plt.ylabel("Power spectrum density (PW^2/month)")
+    plt.show()
+    fig02.savefig(output_path + os.sep + 'FFT_OMET_ORAS4_60N_1979_2014.jpg', dpi = 500)
+
+    fig03 = plt.figure()
+    plt.plot(freq_FFT_E_white[0:200],mag_FFT_E_white[0:200],'b-',label='ORAS4')
+    plt.title('Fourier Transform of OMET Anomaly at 60N (1979-2014)')
+    #plt.legend()
+    fig03.set_size_inches(14, 4)
+    plt.xlabel("Times per month")
+    #plt.xticks(np.linspace(0, 456, 39), index_year)
+    #plt.xticks(rotation=60)
+    plt.ylabel("Power spectrum density (PW^2/month)")
+    plt.show()
+    fig03.savefig(output_path + os.sep + 'FFT_OMET_ORAS4_60N_1979_2014_white.jpg', dpi = 500)
+
+    return ori_E_white
+
+def running_OMET_FFT(ori_E_series):
+    # define the running window for the running mean
+    window = 60
+    # calculate the running mean and sum
+    ori_E_running_mean = np.zeros(len(ori_E_series)-window+1)
+    ori_E_running_sum = np.zeros(len(ori_E_series)-window+1)
+    for i in np.arange(len(ori_E_series)-window+1):
+        ori_E_running_mean[i] = np.mean(ori_E_series[i:i+window])
+        ori_E_running_sum[i] = np.sum(ori_E_series[i:i+window])
+
+    # index of years for plot
+    index = np.arange(1,433,1)
+    index_year = np.arange(1979,2015,1)
+    # Plot the anomaly of OMET in Frequency domain
+    fig11 = plt.figure()
+    plt.plot(index,ori_E_series,'b--',label='time series')
+    plt.plot(index[window-1:],ori_E_running_mean,'r-',linewidth=2.0,label='running mean')
+    #plt.title('Running mean of OMET at 60N with a window of %d months (1979-2014)' % (window))
+    plt.title('Running mean of OMET anomalies at 60N with a window of %d months (1979-2014)' % (window))
+    #plt.legend()
+    fig11.set_size_inches(14, 4)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 432, 37), index_year)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig11.savefig(output_path + os.sep + 'running_mean_OMET_anomaly_ORAS4_60N_window_%d_comp.jpg' % (window), dpi = 500)
+    #fig11.savefig(output_path + os.sep + 'running_mean_OMET_ORAS4_60N_window_%d_comp.jpg' % (window), dpi = 500)
+    #fig11.savefig(output_path + os.sep + 'running_mean_sum' + os.sep + 'running_mean_OMET_anomaly_60N_window_%d_comp.jpg' % (window), dpi = 500)
+
+    # fig12 = plt.figure()
+    # plt.plot(index,ori_E_running_sum,'b-',label='ECMWF')
+    # #plt.title('Running sum of OMET at 60N with a window of %d months (1979-2016)' % (window))
+    # plt.title('Running sum of OMET anomalies at 60N with a window of %d months (1979-2016)' % (window))
+    # #plt.legend()
+    # fig12.set_size_inches(14, 4)
+    # plt.xlabel("Time")
+    # plt.xticks(np.linspace(0, 456, 39), index_year)
+    # plt.xticks(rotation=60)
+    # plt.ylabel("Meridional Energy Transport (PW)")
+    # plt.show()
+    # #fig12.savefig(output_path + os.sep + 'running_sum_OMET_60N_window_%d.jpg' % (window), dpi = 500)
+    # fig12.savefig(output_path + os.sep + 'running_mean_sum' + os.sep + 'running_sum_OMET_anomaly_60N_window_%d.jpg' % (window), dpi = 500)
+
+    # Fast Fourier Transform
+    # FFT_E = np.fft.fft(ori_E_running_mean)
+    # freq_FFT_E = np.fft.fftfreq(len(FFT_E),d=1)
+    # mag_FFT_E = abs(FFT_E)
+    #
+    # # Plot the running mean of OMET in Frequency domain
+    # fig22 = plt.figure()
+    # plt.plot(freq_FFT_E[0:200],mag_FFT_E[0:200],'b-',label='ECMWF')
+    # plt.title('Fourier Transform of running mean (%d) of OMET anomalies at 60N (1979-2016)' % (window))
+    # #plt.legend()
+    # fig22.set_size_inches(14, 4)
+    # plt.xlabel("Times per month")
+    # #plt.xticks(np.linspace(0, 456, 39), index_year)
+    # #plt.xticks(rotation=60)
+    # plt.ylabel("Power spectrum density (PW^2/month)")
+    # plt.show()
+    # fig22.savefig(output_path + os.sep + 'running_mean_sum' + os.sep + 'FFT_running_mean_%d_OMET_anomaly_60N_1979_2016.jpg' % (window), dpi = 500)
+
+
+    return ori_E_running_mean, ori_E_running_sum
+
+if __name__=="__main__":
+    # start
+    print '*******************************************************************'
+    print '**************** whitening and Fourier Transform ******************'
+    print '*******************************************************************'
+    # remove the seasonal cycle of given field
+    # remove seasonal cycle of OMET
+    E_white = whiten_OMET_FFT(E)
+    E_white_series = E_white.reshape(432)
+    print '*******************************************************************'
+    print '************************ running mean/sum *************************'
+    print '*******************************************************************'
+    # running mean of original signal
+    #E_running_mean, E_running_sum = running_OMET_FFT(E_series)
+    # running mean of anaomaly
+    E_running_mean, E_running_sum = running_OMET_FFT(E_white_series)
+    print '*******************************************************************'
+    print '****************************** trend ******************************'
+    print '*******************************************************************'
+
+    print '*******************************************************************'
+    print '************************** regression *****************************'
+    print '*******************************************************************'
+
+
+print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
