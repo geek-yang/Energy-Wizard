@@ -1,0 +1,122 @@
+#!/usr/bin/env python
+"""
+Copyright Netherlands eScience Center
+Function        : Bjerknes Compensation between AMET and OMET
+Author          : Yang Liu
+Date            : 2017.10.14
+Last Update     : 2017.10.15
+Description     : The code aims to study the Bjerknes compensation between atmosphere
+                  and ocean. The atmospheric meridional energy transport is calculated
+                  from reanalysis data ERA-Interim. The oceanic meridional energy
+                  transport is calculated from ORAS4.
+Return Value    : NetCFD4 data file
+Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, logging
+variables       : Atmospheric Meridional Energy Transport   ERA-Interim
+                  Oceanic Meridional Energy Transport       ORAS4
+
+Caveat!!        : The full dataset of ORAS4 is from 1958. However, a quality report from
+                  Magdalena from ECMWF indicates the quality of data for the first
+                  two decades are very poor. Hence we use the data from 1979. which
+                  is the start of satellite era.
+"""
+import numpy as np
+import seaborn as sns
+#import scipy as sp
+import time as tttt
+from netCDF4 import Dataset,num2date
+import os
+import platform
+import sys
+import logging
+import matplotlib
+# generate images without having a window appear
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, cm
+import cartopy.crs as ccrs
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+import iris
+import iris.plot as iplt
+import iris.quickplot as qplt
+
+# print the system structure and the path of the kernal
+print platform.architecture()
+print os.path
+
+# switch on the seaborn effect
+sns.set()
+
+# calculate the time for the code execution
+start_time = tttt.time()
+
+################################   Input zone  ######################################
+# specify data path
+datapath = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
+# specify output path for the netCDF4 file
+output_path = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
+Lat_num = 60
+# mask path
+mask_path = 'F:\DataBase\ORAS\ORAS4\Monthly\Model'
+####################################################################################
+
+print '*******************************************************************'
+print '*********************** extract variables *************************'
+print '*******************************************************************'
+
+###################################  Atmosphere  ###################################
+
+#####################################  Ocean  ######################################
+# ORCA1_z42 grid infor (Madec and Imbard 1996)
+ji = 362
+jj = 292
+level = 42
+# zonal integral
+dataset = Dataset(datapath + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
+# spacial distribution
+dataset_point = Dataset(datapath + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_point.nc')
+# load land-sea mask INFO
+dataset_mask = Dataset(mask_path + os.sep + 'mesh_mask.nc')
+
+for k in dataset.variables:
+    print dataset.variables['%s' % (k)]
+
+# zonal integral
+E = dataset.variables['E'][21:,:,:] # from 1979
+# spacial distribution
+E_point = dataset_point.variables['E'][21:,:,:,:]    # from 1979
+
+year = dataset.variables['year'][21:]    # from 1979
+month = dataset.variables['month'][:]
+latitude_aux = dataset.variables['latitude_aux'][:]
+latitude = dataset_point.variables['latitude'][:]
+longitude = dataset_point.variables['longitude'][:]
+
+# land-sea mask
+# surface mask for v grid
+vmask = dataset_mask.variables['vmask'][0,0,:,:]
+
+print '*******************************************************************'
+print '****************** prepare variables for plot *********************'
+print '*******************************************************************'
+
+print '*******************************************************************'
+print '*********************** time series plots *************************'
+print '*******************************************************************'
+# time series plot of meridional energy transport at 60N
+
+# time series plot of meridional energy transport anomalies at 60N
+
+print '*******************************************************************'
+print '*********************** Regression plots **************************'
+print '*******************************************************************'
+# interpolate
+
+#scipy.interpolate.spline
+
+#Regression
+
+#Regression with time lag
+
+print '*******************************************************************'
+print '*********************** Regression plots **************************'
+print '*******************************************************************'
