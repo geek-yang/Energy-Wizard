@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Bjerknes Compensation between AMET and OMET
 Author          : Yang Liu
 Date            : 2017.10.14
-Last Update     : 2017.10.15
+Last Update     : 2017.10.16
 Description     : The code aims to study the Bjerknes compensation between atmosphere
                   and ocean. The atmospheric meridional energy transport is calculated
                   from reanalysis data ERA-Interim. The oceanic meridional energy
@@ -13,7 +13,6 @@ Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, logging
 variables       : Atmospheric Meridional Energy Transport   ERA-Interim
                   Oceanic Meridional Energy Transport       ORAS4
-
 Caveat!!        : The full dataset of ORAS4 is from 1958. However, a quality report from
                   Magdalena from ECMWF indicates the quality of data for the first
                   two decades are very poor. Hence we use the data from 1979. which
@@ -51,10 +50,14 @@ start_time = tttt.time()
 
 ################################   Input zone  ######################################
 # specify data path
-datapath = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
+datapath_AMET = 'F:\DataBase\HPC_out\ERAI\postprocessing'
+datapath_OMET = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
 # specify output path for the netCDF4 file
-output_path = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
-Lat_num = 60
+output_path = 'F:\DataBase\HPC_out\Bjerknes_ERAI_ORAS4'
+# index of latitude for insteret
+# 60N
+lat_OMET = 233
+lat_AMET = 40
 # mask path
 mask_path = 'F:\DataBase\ORAS\ORAS4\Monthly\Model'
 ####################################################################################
@@ -62,47 +65,66 @@ mask_path = 'F:\DataBase\ORAS\ORAS4\Monthly\Model'
 print '*******************************************************************'
 print '*********************** extract variables *************************'
 print '*******************************************************************'
+dataset_AMET = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
+dataset_OMET = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
+
+for k in dataset_OMET.variables:
+    print dataset_OMET.variables['%s' % (k)]
+for l in dataset_AMET.variables:
+    print dataset_AMET.variables['%s' % (l)]
+
+# from 1979 to 2014
+AMET = dataset_AMET.variables['E'][:-2,:,:]/1000 # from Tera Watt to Peta Watt
+OMET = dataset_OMET.variables['E'][21:,:,:]/1000 # from Tera Watt to Peta Watt # start from 1979
+
+year = dataset_OMET.variables['year'][21:]    # from 1979 to 2014
+month = dataset_OMET.variables['month'][:]
+latitude_OMET = dataset_OMET.variables['latitude_aux'][:]
+latitude_AMET = dataset_AMET.variables['latitude'][:]
+
+print '*******************************************************************'
+print '*************************** whitening *****************************'
+print '*******************************************************************'
+month_ind = np.arange(12)
+year_ind = np.arange(len(year))
+seansonal_cycle_AMET = np.mean(AMET,axis=0)
+seansonal_cycle_OMET = np.mean(OMET,axis=0)
+AMET_white = np.zeros(AMET.shape,dtype=float)
+OMET_white = np.zeros(OMET.shape,dtype=float)
+for i in year_ind:
+    for j in month_ind:
+        AMET_white[i,j,:] = AMET[i,j,:] - seansonal_cycle_AMET[j,:]
+        OMET_white[i,j,:] = OMET[i,j,:] - seansonal_cycle_OMET[j,:]
+
+print '*******************************************************************'
+print '****************** prepare variables for plot *********************'
+print '*******************************************************************'
+# dataset with seasonal cycle
+AMET_60 = AMET[:,:,lat_AMET]
+OMET_60 = OMET[:,:,lat_OMET]
+# dataset without seasonal cycle
+AMET_60_white = AMET_white[:,:,lat_AMET]
+OMET_60_white = OMET_white[:,:,lat_OMET]
+print '*******************************************************************'
+print '*********************** time series plots *************************'
+print '*******************************************************************'
+# time series plot of meridional energy transport at 60N
 
 ###################################  Atmosphere  ###################################
 
-#####################################  Ocean  ######################################
-# ORCA1_z42 grid infor (Madec and Imbard 1996)
-ji = 362
-jj = 292
-level = 42
-# zonal integral
-dataset = Dataset(datapath + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
-# spacial distribution
-dataset_point = Dataset(datapath + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_point.nc')
-# load land-sea mask INFO
-dataset_mask = Dataset(mask_path + os.sep + 'mesh_mask.nc')
 
-for k in dataset.variables:
-    print dataset.variables['%s' % (k)]
+for k in dataset_OMET.variables:
+    print dataset_OMET.variables['%s' % (k)]
 
-# zonal integral
-E = dataset.variables['E'][21:,:,:] # from 1979
-# spacial distribution
-E_point = dataset_point.variables['E'][21:,:,:,:]    # from 1979
-
-year = dataset.variables['year'][21:]    # from 1979
-month = dataset.variables['month'][:]
-latitude_aux = dataset.variables['latitude_aux'][:]
-latitude = dataset_point.variables['latitude'][:]
-longitude = dataset_point.variables['longitude'][:]
 
 # land-sea mask
 # surface mask for v grid
 vmask = dataset_mask.variables['vmask'][0,0,:,:]
 
-print '*******************************************************************'
-print '****************** prepare variables for plot *********************'
-print '*******************************************************************'
 
-print '*******************************************************************'
-print '*********************** time series plots *************************'
-print '*******************************************************************'
-# time series plot of meridional energy transport at 60N
+
+
+
 
 # time series plot of meridional energy transport anomalies at 60N
 
