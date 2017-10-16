@@ -377,6 +377,7 @@ def visualization(cube_regrid):
     # plot with Iris quickplot pcolormesh
     cs = iplt.pcolormesh(cube_regrid/1000,cmap='coolwarm',vmin=-0.7,vmax=0.7)
     cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
+    cbar.set_label('PW (1E+15W)')
     iplt.show()
     fig2.savefig(output_path_fig + os.sep + 'v_grid' + os.sep + 'OMET_ORAS4.jpg',dpi = 500)
 
