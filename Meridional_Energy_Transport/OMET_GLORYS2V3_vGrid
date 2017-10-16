@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3)
 Author          : Yang Liu
 Date            : 2017.10.2
-Last Update     : 2017.10.11
+Last Update     : 2017.10.16
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from
                   Mercator Ocean. The complete computaiton is accomplished
@@ -330,9 +330,10 @@ def visualization(cube_regrid):
     iris.FUTURE.netcdf_promote = True
     print cube_regrid
     fig2 = plt.figure()
-    fig2.suptitle('ORCA1 Data Projected to PlateCarree')
+    fig2.suptitle('Oceanic Meridional Energy Transport in 1993 (GLORYS2V3)')
     # Set up axes and title
-    ax = plt.subplot(projection=ccrs.PlateCarree())
+    #ax = plt.subplot(projection=ccrs.PlateCarree())
+    ax = plt.axes(projection=ccrs.PlateCarree())
     # Set limits
     ax.set_global()
     # Draw coastlines
@@ -350,7 +351,8 @@ def visualization(cube_regrid):
     #ax.ylabels_left = False
     gl.yformatter = LATITUDE_FORMATTER
     # plot with Iris quickplot pcolormesh
-    qplt.pcolormesh(cube_regrid/1000,cmap='coolwarm')
+    cs = iplt.pcolormesh(cube_regrid/1000,cmap='coolwarm',vmin=-0.5,vmax=0.5)
+    cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
     iplt.show()
     fig2.savefig(output_path + os.sep + 'OMET_GLORYS2V3.jpg',dpi = 500)
 
