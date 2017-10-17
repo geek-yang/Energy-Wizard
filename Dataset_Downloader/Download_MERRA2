@@ -15,4 +15,4 @@
 # The url links are generated on the webpage below after specify all the attributes
 # https://disc.sci.gsfc.nasa.gov/daac-bin/FTPSubset2.pl
 #-----------------------   Input zone   -------------------------------------------
-wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --keep-session-cookies --content-disposition -i MERRA2_1980.dat
+wget --load-cookies ~/.urs_cookies --save-cookies ~/.urs_cookies --auth-no-challenge=on --keep-session-cookies --content-disposition -i MERRA2_1980.dat --directory-prefix=/project/Reanalysis/MERRA2/Subdaily/Model/merra1980
