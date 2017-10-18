@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Bjerknes Compensation between AMET and OMET
 Author          : Yang Liu
 Date            : 2017.10.14
-Last Update     : 2017.10.17
+Last Update     : 2017.10.16
 Description     : The code aims to study the Bjerknes compensation between atmosphere
                   and ocean. The atmospheric meridional energy transport is calculated
                   from reanalysis data ERA-Interim. The oceanic meridional energy
@@ -31,6 +31,7 @@ import matplotlib
 # generate images without having a window appear
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+# univariate spline fitting (interpolation)
 from scipy.interpolate import InterpolatedUnivariateSpline
 from mpl_toolkits.basemap import Basemap, cm
 import cartopy.crs as ccrs
@@ -107,13 +108,14 @@ OMET_series = OMET.reshape(len(year)*len(month),len(latitude_OMET))
 AMET_white_series = AMET_white.reshape(len(year)*len(month),len(latitude_AMET))
 OMET_white_series = OMET_white.reshape(len(year)*len(month),len(latitude_OMET))
 
-# interpolate OMET on the latitude of AMET uni variate spline fitting
+# interpolate OMET on the latitude of AMET through univariate spline fitting
+# Using radial basis functions for smoothing/interpolation
 OMET_interpolate = np.zeros((len(year),len(month),len(latitude_AMET)),dtype=float)
 for i in year_ind:
     for j in month_ind:
         ius = InterpolatedUnivariateSpline(latitude_OMET, OMET[i,j,:])
         OMET_interpolate[i,j,:] = ius(latitude_AMET)
-# https://docs.scipy.org/doc/scipy/reference/tutorial/interpolate.html#spline-interpolation-in-1-d-procedural-interpolate-splxxx
+
 print '*******************************************************************'
 print '*********************** time series plots *************************'
 print '*******************************************************************'
