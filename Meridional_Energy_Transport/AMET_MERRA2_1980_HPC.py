@@ -175,9 +175,9 @@ def mass_correction_tendency(datapath,year,month,var_start,var_end,var_last,days
     var_next = Dataset(datapath_next)
     # extract data
     # surface pressure (8,361,576)
-    ps_last = var_last['PS'][-1,:,:] # the last day of last month at 21：00
-    ps_start = var_start['PS'][0,:,:] # the first day of current month at 00：00
-    ps_end = var_end['PS'][-1,:,:] # the last day of current month at 21：00
+    ps_last = var_last['PS'][-1,:,:] # the last day of last month at 21:00
+    ps_start = var_start['PS'][0,:,:] # the first day of current month at 00:00
+    ps_end = var_end['PS'][-1,:,:] # the last day of current month at 21:00
     ps_next = var_next['PS'][0,:,:] # the first day of next month at 00:00
     # specific Humidity (8,72,361,576)
     q_last = var_last['QV'][-1,:,:,:] # the naming rule is the same as above
