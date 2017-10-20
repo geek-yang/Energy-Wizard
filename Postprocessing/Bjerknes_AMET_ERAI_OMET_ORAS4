@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Bjerknes Compensation between AMET and OMET
 Author          : Yang Liu
 Date            : 2017.10.14
-Last Update     : 2017.10.19
+Last Update     : 2017.10.20
 Description     : The code aims to study the Bjerknes compensation between atmosphere
                   and ocean. The atmospheric meridional energy transport is calculated
                   from reanalysis data ERA-Interim. The oceanic meridional energy
@@ -17,6 +17,7 @@ Caveat!!        : The full dataset of ORAS4 is from 1958. However, a quality rep
                   Magdalena from ECMWF indicates the quality of data for the first
                   two decades are very poor. Hence we use the data from 1979. which
                   is the start of satellite era.
+                  Data from 30N - 90N are taken into account!
 """
 import numpy as np
 import seaborn as sns
@@ -31,8 +32,8 @@ import matplotlib
 # generate images without having a window appear
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-# univariate spline fitting (interpolation)
-from scipy.interpolate import InterpolatedUnivariateSpline
+#from scipy.interpolate import InterpolatedUnivariateSpline
+import scipy
 from mpl_toolkits.basemap import Basemap, cm
 import cartopy.crs as ccrs
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
@@ -55,7 +56,7 @@ start_time = tttt.time()
 datapath_AMET = 'F:\DataBase\HPC_out\ERAI\postprocessing'
 datapath_OMET = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
 # specify output path for the netCDF4 file
-output_path = 'F:\DataBase\HPC_out\Bjerknes_ERAI_ORAS4'
+output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\Bjerknes\ERAInterim_ORAS4'
 # index of latitude for insteret
 # 60N
 lat_OMET = 233
@@ -69,19 +70,27 @@ print '*******************************************************************'
 dataset_AMET = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
 dataset_OMET = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
 
+dataset_AMET_point = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_point.nc')
+dataset_OMET_point = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_point.nc')
+
 for k in dataset_OMET.variables:
     print dataset_OMET.variables['%s' % (k)]
 for l in dataset_AMET.variables:
     print dataset_AMET.variables['%s' % (l)]
 
 # from 1979 to 2014
+# from 30N - 90N
 AMET = dataset_AMET.variables['E'][:-2,:,:]/1000 # from Tera Watt to Peta Watt
-OMET = dataset_OMET.variables['E'][21:,:,:]/1000 # from Tera Watt to Peta Watt # start from 1979
+OMET = dataset_OMET.variables['E'][21:,:,191:]/1000 # from Tera Watt to Peta Watt # start from 1979
 
 year = dataset_OMET.variables['year'][21:]    # from 1979 to 2014
 month = dataset_OMET.variables['month'][:]
-latitude_OMET = dataset_OMET.variables['latitude_aux'][:]
+latitude_OMET = dataset_OMET.variables['latitude_aux'][191:]
 latitude_AMET = dataset_AMET.variables['latitude'][:]
+
+# since OMET is from 30N - 90N, AMET is from 90N to 30N, we have to reverse it
+# for interpolation, x should be monotonically increasing
+latitude_AMET_reverse = latitude_AMET[::-1]
 
 print '*******************************************************************'
 print '*************************** whitening *****************************'
@@ -103,10 +112,12 @@ print '*******************************************************************'
 # annual mean of AMET and OMET at different latitudes
 AMET_mean = np.mean(np.mean(AMET,0),0)
 OMET_mean = np.mean(np.mean(OMET,0),0)
-# Using radial basis functions for smoothing/interpolation
+# Interpolation through spline
 OMET_mean_interpolate = np.zeros(AMET_mean.shape,dtype=float)
-ius = InterpolatedUnivariateSpline(latitude_OMET[130:], OMET_mean[130:])
-OMET_mean_interpolate = ius(latitude_AMET)
+# 'kind' refer to the interpolation method, it includes:
+# 'linear' 'nearest' and spline interpolation of 1,2,3 order 'slinear' 'quadratic' 'cubic'
+ius = scipy.interpolate.interp1d(latitude_OMET, OMET_mean, kind='slinear',bounds_error=False,fill_value=0.0)
+OMET_mean_interpolate = ius(latitude_AMET_reverse)
 
 # dataset with seasonal cycle - time series
 AMET_series = AMET.reshape(len(year)*len(month),len(latitude_AMET))
@@ -116,11 +127,11 @@ AMET_white_series = AMET_white.reshape(len(year)*len(month),len(latitude_AMET))
 OMET_white_series = OMET_white.reshape(len(year)*len(month),len(latitude_OMET))
 
 # interpolate OMET on the latitude of AMET through univariate spline fitting
-# Using radial basis functions for smoothing/interpolation
+#
 OMET_interpolate = np.zeros((len(year),len(month),len(latitude_AMET)),dtype=float)
 for i in year_ind:
     for j in month_ind:
-        ius = InterpolatedUnivariateSpline(latitude_OMET[130:], OMET[i,j,130:])
+        ius = scipy.interpolate.interp1d(latitude_OMET, OMET[i,j,:], kind='slinear',bounds_error=False,fill_value=0.0)
         OMET_interpolate[i,j,:] = ius(latitude_AMET)
 
 # remove the seasonal cycle after the interpolation of OMET
@@ -135,7 +146,7 @@ print '*************************** x-y plots *****************************'
 print '*******************************************************************'
 fig0 = plt.figure()
 plt.plot(latitude_AMET,AMET_mean,'r-',label='ERA-Interim')
-plt.plot(latitude_OMET[130:],OMET_mean[130:],'b-',label='ORAS4')
+plt.plot(latitude_OMET,OMET_mean,'b-',label='ORAS4')
 plt.plot(latitude_AMET,AMET_mean+OMET_mean_interpolate,'g-',label='Total')
 plt.title('Meridional Energy Transport at 60 N (1979-2014)')
 #plt.legend()
@@ -145,15 +156,21 @@ plt.xticks(np.linspace(30, 90, 10))
 #plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig0.savefig(output_path + os.sep + 'AMET_OMET_annual_mean_1979_2014.jpg', dpi = 500)
+fig0.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_annual_mean_1979_2014.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '*********************** time series plots *************************'
 print '*******************************************************************'
+# index and namelist of years for time series and running mean time series
+index = np.arange(1,433,1)
+
+#index_running_mean = np.arange(1,433-window+1,1)
+#index_year_running_mean = np.arange(1979+window/12-1,2015,1)
+
 # time series plot of meridional energy transport at 60N
 fig1 = plt.figure()
 plt.plot(index,AMET_series[:,lat_AMET],'r-',label='ERA-Interim')
-plt.plot(index,OMET_series[:,lat_OMET],'b-',label='ORAS4')
+plt.plot(index,OMET_series[:,42],'b-',label='ORAS4')
 plt.title('Meridional Energy Transport at 60 N (1979-2014)')
 plt.legend()
 fig1.set_size_inches(14, 5)
@@ -162,11 +179,11 @@ plt.xticks(np.linspace(0, 432, 37), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig1.savefig(output_path + os.sep + 'AMET_OMET_60N_total_time_series_1979_2014.jpg', dpi = 500)
+fig1.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_60N_total_time_series_1979_2014.jpg', dpi = 500)
 
 fig2 = plt.figure()
 plt.plot(index,AMET_white_series[:,lat_AMET],'r-',label='ERA-Interim')
-plt.plot(index,OMET_white_series[:,lat_OMET],'b-',label='ORAS4')
+plt.plot(index,OMET_white_series[:,42],'b-',label='ORAS4')
 plt.title('Meridional Energy Transport Anomalies at 60 N (1979-2014)')
 plt.legend()
 fig2.set_size_inches(14, 5)
@@ -187,11 +204,14 @@ print '*********************** Regression plots **************************'
 print '*******************************************************************'
 #Regression
 # create an array to store the correlation coefficient
-slope = np.zeros((lat_AMET+1,len(lon)),dtype = float)
-r_value = np.zeros((lat_AMET+1,len(lon)),dtype = float)
-p_value = np.zeros((lat_AMET+1,len(lon)),dtype = float)
+slope = np.zeros((lat_AMET+1),dtype = float)
+r_value = np.zeros((lat_AMET+1),dtype = float)
+p_value = np.zeros((lat_AMET+1),dtype = float)
 for i in np.arange(lat_AMET+1):
-    for j in np.arange(len(lon)):
         # return value: slope, intercept, r_value, p_value, stderr
-        slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(x,y[:,i,j])
+        slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series,y[:,i,j])
 #Regression with time lag
+
+print '*******************************************************************'
+print '****************** maps (average of point data) *******************'
+print '*******************************************************************'
