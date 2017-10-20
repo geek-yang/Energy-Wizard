@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.18
-Last Update     : 2017.10.11
+Last Update     : 2017.10.20
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4 from ECMWF.
                   The complete computaiton is accomplished on model level (original ORCA1_z42 grid).
@@ -365,9 +365,9 @@ def visualization(cube_regrid,year):
     iris.FUTURE.netcdf_promote = True
     print cube_regrid
     fig2 = plt.figure()
-    fig2.suptitle('ORCA1 Data Projected to PlateCarree')
+    fig2.suptitle('Oceanic Meridional Energy Transport in %d (ORAS4)' % (year))
     # Set up axes and title
-    ax = plt.subplot(projection=ccrs.PlateCarree())
+    ax = plt.axes(projection=ccrs.PlateCarree())
     # Set limits
     ax.set_global()
     # Draw coastlines
@@ -385,7 +385,9 @@ def visualization(cube_regrid,year):
     #ax.ylabels_left = False
     gl.yformatter = LATITUDE_FORMATTER
     # plot with Iris quickplot pcolormesh
-    qplt.pcolormesh(cube_regrid,cmap='coolwarm')
+    cs = iplt.pcolormesh(cube_regrid,cmap='coolwarm',vmin=-0.7,vmax=0.7)
+    cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
+    cbar.set_label('PW (1E+15W)')
     iplt.show()
     fig2.savefig(output_path + os.sep + 'lat-lon' + os.sep + 'OMET_ORAS4_lat-lon_%d.png' % (year),dpi = 500)
 
