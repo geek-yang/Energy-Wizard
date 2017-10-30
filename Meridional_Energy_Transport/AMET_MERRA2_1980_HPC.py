@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-
 """
 Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2017.10.17
-Last Update     : 2017.10.18
+Last Update     : 2017.10.30
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -140,19 +139,19 @@ benchmark_path = '/project/Reanalysis/MERRA2/Subdaily/Model/merra1980/MERRA2_100
 benchmark = Dataset(benchmark_path)
 ####################################################################################
 
-def var_key(datapath, year, month, day):
+def var_key_retrieve(datapath, year, month, day):
     '''
     This module extracts the variables for mass correction and the computation of AMET.
     Due to the strcture of the dataset (MEERA2), the processing unit is daily data.
     '''
     # get the path to each datasets
-    print "Start retrieving datasets"
+    print "Start retrieving datasets %d (y) - %s (m) - %s (d)" % (year,namelist_month[month-1],namelist_day[day])
     logging.info("Start retrieving variables T,q,u,v,lnsp,z for from %d (y) - %s (m) - %s (d) " % (year,namelist_month[month-1],namelist_day[day]))
     datapath_var = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d%s%s.SUB.nc4' % (year,namelist_month[month-1],namelist_day[day])
     # get the variable keys
     var_key = Dataset(datapath_var)
     # The shape of each variable is (8,72,)
-    print "Retrieving datasets successfully!"
+    print "Retrieving datasets successfully and return the variable key!"
     logging.info("Retrieving variables for from %d (y) - %s (m) - %s (d) successfully!" % (year,namelist_month[month-1],namelist_day[day]))
     return var_key
 
@@ -175,15 +174,15 @@ def mass_correction_tendency(datapath,year,month,var_start,var_end,var_last,days
     var_next = Dataset(datapath_next)
     # extract data
     # surface pressure (8,361,576)
-    ps_last = var_last['PS'][-1,:,:] # the last day of last month at 21:00
-    ps_start = var_start['PS'][0,:,:] # the first day of current month at 00:00
-    ps_end = var_end['PS'][-1,:,:] # the last day of current month at 21:00
-    ps_next = var_next['PS'][0,:,:] # the first day of next month at 00:00
+    ps_last = var_last.variables['PS'][-1,:,:] # the last day of last month at 21:00
+    ps_start = var_start.variables['PS'][0,:,:] # the first day of current month at 00:00
+    ps_end = var_end.variables['PS'][-1,:,:] # the last day of current month at 21:00
+    ps_next = var_next.variables['PS'][0,:,:] # the first day of next month at 00:00
     # specific Humidity (8,72,361,576)
-    q_last = var_last['QV'][-1,:,:,:] # the naming rule is the same as above
-    q_start = var_start['QV'][0,:,:,:]
-    q_end = var_end['QV'][-1,:,:,:]
-    q_next = var_next['QV'][0,:,:,:]
+    q_last = var_last.variables['QV'][-1,:,:,:] # the naming rule is the same as above
+    q_start = var_start.variables['QV'][0,:,:,:]
+    q_end = var_end.variables['QV'][-1,:,:,:]
+    q_next = var_next.variables['QV'][0,:,:,:]
     # calculate the index of pressure levels
     index_level = np.arange(len(level))
     # calculate pressure depth
@@ -430,6 +429,8 @@ def meridional_energy_transport(var_key, gz):
     # for the correction of Kinetic Energy flux u2
     velocity_flux = 1/2 *(u**2 + v**2) * dp_level / constant['g']
     velocity_flux_int = np.mean(np.sum(velocity_flux,1),0)
+
+    print 'Complete calculating meridional energy transport on model level'
 
     return internal_flux_int, latent_flux_int, geopotential_flux_int, kinetic_flux_int,\
            heat_flux_int, vapor_flux_int, geo_flux_int, velocity_flux_int
@@ -725,7 +726,7 @@ if __name__=="__main__":
             # days loop
             for k in days:
                 # get the key of each variable
-                var_key = var_key(datapath,i,j,k)
+                var_key = var_key_retrieve(datapath,i,j,k)
                 ####################################################################
                 ######                   Mass Correction                     #######
                 ####################################################################
