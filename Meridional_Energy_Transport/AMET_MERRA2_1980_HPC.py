@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2017.10.17
-Last Update     : 2017.10.23
+Last Update     : 2017.10.30
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -174,15 +174,15 @@ def mass_correction_tendency(datapath,year,month,var_start,var_end,var_last,days
     var_next = Dataset(datapath_next)
     # extract data
     # surface pressure (8,361,576)
-    ps_last = var_last['PS'][-1,:,:] # the last day of last month at 21:00
-    ps_start = var_start['PS'][0,:,:] # the first day of current month at 00:00
-    ps_end = var_end['PS'][-1,:,:] # the last day of current month at 21:00
-    ps_next = var_next['PS'][0,:,:] # the first day of next month at 00:00
+    ps_last = var_last.variables['PS'][-1,:,:] # the last day of last month at 21:00
+    ps_start = var_start.variables['PS'][0,:,:] # the first day of current month at 00:00
+    ps_end = var_end.variables['PS'][-1,:,:] # the last day of current month at 21:00
+    ps_next = var_next.variables['PS'][0,:,:] # the first day of next month at 00:00
     # specific Humidity (8,72,361,576)
-    q_last = var_last['QV'][-1,:,:,:] # the naming rule is the same as above
-    q_start = var_start['QV'][0,:,:,:]
-    q_end = var_end['QV'][-1,:,:,:]
-    q_next = var_next['QV'][0,:,:,:]
+    q_last = var_last.variables['QV'][-1,:,:,:] # the naming rule is the same as above
+    q_start = var_start.variables['QV'][0,:,:,:]
+    q_end = var_end.variables['QV'][-1,:,:,:]
+    q_next = var_next.variables['QV'][0,:,:,:]
     # calculate the index of pressure levels
     index_level = np.arange(len(level))
     # calculate pressure depth
