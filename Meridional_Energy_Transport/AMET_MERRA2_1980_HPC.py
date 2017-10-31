@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2017.10.17
-Last Update     : 2017.10.30
+Last Update     : 2017.10.31
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -795,8 +795,9 @@ if __name__=="__main__":
             # extra modification for points at pcolormesh
             vc[0,:] = 0
             vc[-1,:] = 0
-            for i in np.arange(len(latitude)):
-                uc[i,:] = mass_residual[i,:] * dx[i] / (np.mean(pool_ps_mean[:,i,:],0) - constant['g'] * np.mean(pool_precipitable_water[:,i,:],0))
+            # Here we should avoid i,j,k as counter since they are used and will still function
+            for c in np.arange(len(latitude)):
+                uc[c,:] = mass_residual[c,:] * dx[c] / (np.mean(pool_ps_mean[:,c,:],0) - constant['g'] * np.mean(pool_precipitable_water[:,c,:],0))
             print '********************************************************************************'
             print "*** Computation of barotropic correction wind on each grid point is finished ***"
             print '********************************************************************************'
@@ -816,11 +817,11 @@ if __name__=="__main__":
             meridional_E_geopotential_point = np.zeros((len(latitude),len(longitude)),dtype=float)
             meridional_E_kinetic_point = np.zeros((len(latitude),len(longitude)),dtype=float)
             meridional_E_point = np.zeros((len(latitude),len(longitude)),dtype=float)
-            for i in np.arange(len(latitude)):
-                meridional_E_internal_point[i,:] = (np.mean(pool_internal_flux_int[:,i,:],0) - correction_internal_flux_int[i,:]) * dx[i]/1e+12
-                meridional_E_latent_point[i,:] = (np.mean(pool_latent_flux_int[:,i,:],0) - correction_latent_flux_int[i,:]) * dx[i]/1e+12
-                meridional_E_geopotential_point[i,:] = (np.mean(pool_geopotential_flux_int[:,i,:],0) - correction_geopotential_flux_int[i,:]) * dx[i]/1e+12
-                meridional_E_kinetic_point[i,:] = (np.mean(pool_kinetic_flux_int[:,i,:],0) - correction_kinetic_flux_int[i,:]) * dx[i]/1e+12
+            for c in np.arange(len(latitude)):
+                meridional_E_internal_point[c,:] = (np.mean(pool_internal_flux_int[:,c,:],0) - correction_internal_flux_int[c,:]) * dx[c]/1e+12
+                meridional_E_latent_point[c,:] = (np.mean(pool_latent_flux_int[:,c,:],0) - correction_latent_flux_int[c,:]) * dx[i]/1e+12
+                meridional_E_geopotential_point[c,:] = (np.mean(pool_geopotential_flux_int[:,c,:],0) - correction_geopotential_flux_int[c,:]) * dx[c]/1e+12
+                meridional_E_kinetic_point[c,:] = (np.mean(pool_kinetic_flux_int[:,c,:],0) - correction_kinetic_flux_int[c,:]) * dx[c]/1e+12
             # total energy transport
             meridional_E_point = meridional_E_internal_point + meridional_E_latent_point + meridional_E_geopotential_point + meridional_E_kinetic_point
             # zonal integral of energy
