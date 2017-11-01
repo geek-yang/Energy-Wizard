@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2017.10.17
-Last Update     : 2017.10.31
+Last Update     : 2017.11.1
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -446,11 +446,9 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     E_latent_monthly_mean = np.mean(E_latent,0)/1000
     E_geopotential_monthly_mean = np.mean(E_geopotential,0)/1000
     E_kinetic_monthly_mean = np.mean(E_kinetic,0)/1000
-    # take latitude data from benchmark variable
-    Lat = benchmark.variables['latitude'][:]
     # Plot the total meridional energy transport against the latitude
     fig1 = plt.figure()
-    plt.plot(Lat,E_total_monthly_mean,'b-',label='ECMWF')
+    plt.plot(latitude,E_total_monthly_mean,'b-',label='MERRA2')
     plt.axhline(y=0, color='r',ls='--')
     #plt.hold()
     plt.title('Total Atmospheric Meridional Energy Transport %d' % (year))
@@ -464,7 +462,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
 
     # Plot the meridional internal energy transport against the latitude
     fig2 = plt.figure()
-    plt.plot(Lat,E_internal_monthly_mean,'b-',label='ECMWF')
+    plt.plot(latitude,E_internal_monthly_mean,'b-',label='MERRA2')
     plt.axhline(y=0, color='r',ls='--')
     #plt.hold()
     plt.title('Atmospheric Meridional Internal Energy Transport %d' % (year))
@@ -478,7 +476,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
 
     # Plot the meridional latent energy transport against the latitude
     fig3 = plt.figure()
-    plt.plot(Lat,E_latent_monthly_mean,'b-',label='ECMWF')
+    plt.plot(latitude,E_latent_monthly_mean,'b-',label='MERRA2')
     plt.axhline(y=0, color='r',ls='--')
     #plt.hold()
     plt.title('Atmospheric Meridional Latent Energy Transport %d' % (year))
@@ -492,7 +490,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
 
     # Plot the meridional geopotential energy transport against the latitude
     fig4 = plt.figure()
-    plt.plot(Lat,E_geopotential_monthly_mean,'b-',label='ECMWF')
+    plt.plot(latitude,E_geopotential_monthly_mean,'b-',label='MERRA2')
     plt.axhline(y=0, color='r',ls='--')
     #plt.hold()
     plt.title('Atmospheric Meridional Geopotential Energy Transport %d' % (year))
@@ -506,7 +504,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
 
     # Plot the meridional kinetic energy transport against the latitude
     fig5 = plt.figure()
-    plt.plot(Lat,E_kinetic_monthly_mean,'b-',label='ECMWF')
+    plt.plot(latitude,E_kinetic_monthly_mean,'b-',label='MERRA2')
     plt.axhline(y=0, color='r',ls='--')
     #plt.hold()
     plt.title('Atmospheric Meridional Kinetic Energy Transport %d' % (year))
@@ -568,8 +566,8 @@ def create_netcdf_point (meridional_E_point_pool,meridional_E_internal_point_poo
     E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
     E_kinetic_wrap_var.long_name = 'atmospheric meridional kinetic energy transport'
     # writing data
-    lat_warp_var[:] = benchmark.variables['latitude'][:]
-    lon_warp_var[:] = benchmark.variables['longitude'][:]
+    lat_warp_var[:] = latitude
+    lon_warp_var[:] = longitude
     month_warp_var[:] = index_month
     uc_warp_var[:] = uc_point_pool
     vc_warp_var[:] = vc_point_pool
@@ -620,7 +618,7 @@ def create_netcdf_zonal_int (meridional_E_pool, meridional_E_internal_pool, meri
     E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
     E_kinetic_wrap_var.long_name = 'atmospheric meridional kinetic energy transport'
     # writing data
-    lat_warp_var[:] = benchmark.variables['latitude'][:]
+    lat_warp_var[:] = latitude
     month_warp_var[:] = index_month
     E_total_wrap_var[:] = meridional_E_pool
     E_internal_wrap_var[:] = meridional_E_internal_pool
@@ -781,7 +779,7 @@ if __name__=="__main__":
             print '*******************************************************************'
             logging.info("Computation of E-P on each grid point is finished!")
             # calculate the mass residual
-            mass_residual = ps_tendency + constant['g'] * (np.mean(pool_div_mass_flux_u[k,:,:],0) +\
+            mass_residual = ps_tendency + constant['g'] * (np.mean(pool_div_mass_flux_u,0) +\
                             np.mean(pool_div_mass_flux_v,0)) - constant['g'] * E_P
             print '*******************************************************************'
             print "*** Computation of mass residual on each grid point is finished ***"
@@ -792,7 +790,7 @@ if __name__=="__main__":
             uc = np.zeros((len(latitude),len(longitude)),dtype = float)
             vc = np.zeros((len(latitude),len(longitude)),dtype = float)
             vc = mass_residual * dy / (np.mean(pool_ps_mean,0) - constant['g'] * np.mean(pool_precipitable_water,0))
-            # extra modification for points at pcolormesh
+            # extra modification for points at polor mesh
             vc[0,:] = 0
             vc[-1,:] = 0
             # Here we should avoid i,j,k as counter since they are used and will still function
