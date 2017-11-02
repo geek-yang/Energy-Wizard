@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Bjerknes Compensation between AMET and OMET
 Author          : Yang Liu
 Date            : 2017.10.14
-Last Update     : 2017.10.22
+Last Update     : 2017.11.2
 Description     : The code aims to study the Bjerknes compensation between atmosphere
                   and ocean. The atmospheric meridional energy transport is calculated
                   from reanalysis data ERA-Interim. The oceanic meridional energy
@@ -150,6 +150,7 @@ print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
 # running mean is calculated on time series
 # define the running window for the running mean
+#window = 60 # in month
 window = 120 # in month
 #window = 180 # in month
 # calculate the running mean of AMET and OMET at 60N
@@ -193,6 +194,7 @@ index_year = np.arange(1979,2015,1)
 fig1 = plt.figure()
 plt.plot(index,AMET_series[:,lat_AMET],'r-',label='ERA-Interim')
 plt.plot(index,OMET_series[:,42],'b-',label='ORAS4')
+plt.plot(index,AMET_series[:,lat_AMET]+OMET_interpolate_series[:,42],'g--',label='Total')
 plt.title('Meridional Energy Transport at 60 N (1979-2014)')
 plt.legend()
 fig1.set_size_inches(12, 5)
@@ -207,6 +209,7 @@ fig1.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_60N_total_time_series_197
 fig2 = plt.figure()
 plt.plot(index,AMET_white_series[:,lat_AMET],'r-',label='ERA-Interim')
 plt.plot(index,OMET_white_series[:,42],'b-',label='ORAS4')
+plt.plot(index,AMET_white_series[:,lat_AMET]+OMET_interpolate_white_series[:,42],'g--',label='Total')
 plt.title('Meridional Energy Transport Anomalies at 60 N (1979-2014)')
 plt.legend()
 fig2.set_size_inches(12, 5)
@@ -221,6 +224,7 @@ fig2.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_time_series_1979_2014
 fig3 = plt.figure()
 plt.plot(index[window-1:],AMET_white_series_running_mean[:,lat_AMET],'r-',label='ERA-Interim')
 plt.plot(index[window-1:],OMET_interpolate_white_series_running_mean[:,lat_AMET],'b-',label='ORAS4')
+plt.plot(index[window-1:],AMET_white_series_running_mean[:,lat_AMET]+OMET_interpolate_white_series_running_mean[:,lat_AMET],'g--',label='Total')
 plt.title('Meridional Energy Transport Anomalies with running mean of %d months at 60 N (1979-2014)' % (window))
 plt.legend()
 fig3.set_size_inches(12, 5)
@@ -292,20 +296,27 @@ plt.ylabel("Correlation Coefficient")
 plt.show()
 fig6.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_white_running_mean_%dm_regression_correlation_coef_1979_2014.jpg' % (window), dpi = 500)
 
+print '*******************************************************************'
+print '******************* Regression Lead/Lag plots *********************'
+print '*******************************************************************'
 #Regression with time lag
 #lead_index_ocean = np.arange(-120,121,1)
 lead_index_ocean = np.arange(-180,181,1)
+
 # create a 2D array to store the correlation coefficient
 slope_2D = np.zeros((len(lead_index_ocean),len(latitude_AMET)),dtype = float)
 r_value_2D = np.zeros((len(lead_index_ocean),len(latitude_AMET)),dtype = float)
 p_value_2D = np.zeros((len(lead_index_ocean),len(latitude_AMET)),dtype = float)
+
 # regress
 for i in np.arange(len(lead_index_ocean)):
     for j in np.arange(len(latitude_AMET)):
         if lead_index_ocean[i]<0:
-            slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series_running_mean[-lead_index_ocean[i]:,j],OMET_interpolate_white_series_running_mean[:lead_index_ocean[i],j])
+            # atmosphere lead the ocean
+            slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series_running_mean[:lead_index_ocean[i],j],OMET_interpolate_white_series_running_mean[-lead_index_ocean[i]:,j])
         elif lead_index_ocean[i]>0:
-            slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series_running_mean[:-lead_index_ocean[i],j],OMET_interpolate_white_series_running_mean[lead_index_ocean[i]:,j])
+            # ocean lead the atmosphere
+            slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series_running_mean[lead_index_ocean[i]:,j],OMET_interpolate_white_series_running_mean[:-lead_index_ocean[i],j])
         else:
             slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series_running_mean[:,j],OMET_interpolate_white_series_running_mean[:,j])
 # plot the correlation coefficient contour
@@ -314,7 +325,8 @@ x , y = np.meshgrid(lead_index_ocean,latitude_AMET)
 fig7 = plt.figure()
 # cmap 'jet' 'RdYlBu' 'coolwarm'
 #contour_level = np.array([-1.0,-0.8,-0.6,-0.4,-0.2,0,0.5,1.0])
-contour_level = np.array([-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0])
+#contour_level = np.array([-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0])
+contour_level = np.array([-0.8,-0.6,-0.4,-0.3,-0.2,-0.1,0.0])
 #cs = plt.contour(x,y,slope_2D.transpose(), linewidth=0.05, colors='k') # negative contours will be dashed by default
 #matplotlib.rcParams['contour.negative_linestyle'] = 'solid' #set negative contours to be solid instead of dashed
 cs = plt.contour(x,y,slope_2D.transpose(), contour_level, linewidth=0.05, cmap='jet')
@@ -335,6 +347,44 @@ plt.ylabel("Latitude")
 plt.show()
 fig7.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_running_mean_%dm_regression_lead_lag.jpg' % (window), dpi = 500)
 
+
+# time lead/lag regression of anomalies without running means
+for i in np.arange(len(lead_index_ocean)):
+    for j in np.arange(len(latitude_AMET)):
+        if lead_index_ocean[i]<0:
+            # atmosphere lead the ocean
+            slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series[:lead_index_ocean[i],j],OMET_interpolate_white_series[-lead_index_ocean[i]:,j])
+        elif lead_index_ocean[i]>0:
+            # ocean lead the atmosphere
+            slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series[lead_index_ocean[i]:,j],OMET_interpolate_white_series[:-lead_index_ocean[i],j])
+        else:
+            slope_2D[i,j],_,r_value_2D[i,j],p_value_2D[i,j],_ = scipy.stats.linregress(AMET_white_series[:,j],OMET_interpolate_white_series[:,j])
+# plot the correlation coefficient contour
+x , y = np.meshgrid(lead_index_ocean,latitude_AMET)
+
+fig8 = plt.figure()
+# cmap 'jet' 'RdYlBu' 'coolwarm'
+#contour_level = np.array([-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3])
+contour_level = np.array([-0.3,-0.2,-0.1,0.0])
+#cs = plt.contour(x,y,slope_2D.transpose(), linewidth=0.05, colors='k') # negative contours will be dashed by default
+#matplotlib.rcParams['contour.negative_linestyle'] = 'solid' #set negative contours to be solid instead of dashed
+cs = plt.contour(x,y,slope_2D.transpose(), contour_level, linewidth=0.05, cmap='jet')
+plt.clabel(cs, inline=1, fontsize=10)
+#plt.contourf(x,y,T_series_E[181:,:]/1000,cmap='coolwarm') # from 20N-90N
+plt.title('Lead/Lag regression of OMET on AMET anomalies (1979-2014)')
+fig8.set_size_inches(12, 5)
+#add color bar
+cbar = plt.colorbar(cs,orientation='vertical',shrink =0.8)
+#cbar.set_label('PW (1E+15W)')
+plt.xlabel("Time Lag (year)")
+#lead_year = ['-10','-8','-6','-4','-2','0','2','4','6','8','10']
+lead_year = ['-15','-12','-9','-6','-3','0','3','6','9','12','15']
+#plt.xticks(np.linspace(-120, 120, 11), lead_year)
+plt.xticks(np.linspace(-180, 180, 11), lead_year)
+#plt.xticks(rotation=60)
+plt.ylabel("Latitude")
+plt.show()
+fig8.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_anomalies_regression_lead_lag.jpg', dpi = 500)
 print '*******************************************************************'
 print '****************** maps (average of point data) *******************'
 print '*******************************************************************'
