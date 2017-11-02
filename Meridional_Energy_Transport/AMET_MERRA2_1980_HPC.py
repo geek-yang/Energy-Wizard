@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2017.10.17
-Last Update     : 2017.11.1
+Last Update     : 2017.11.2
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -15,7 +15,7 @@ Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
 variables       : Absolute Temperature              T         [K]
                   Specific Humidity                 q         [kg/kg]
-                  Logarithmic Surface Pressure      ps        [Pa]
+                  Surface Pressure                  ps        [Pa]
                   Zonal Divergent Wind              u         [m/s]
                   Meridional Divergent Wind         v         [m/s]
 		          Surface geopotential  	        z         [m2/s2]
@@ -90,7 +90,7 @@ constant ={'g' : 9.80616,      # gravititional acceleration [m / s2]
 # A and B values for the definition of sigma levelist
 # Since there are 72 model levels, there are 73 half levels, so it is for A and B values
 # the unit of A is hPa!!!!!!!!!!!!
-# from surfac eto TOA
+# from surface to TOA
 A = np.array([
       0.000000e+00, 4.804826e-02, 6.593752e+00, 1.313480e+01, 1.961311e+01, 2.609201e+01,
       3.257081e+01, 3.898201e+01, 4.533901e+01, 5.169611e+01, 5.805321e+01, 6.436264e+01,
@@ -105,6 +105,8 @@ A = np.array([
       6.167791e-01, 4.758061e-01, 3.650411e-01, 2.785261e-01, 2.113490e-01, 1.594950e-01,
       1.197030e-01, 8.934502e-02, 6.600001e-02, 4.758501e-02, 3.270000e-02, 2.000000e-02,
       1.000000e-02,],dtype=float)
+# reverse A
+A = A[::-1]
 # the unit of B is 1!!!!!!!!!!!!
 # from surfac eto TOA
 B = np.array([
@@ -121,6 +123,8 @@ B = np.array([
       0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00,
       0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00, 0.000000e+00,
       0.000000e+00,],dtype=float)
+# reverse B
+B = B[::-1]
 
 ################################   Input zone  ######################################
 # specify data path
@@ -146,11 +150,11 @@ def var_key_retrieve(datapath, year, month, day):
     '''
     # get the path to each datasets
     print "Start retrieving datasets %d (y) - %s (m) - %s (d)" % (year,namelist_month[month-1],namelist_day[day])
-    logging.info("Start retrieving variables T,q,u,v,lnsp,z for from %d (y) - %s (m) - %s (d) " % (year,namelist_month[month-1],namelist_day[day]))
+    logging.info("Start retrieving variables T,q,u,v,sp,z for from %d (y) - %s (m) - %s (d) " % (year,namelist_month[month-1],namelist_day[day]))
     datapath_var = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d%s%s.SUB.nc4' % (year,namelist_month[month-1],namelist_day[day])
     # get the variable keys
     var_key = Dataset(datapath_var)
-    # The shape of each variable is (8,72,)
+    # The shape of each variable is (8,72,361,576)
     print "Retrieving datasets successfully and return the variable key!"
     logging.info("Retrieving variables for from %d (y) - %s (m) - %s (d) successfully!" % (year,namelist_month[month-1],namelist_day[day]))
     return var_key
@@ -192,19 +196,19 @@ def mass_correction_tendency(datapath,year,month,var_start,var_end,var_last,days
     dp_level_next = np.zeros((len(level),len(latitude),len(longitude)),dtype = float) # first day of the next month
     # use matrix A and B to calculate dp based on half pressure level
     for i in index_level:
-        dp_level_last[i,:,:] = (A[i]*100 + B[i] * ps_last) - (A[i+1]*100 + B[i+1] * ps_last)
-        dp_level_start[i,:,:] = (A[i]*100 + B[i] * ps_start) - (A[i+1]*100 + B[i+1] * ps_start)
-        dp_level_end[i,:,:] = (A[i]*100 + B[i] * ps_end) - (A[i+1]*100 + B[i+1] * ps_end)
-        dp_level_next[i,:,:] = (A[i]*100 + B[i] * ps_next) - (A[i+1]*100 + B[i+1] * ps_next)
+        dp_level_last[i,:,:] = (A[i+1]*100 + B[i+1] * ps_last) - (A[i]*100 + B[i] * ps_last)
+        dp_level_start[i,:,:] = (A[i+1]*100 + B[i+1] * ps_start) - (A[i]*100 + B[i] * ps_start)
+        dp_level_end[i,:,:] = (A[i+1]*100 + B[i+1] * ps_end) - (A[i]*100 + B[i] * ps_end)
+        dp_level_next[i,:,:] = (A[i+1]*100 + B[i+1] * ps_next) - (A[i]*100 + B[i] * ps_next)
     # calculte the precipitable water tendency and take the vertical integral
     moisture_last = np.sum((q_last * dp_level_last), 0) # last day of the last month
     moisture_start = np.sum((q_start * dp_level_start), 0) # start of the current month
     moisture_end = np.sum((q_end * dp_level_end), 0) # end of the current month
     moisture_next = np.sum((q_next * dp_level_next), 0) # first day of the next month
     # compute the moisture tendency (one day has 86400s)
-    moisture_tendency = ((moisture_end + moisture_next) / 2 - (moisture_last + moisture_start) / 2) / (len(days)/8*86400) / constant['g']
+    moisture_tendency = ((moisture_end + moisture_next) / 2 - (moisture_last + moisture_start) / 2) / (len(days)*86400) / constant['g']
     # calculate the surface pressure tendency
-    ps_tendency = ((ps_end + ps_next) / 2 - (ps_last + ps_start) / 2 ) / (len(days)/8*86400)
+    ps_tendency = ((ps_end + ps_next) / 2 - (ps_last + ps_start) / 2 ) / (len(days)*86400)
     logging.info("Finish calculating the moisture tendency and surface pressure tendency")
     print "Finish calculating the moisture tendency and surface pressure tendency"
 
@@ -233,7 +237,7 @@ def mass_correction_divergence(var_key):
     # calculate the delta pressure
     dp_level = np.zeros((len(time),len(level),len(latitude),len(longitude)),dtype = float)
     for i in index_level:
-        dp_level[:,i,:,:] = (A[i]*100 + B[i] * ps) - (A[i+1]*100 + B[i+1] * ps)
+        dp_level[:,i,:,:] =  (A[i+1]*100 + B[i+1] * ps) - (A[i]*100 + B[i] * ps)
     # calculte the mean moisture flux for a certain month
     moisture_flux_u = u * q * dp_level / constant['g']
     moisture_flux_v = v * q * dp_level / constant['g']
@@ -335,8 +339,8 @@ def calc_geopotential(var_key):
     index_level = np.arange(len(level))
     # calculate the pressure at each half level
     for i in index_level:
-        p_half_minus[:,i,:,:] = A[i+1]*100 + B[i+1] * ps
-        p_half_plus[:,i,:,:] = A[i]*100 + B[i] * ps
+        p_half_plus[:,i,:,:] = A[i+1]*100 + B[i+1] * ps
+        p_half_minus[:,i,:,:] = A[i]*100 + B[i] * ps
     # calculate full pressure level
     #level_full = (p_half_plus + p_half_minus) / 2
     # compute the moist temperature (virtual temperature)
@@ -348,25 +352,27 @@ def calc_geopotential(var_key):
     # Calculate the geopotential at each level
     # The integral should be taken from surface level to the TOA
     for i in index_level:
+        # reverse the index to make it from surface to the TOA
+        i_inverse = len(level) -1 - i
         # the ln(p_plus/p_minus) is calculated, alpha is defined
         # an exception lies in the TOA
         # see equation 2.23 in ECMWF IFS 9220
-        if i == index_level[-1]:
-            ln_p = np.log(p_half_plus[:,i,:,:]/10)
+        if i_inverse == 0:
+            ln_p = np.log(p_half_plus[:,i_inverse,:,:]/10)
             alpha = np.log(2)
         else:
-            ln_p = np.log(p_half_plus[:,i,:,:]/p_half_minus[:,i,:,:])
-            delta_p = p_half_plus[:,i,:,:] - p_half_minus[:,i,:,:]
-            alpha = 1 - p_half_minus[:,i,:,:] / delta_p * ln_p
+            ln_p = np.log(p_half_plus[:,i_inverse,:,:]/p_half_minus[:,i_inverse,:,:])
+            delta_p = p_half_plus[:,i_inverse,:,:] - p_half_minus[:,i_inverse,:,:]
+            alpha = 1 - p_half_minus[:,i_inverse,:,:] / delta_p * ln_p
         # calculate the geopotential of the full level (exclude surface geopotential)
         # see equation 2.22 in ECMWF IFS 9220
-        gz_full = gz_half + alpha * constant['R_dry'] * Tv[:,i,:,:]
+        gz_full = gz_half + alpha * constant['R_dry'] * Tv[:,i_inverse,:,:]
         # add surface geopotential to the full level
         # see equation 2.21 in ECMWF IFS 9220
-        gz[:,i,:,:] = z + gz_full
+        gz[:,i_inverse,:,:] = z + gz_full
         # renew the half level geopotential for next loop step (from p_half_minus level to p_half_plus level)
         # see equation 2.20 in ECMWF IFS 9220
-        gz_half = gz_half + ln_p * constant['R_dry'] * Tv[:,i,:,:]
+        gz_half = gz_half + ln_p * constant['R_dry'] * Tv[:,i_inverse,:,:]
     print '*******************************************************************'
     print "***Computation of geopotential on each pressure level is finished**"
     print '*******************************************************************'
@@ -400,7 +406,7 @@ def meridional_energy_transport(var_key, gz):
     # calculate the index of pressure levels
     index_level = np.arange(len(level))
     for i in index_level:
-        dp_level[:,i,:,:] =  (A[i]*100 + B[i] * ps) - (A[i+1]*100 + B[i+1] * ps)
+        dp_level[:,i,:,:] = (A[i+1]*100 + B[i+1] * ps) - (A[i]*100 + B[i] * ps)
     # calculate each component of total energy
     # take the vertical integral
     # mass correction component
@@ -527,7 +533,7 @@ def create_netcdf_point (meridional_E_point_pool,meridional_E_internal_point_poo
     logging.info("Start creating netcdf file for total meridional energy transport and each component at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep+'merra%d' % (year) + os.sep + 'output' + os.sep + 'AMET_MERRA2_model_daily_075_%d_E_point.nc' % (year),'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep+'merra%d' % (year) + os.sep + 'output' + os.sep + 'AMET_MERRA2_model_daily_%d_E_point.nc' % (year),'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     month_wrap_dim = data_wrap.createDimension('month',Dim_month)
     lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
@@ -590,7 +596,7 @@ def create_netcdf_zonal_int (meridional_E_pool, meridional_E_internal_pool, meri
     logging.info("Start creating netcdf files for the zonal integral of total meridional energy transport and each component.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep+'merra%d' % (year) + os.sep + 'output' + os.sep + 'AMET_MERRA2_model_daily_075_%d_E_zonal_int.nc' % (year),'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep+'merra%d' % (year) + os.sep + 'output' + os.sep + 'AMET_MERRA2_model_daily_%d_E_zonal_int.nc' % (year),'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     month_wrap_dim = data_wrap.createDimension('month',Dim_month)
     lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
