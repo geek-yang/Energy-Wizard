@@ -145,7 +145,7 @@ def var_coordinate(datapath):
     #umask = mesh_mask_key.variables['umask'][0,:,:,:]
     vmask = mesh_mask_key.variables['vmask'][0,:,:,:]
     # land-sea mask for sub-basin
-    tmaskatl = subbasin_mesh_key.variables['tmaskatl'][:]
+    tmaskatl = subbasin_mesh_key.variables['tmaskatl'][:,1:-1] # attention that the size is different!
     # grid spacing scale factors (zonal)
     e1t = mesh_mask_key.variables['e1t'][0,:,:]
     e2t = mesh_mask_key.variables['e2t'][0,:,:]
@@ -198,11 +198,11 @@ def stream_function(uv_key,e1v):
         # Atlantic meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl[:,:] * e3t_0[i] +\
-                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl[:,:] * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_0[i] +\
+                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
             else:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl[:,:] * e3t_0[i] + psi_atlantic[i+1,:,:] +\
-                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl[:,:] * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] +\
+                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
