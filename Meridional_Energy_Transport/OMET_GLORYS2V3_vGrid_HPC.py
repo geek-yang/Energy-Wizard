@@ -310,7 +310,7 @@ def zonal_int_plot(E_point_annual):
     plt.xlabel("Latitude")
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
-    fig3.savefig(output_path + os.sep + 'OMET_GLORYS2V3_1993_2014.jpg',dpi = 500)
+    fig3.savefig(output_path + os.sep + 'OMET_GLORYS2V3_1993_2014.png',dpi = 500)
 
 def create_netcdf_point (meridional_E_point_pool,output_path):
     print '*******************************************************************'
