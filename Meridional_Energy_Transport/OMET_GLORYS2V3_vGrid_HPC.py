@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3) on HPC
 Author          : Yang Liu
 Date            : 2017.11.7
-Last Update     : 2017.11.7
+Last Update     : 2017.11.9
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from
                   Mercator Ocean. The complete computaiton is accomplished
@@ -230,13 +230,13 @@ def visualization_stream_function(psi_glo,psi_atl):
     X , Y = np.meshgrid(gphiv[:,1060],deptht)
     contour_level = np.arange(-40,80,5)
     plt.contour(X,Y,psi_glo_mean,linewidth= 0.2)
-    cs = plt.contourf(X,Y,psi_glo_mean,contour_level,linewidth= 0.2,cmap='RdYlGn')
+    #cs = plt.contourf(X,Y,psi_glo_mean,contour_level,linewidth= 0.2,cmap='RdYlGn')
     plt.title('Stokes Stream Function of Global Ocean')
     plt.xlabel("Laitude")
     plt.xticks(np.linspace(-90,90,13))
     plt.ylabel("Ocean Depth")
-    cbar = plt.colorbar(orientation='horizontal')
-    cbar.set_label('Transport of mass 1E+6 m3/s')
+    #cbar = plt.colorbar(orientation='horizontal')
+    #cbar.set_label('Transport of mass 1E+6 m3/s')
     #invert the y axis
     plt.gca().invert_yaxis()
     plt.show()
@@ -247,13 +247,13 @@ def visualization_stream_function(psi_glo,psi_atl):
     X , Y = np.meshgrid(gphiv[:,1060],deptht)
     contour_level = np.arange(-40,80,5)
     plt.contour(X,Y,psi_atl_mean,linewidth= 0.2)
-    cs = plt.contourf(X,Y,psi_atl_mean,contour_level,linewidth= 0.2,cmap='RdYlGn')
+    #cs = plt.contourf(X,Y,psi_atl_mean,contour_level,linewidth= 0.2,cmap='RdYlGn')
     plt.title('Stokes Stream Function of Atlantic Ocean')
     plt.xlabel("Laitude")
     plt.xticks(np.linspace(-90,90,13))
     plt.ylabel("Ocean Depth")
-    cbar = plt.colorbar(orientation='horizontal')
-    cbar.set_label('Transport of mass 1E+6 m3/s')
+    #cbar = plt.colorbar(orientation='horizontal')
+    #cbar.set_label('Transport of mass 1E+6 m3/s')
     #invert the y axis
     plt.gca().invert_yaxis()
     plt.show()
@@ -302,9 +302,9 @@ def meridional_energy_transport(theta_key, uv_key):
     print '*****************************************************************************'
     return Internal_E_int
 
-def zonal_int_plot(E_point_annual):
+def zonal_int_plot(E_annual):
     # take the zonal means
-    E_zonal_int_mean = np.mean(np.mean(E_point_annual,0)/1000,0)
+    E_zonal_int_mean = np.mean(np.mean(E_annual,0)/1000,0)
     fig3 = plt.figure()
     plt.plot(gphiv[:,1060],E_zonal_int_mean)
     plt.xlabel("Latitude")
