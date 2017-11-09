@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2017.10.17
-Last Update     : 2017.11.3
+Last Update     : 2017.11.9
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -19,20 +19,20 @@ variables       : Absolute Temperature              T         [K]
                   Zonal Divergent Wind              u         [m/s]
                   Meridional Divergent Wind         v         [m/s]
 		          Surface geopotential  	        z         [m2/s2]
-Caveat!!	: The dataset is a testing dataset containing the globe in 1980.
-		      Attention should be paid when calculating the meridional grid length (dy)!
-              Direction of Axis:
-              Model Level: surface to TOA
-              Latitude: South to Nouth (-90 to 90)
-              Lontitude: West to East (-180 to 180)
-              Time: 00:00 03:00 06:00 09:00 12:00 15:00 18:00 21:00 (3 hourly)
+Caveat!!	    : The dataset is a testing dataset containing the globe in 1980.
+		          Attention should be paid when calculating the meridional grid length (dy)!
+                  Direction of Axis:
+                  Model Level: TOA to surface
+                  Latitude: South to Nouth (-90 to 90)
+                  Lontitude: West to East (-180 to 180)
+                  Time: 00:00 03:00 06:00 09:00 12:00 15:00 18:00 21:00 (3 hourly)
 
-              Mass correction is accmpolished through the correction of barotropic wind:
-              mass residual = surface pressure tendency + divergence of mass flux (u,v) - (E-P)
-              E-P = evaporation - precipitation = moisture tendency - divergence of moisture flux(u,v)
-              Due to the structure of the dataset, the mass budget correction are split into
-              two parts: 1. Quantify tendency terms in month loop
-                         2. Quantify divergence terms in day loop
+                  Mass correction is accmpolished through the correction of barotropic wind:
+                  mass residual = surface pressure tendency + divergence of mass flux (u,v) - (E-P)
+                  E-P = evaporation - precipitation = moisture tendency - divergence of moisture flux(u,v)
+                  Due to the structure of the dataset, the mass budget correction are split into
+                  two parts: 1. Quantify tendency terms in month loop
+                             2. Quantify divergence terms in day loop
 """
 import numpy as np
 import time as tttt
@@ -460,7 +460,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Total Atmospheric Meridional Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    #plt.xticks(np.linspace(20,90,13))
+    plt.xticks(np.linspace(-90,90,13))
     #plt.yticks(np.linspace(0,6,7))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
@@ -474,7 +474,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Internal Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    #plt.xticks(np.linspace(20,90,13))
+    plt.xticks(np.linspace(-90,90,13))
     #plt.yticks(np.linspace(0,6,7))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
@@ -488,7 +488,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Latent Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    #plt.xticks(np.linspace(20,90,13))
+    plt.xticks(np.linspace(-90,90,13))
     #plt.yticks(np.linspace(0,2,5))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
@@ -502,7 +502,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Geopotential Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    #plt.xticks(np.linspace(20,90,13))
+    plt.xticks(np.linspace(-90,90,13))
     #plt.yticks(np.linspace(-2.5,2.0,10))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
@@ -516,7 +516,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.title('Atmospheric Meridional Kinetic Energy Transport %d' % (year))
     #plt.legend()
     plt.xlabel("Laitude")
-    #plt.xticks(np.linspace(20,90,13))
+    plt.xticks(np.linspace(-90,90,13))
     #plt.yticks(np.linspace(0,0.15,6))
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
