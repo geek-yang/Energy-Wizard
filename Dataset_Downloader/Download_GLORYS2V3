@@ -5,6 +5,7 @@
 #Function        : Download GLORYS2V3 from CMEMS
 #Author          : Yang Liu
 #Date            : 2017.11.3
+#Last Update     : 2017.11.8
 #Description     : The code aims to download the ocean reanalysis data GLORYS2V3 from
 #                  EU Copernicus Marine Environment Monitoring Service. The data is on
 #                  original ORCA083 grid (model level). This dataset contains a full
@@ -49,7 +50,7 @@ do
   wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-t/GLORYS2V3_ORCA025_${year}1215_R20130808_gridT.nc
   echo $year
 done
-echo 'Complete downloading Potential Temperature on model level (ORCA083)!'
+echo 'Complete downloading Potential Temperature on model level (ORCA)!'
 sleep 5
 # 2010 is between the 1st and 2nd stream
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-t/GLORYS2V3_ORCA025_20100115_R20130808_gridT.nc
@@ -65,7 +66,7 @@ wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/G
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-t/GLORYS2V3_ORCA025_20101115_R20130808_gridT.nc
 #-----------#-----------#------------#
 # Meridional/Zonal Current Velocity
-echo 'Meridional and Zonal Current Velocity on model level (ORCA083)!'
+echo 'Meridional and Zonal Current Velocity on model level (ORCA)!'
 cd ~
 cd /project/Reanalysis/GLORYS2V3/monthly/UV
 for (( year=${start_year_1st}; year<=${end_year_1st}; year++))
@@ -84,7 +85,7 @@ do
   wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_${year}1215_R20130808_gridUV.nc
   echo $year
 done
-echo 'Complete downloading Meridional and Zonal Current Velocity on model level (ORCA083)!'
+echo 'Complete downloading Meridional and Zonal Current Velocity on model level (ORCA)!'
 sleep 5
 # 2010 is between the 1st and 2nd stream
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20100115_R20130808_gridUV.nc
@@ -119,12 +120,12 @@ wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/G
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-t/GLORYS2V3_ORCA025_20111015_R20140520_gridT.nc
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-t/GLORYS2V3_ORCA025_20111115_R20140520_gridT.nc
 #-----------#-----------#------------#
-echo 'Meridional and Zonal Current Velocity on model level (ORCA083)!'
+echo 'Meridional and Zonal Current Velocity on model level (ORCA)!'
 cd ~
 cd /project/Reanalysis/GLORYS2V3/monthly/UV
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20101215_R20140520_gridUV.nc
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20110115_R20140520_gridUV.nc
-wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20110315_R20140520_gridUV.nc
+wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20110215_R20140520_gridUV.nc
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20110315_R20140520_gridUV.nc
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20110415_R20140520_gridUV.nc
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20110515_R20140520_gridUV.nc
@@ -138,7 +139,7 @@ wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/G
 # Download the 3rd assimilation stream
 # go to the directory
 # potential Temperature
-echo 'Potential Temperature on model level (ORCA083083)!'
+echo 'Potential Temperature on model level (ORCA083)!'
 cd ~
 cd /project/Reanalysis/GLORYS2V3/monthly/T
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-t/GLORYS2V3_ORCA025_20111215_R20151218_gridT.nc
@@ -158,10 +159,10 @@ do
   wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-t/GLORYS2V3_ORCA025_${year}1215_R20151218_gridT.nc
   echo $year
 done
-echo 'Complete downloading Potential Temperature on model level (ORCA083)!'
+echo 'Complete downloading Potential Temperature on model level (ORCA)!'
 sleep 5
 #-----------#-----------#------------#
-echo 'Meridional and Zonal Current Velocity on model level (ORCA083)!'
+echo 'Meridional and Zonal Current Velocity on model level (ORCA)!'
 cd ~
 cd /project/Reanalysis/GLORYS2V3/monthly/UV
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_20111215_R20151218_gridUV.nc
@@ -181,14 +182,14 @@ do
   wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-monthly-u-v/GLORYS2V3_ORCA025_${year}1215_R20151218_gridUV.nc
   echo $year
 done
-echo 'Complete downloading Meridional and Zonal Current Velocity on model level (ORCA083)!'
+echo 'Complete downloading Meridional and Zonal Current Velocity on model level (ORCA)!'
 sleep 5
 #-----------#-----------#------------#
 # Download mask-mesh.file
-echo 'Mask and Mesh (ORCA083)!'
+echo 'Mask and Mesh (ORCA)!'
 cd ~
 cd /project/Reanalysis/GLORYS2V3/monthly/
 wget --user=yliu17 --password='Bach1685' ftp://rancmems.mercator-ocean.fr/Core/GLOBAL_REANALYSIS_PHYS_001_009/dataset-global-reanalysis-phys-001-009-ran-fr-glorys2v3-coordinates/G2V3_mesh_mask_myocean.nc
 #-----------#-----------#------------#
 # Finish downloading the entire dataset
-echo 'Finish downloading the entire dataset GLORYS2V3 on model level (ORCA083)!'
+echo 'Finish downloading the entire dataset GLORYS2V3 on model level (ORCA)!'
