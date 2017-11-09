@@ -211,7 +211,7 @@ def stream_function(uv_key,e1v):
             else:
                 psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] + psi_globe[i-1,:,:]
     # take the zonal integral
-    psi_stream_globe = np.sum(psi_globe,2)/1e+6 # the unit is changed to Sv
+    psi_stream_globe = np.sum(psi_globe * vmask,2)/1e+6 # the unit is changed to Sv
     psi_stream_atlantic = np.sum(psi_atlantic,2)/1e+6 # the unit is changed to Sv
 
     print "Compute the meridional overturning stream function for globle and Atlantic successfully!"
@@ -295,7 +295,7 @@ def meridional_energy_transport(theta_key, uv_key):
                                      T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:]
     # take the vertical integral
     Internal_E_int = np.zeros((jj,ji))
-    Internal_E_int = np.sum(Internal_E_flux,0)/1e+12
+    Internal_E_int = np.sum(Internal_E_flux * vmask,0)/1e+12
     print '*****************************************************************************'
     print "**** Computation of meridional energy transport in the ocean is finished ****"
     print "************         The result is in tera-watt (1E+12)          ************"
