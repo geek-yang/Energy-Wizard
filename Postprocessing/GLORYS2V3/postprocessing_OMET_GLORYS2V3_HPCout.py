@@ -187,7 +187,7 @@ print '*******************************************************************'
 
 angle = np.linspace(0, 2 * np.pi, 13)
 # np.repeat
-angle_series = np.tile(angle[:-1],23)
+angle_series = np.tile(angle[:-1],22)
 month_str = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 # wind rose of time series
