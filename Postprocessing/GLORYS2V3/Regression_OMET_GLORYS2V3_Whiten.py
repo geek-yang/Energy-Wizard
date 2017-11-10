@@ -178,7 +178,7 @@ index = np.arange(1,265,1)
 index_year = np.arange(1993,2015,1)
 
 index_running_mean = np.arange(1,265-window+1,1)
-index_year_running_mean = np.arange(1993+window/12-1,2015,1)
+index_year_running_mean = np.arange(1993+window/12,2015,1)
 
 # plot the OMET after removing seasonal cycle
 fig1 = plt.figure()

@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3) on HPC
 Author          : Yang Liu
 Date            : 2017.11.7
-Last Update     : 2017.11.9
+Last Update     : 2017.11.10
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from
                   Mercator Ocean. The complete computaiton is accomplished
@@ -192,17 +192,25 @@ def stream_function(uv_key,e1v):
             if i == level -1:
                 psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] +\
                              e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
+                # for old version of python to avoid the filling value during summation
+                psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
             else:
                 psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] +\
                              e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
+                # for old version of python to avoid the filling value during summation
+                psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
         # Atlantic meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
                 psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_0[i] +\
                              e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                # for old version of python to avoid the filling value during summation
+                psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
             else:
                 psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] +\
                              e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                # for old version of python to avoid the filling value during summation
+                psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
@@ -211,7 +219,7 @@ def stream_function(uv_key,e1v):
             else:
                 psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] + psi_globe[i-1,:,:]
     # take the zonal integral
-    psi_stream_globe = np.sum(psi_globe * vmask,2)/1e+6 # the unit is changed to Sv
+    psi_stream_globe = np.sum(psi_globe,2)/1e+6 # the unit is changed to Sv
     psi_stream_atlantic = np.sum(psi_atlantic,2)/1e+6 # the unit is changed to Sv
 
     print "Compute the meridional overturning stream function for globle and Atlantic successfully!"
