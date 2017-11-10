@@ -576,7 +576,7 @@ XX, YY = m(xx, yy)
 # define color range for the contourf
 color = np.linspace(-0.25,0.25,11)
 # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
-cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci[0:lat_y+1,:],r_value),color,cmap='coolwarm') # ci_white
+cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci,r_value),color,cmap='coolwarm') # ci_white
 # add color bar
 cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
 cbar.ax.tick_params(labelsize=8)
