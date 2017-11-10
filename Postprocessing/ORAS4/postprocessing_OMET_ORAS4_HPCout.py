@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from HPC cloud (ORAS4)
 Author          : Yang Liu
 Date            : 2017.10.12
-Last Update     : 2017.10.13
+Last Update     : 2017.11.10
 Description     : The code aims to postprocess the output from the HPC cloud
                   regarding the computation of oceainic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4 from ECMWF
@@ -143,32 +143,6 @@ index = np.arange(1,len(year)*len(month)+1,1)
 index_year = np.arange(1979,1979+len(year)+1,1)
 axis_ref = np.zeros(len(index))
 
-# # nearest neighbour interpolation
-# E_point_near = np.zeros((len(year),len(month),180,360),dtype=float)
-# # prepare for cube
-# latitude_cube = iris.coords.AuxCoord(latitude,standard_name='latitude',units='degrees')
-# longitude_cube = iris.coords.AuxCoord(longitude,standard_name='longitude',units='degrees')
-# for i in year_ind:
-#     for j in month_ind:
-#         E_mask = np.ma.masked_where(vmask == 0, E_point[i,j,:,:])
-#         cube = iris.cube.Cube(E_mask,long_name='Oceanic Meridional Energy Transport',
-#                             var_name='OMET',units='PW',aux_coords_and_dims=[(latitude_cube,(0,1)),(longitude_cube,(0,1))])
-#         # choose the projection map type
-#         projection = ccrs.PlateCarree()
-#         # Transform cube to target projection
-#         cube_regrid, extent = iris.analysis.cartography.project(cube, projection, nx=360, ny=180)
-#         # save data
-#         E_point_near[i,j,:,:] = cube_regrid.data
-#     if i == 0:
-#         y_coord = cube_regrid.coord('projection_y_coordinate').points
-#
-# E_point_near_seasonal_cycle = np.mean(E_point_near,0)
-# E_point_near_white = np.zeros(E_point_near.shape)
-# for i in month_ind:
-#     for j in year_ind:
-#         E_point_near_white[j,i,:,:] = E_point_near[j,i,:,:] - E_point_near_seasonal_cycle[i,:,:]
-# # calculate zonal integral based on interpolation result
-# E_near = np.sum(E_point_near_white,3)
 
 print '*******************************************************************'
 print '*********************** time series plots *************************'
@@ -201,7 +175,7 @@ plt.title('Oceanic Meridional Energy Transport time series(1979-2014)' )
 fig7.set_size_inches(14, 4)
 #add color bar
 cbar = plt.colorbar()
-cbar.set_label('PW (1E+15)')
+cbar.set_label('PW (1E+15W)')
 plt.xlabel("Time")
 plt.xticks(np.linspace(0, 432, 37), index_year)
 plt.xticks(rotation=60)
@@ -271,7 +245,6 @@ print '*******************************************************************'
 # For each plot, a cube has to been constructed first
 # spacial distribution of AMET - mean of 36 years
 
-fig16 = plt.figure()
 latitude_cube = iris.coords.AuxCoord(latitude,standard_name='latitude',units='degrees')
 longitude_cube = iris.coords.AuxCoord(longitude,standard_name='longitude',units='degrees')
 E_point_mean = np.mean(np.mean(E_point,0),0)
@@ -285,85 +258,116 @@ y_coord = cube_space_mean_regrid.coord('projection_y_coordinate').points
 x_coord = cube_space_mean_regrid.coord('projection_x_coordinate').points
 
 print cube_space_mean_regrid
+# support NetCDF
+iris.FUTURE.netcdf_promote = True
 fig16 =plt.figure()
-# setup north polar stereographic basemap
-# resolution c(crude) l(low) i(intermidiate) h(high) f(full)
-# lon_0 is at 6 o'clock
-m = Basemap(projection='npstere',boundinglat=30,round=True,lon_0=0,resolution='l')
-# draw coastlines
-m.drawcoastlines()
-# fill continents, set lake color same as ocean color.
-# m.fillcontinents(color='coral',lake_color='aqua')
-# draw parallels and meridians
-# location labels=[left,right,top,bottom]
-m.drawparallels(np.arange(30,91,30),fontsize = 7)
-m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
-# x,y coordinate - lon, lat
-xx, yy = np.meshgrid(x_coord,y_coord[90:])
-XX, YY = m(xx, yy)
-# define color range for the contourf
-color = np.linspace(-1,1,11)
-# !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
-cs = m.contourf(XX,YY,E_point_mean_regrid[90:,:]/1000,color,cmap='coolwarm')
-# add color bar
-cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
-cbar.ax.tick_params(labelsize=8)
-cbar.set_label('Peta Watt',fontsize = 8)
-plt.title('Mean Meridional Energy Transport (1979-2014)',fontsize = 9, y=1.05)
-plt.show()
-fig16.savefig(output_path + os.sep + "Map_OMET_ORAS4_mean.jpeg",dpi=500)
+fig16.suptitle('Oceanic Meridional Energy Transport in 1993 (GLORYS2V3)')
+# Set up axes and title
+ax = plt.subplot(projection=ccrs.PlateCarree())
+#ax = plt.axes(projection=ccrs.NorthPolarStereo())
+# Set limits
+#ax.set_global()
+ax.set_extent([-180,180,30,90],crs=ccrs.PlateCarree())
+# Draw coastlines
+ax.coastlines(linewidth=0.25)
+# set gridlines and ticks
+gl = ax.gridlines(crs=ccrs.NorthPolarStereo(), draw_labels=True,linewidth=1,
+                 color='gray', alpha=0.5,linestyle='--')
+gl.xlabels_top = False
+gl.xlabel_style = {'size': 11, 'color': 'gray'}
+#gl.xlines = False
+#gl.set_xticks()
+#gl.set_yticks()
+gl.xformatter = LONGITUDE_FORMATTER
+gl.ylabel_style = {'size': 11, 'color': 'gray'}
+#ax.ylabels_left = False
+gl.yformatter = LATITUDE_FORMATTER
+# plot with Iris quickplot pcolormesh
+cs = iplt.pcolormesh(cube_space_mean_regrid/1000,cmap='coolwarm',vmin=-0.7,vmax=0.7)
+cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
+cbar.set_label('PW (1E+15W)')
+iplt.show()
+fig16.savefig(output_path + os.sep + 'Map_OMET_ORAS4_mean.jpg',dpi = 500)
 
-# spacial distribution of AMET - trend of the anomaly of 36 years
-# calculate trend
-# create an array to store the slope coefficient and residual
-a = np.zeros((jj,ji),dtype = float)
-b = np.zeros((jj,ji),dtype = float)
-# the least square fit equation is y = ax + b
-# np.lstsq solves the equation ax=b, a & b are the input
-# thus the input file should be reformed for the function
-# we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
-A = np.vstack([index,np.ones(len(index))]).T
-# start the least square fitting
-for i in np.arange(jj):
-    for j in np.arange(ji):
-        # return value: coefficient matrix a and b, where a is the slope
-        a[i,j], b[i,j] = np.linalg.lstsq(A,series_E_point_white[:,i,j]/1000)[0]
-
-E_point_trend_mask = np.ma.masked_where(vmask == 0, a)
-cube_trend = iris.cube.Cube(E_point_trend_mask,long_name='Trend of Oceanic Meridional Energy Transport Anomaly',
-                            var_name='OMET',units='PW',aux_coords_and_dims=[(latitude_cube,(0,1)),(longitude_cube,(0,1))])
-projection = ccrs.NorthPolarStereo()
-cube_trend_regrid, extent = iris.analysis.cartography.project(cube_trend, projection, nx=360, ny=180)
-a_trend_regrid = cube_trend_regrid.data
-#y_coord = cube_space_mean_regrid.coord('projection_y_coordinate').points
-#x_coord = cube_space_mean_regrid.coord('projection_x_coordinate').points
-
-fig18 = plt.figure()
-# setup north polar stereographic basemap
-# resolution c(crude) l(low) i(intermidiate) h(high) f(full)
-# lon_0 is at 6 o'clock
-m = Basemap(projection='npstere',boundinglat=30,round=True,lon_0=0,resolution='l')
-# draw coastlines
-m.drawcoastlines()
-# fill continents, set lake color same as ocean color.
-# m.fillcontinents(color='coral',lake_color='aqua')
-# draw parallels and meridians
-# location labels=[left,right,top,bottom]
-m.drawparallels(np.arange(30,91,30),fontsize = 7)
-m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
-# x,y coordinate - lon, lat
-xx, yy = np.meshgrid(x_coord,y_coord[90:])
-XX, YY = m(xx, yy)
-# define color range for the contourf
-color = np.linspace(-0.1,0.1,11)
-# !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
-cs = m.contourf(XX,YY,a[90:,:]*12*10,color,cmap='coolwarm')
-# add color bar
-cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
-cbar.ax.tick_params(labelsize=8)
-cbar.set_label('PW/decade',fontsize = 8)
-plt.title('Trend of OMET anomaly (1979-2014)',fontsize = 9, y=1.05)
-plt.show()
-fig18.savefig(output_path + os.sep + "Map_OMET_ORAS4_anomaly_trend.jpeg",dpi=500)
+# fig17 =plt.figure()
+# # setup north polar stereographic basemap
+# # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+# # lon_0 is at 6 o'clock
+# m = Basemap(projection='npstere',boundinglat=30,round=True,lon_0=0,resolution='l')
+# # draw coastlines
+# m.drawcoastlines()
+# # fill continents, set lake color same as ocean color.
+# # m.fillcontinents(color='coral',lake_color='aqua')
+# # draw parallels and meridians
+# # location labels=[left,right,top,bottom]
+# m.drawparallels(np.arange(30,91,30),fontsize = 7)
+# m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+# # x,y coordinate - lon, lat
+# xx, yy = np.meshgrid(x_coord,y_coord[90:])
+# XX, YY = m(xx, yy)
+# # define color range for the contourf
+# color = np.linspace(-1,1,11)
+# # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+# cs = m.contourf(XX,YY,E_point_mean_regrid[90:,:]/1000,color,cmap='coolwarm')
+# # add color bar
+# cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+# cbar.ax.tick_params(labelsize=8)
+# cbar.set_label('Peta Watt',fontsize = 8)
+# plt.title('Mean Meridional Energy Transport (1979-2014)',fontsize = 9, y=1.05)
+# plt.show()
+# fig17.savefig(output_path + os.sep + "Map_OMET_ORAS4_mean.jpeg",dpi=500)
+#
+# # spacial distribution of AMET - trend of the anomaly of 36 years
+# # calculate trend
+# # create an array to store the slope coefficient and residual
+# a = np.zeros((jj,ji),dtype = float)
+# b = np.zeros((jj,ji),dtype = float)
+# # the least square fit equation is y = ax + b
+# # np.lstsq solves the equation ax=b, a & b are the input
+# # thus the input file should be reformed for the function
+# # we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+# A = np.vstack([index,np.ones(len(index))]).T
+# # start the least square fitting
+# for i in np.arange(jj):
+#     for j in np.arange(ji):
+#         # return value: coefficient matrix a and b, where a is the slope
+#         a[i,j], b[i,j] = np.linalg.lstsq(A,series_E_point_white[:,i,j]/1000)[0]
+#
+# E_point_trend_mask = np.ma.masked_where(vmask == 0, a)
+# cube_trend = iris.cube.Cube(E_point_trend_mask,long_name='Trend of Oceanic Meridional Energy Transport Anomaly',
+#                             var_name='OMET',units='PW',aux_coords_and_dims=[(latitude_cube,(0,1)),(longitude_cube,(0,1))])
+# projection = ccrs.NorthPolarStereo()
+# cube_trend_regrid, extent = iris.analysis.cartography.project(cube_trend, projection, nx=360, ny=180)
+# a_trend_regrid = cube_trend_regrid.data
+# #y_coord = cube_space_mean_regrid.coord('projection_y_coordinate').points
+# #x_coord = cube_space_mean_regrid.coord('projection_x_coordinate').points
+#
+# fig18 = plt.figure()
+# # setup north polar stereographic basemap
+# # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+# # lon_0 is at 6 o'clock
+# m = Basemap(projection='npstere',boundinglat=30,round=True,lon_0=0,resolution='l')
+# # draw coastlines
+# m.drawcoastlines()
+# # fill continents, set lake color same as ocean color.
+# # m.fillcontinents(color='coral',lake_color='aqua')
+# # draw parallels and meridians
+# # location labels=[left,right,top,bottom]
+# m.drawparallels(np.arange(30,91,30),fontsize = 7)
+# m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+# # x,y coordinate - lon, lat
+# xx, yy = np.meshgrid(x_coord,y_coord[90:])
+# XX, YY = m(xx, yy)
+# # define color range for the contourf
+# color = np.linspace(-0.1,0.1,11)
+# # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+# cs = m.contourf(XX,YY,a_trend_regrid[90:,:]*12*10,color,cmap='coolwarm')
+# # add color bar
+# cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
+# cbar.ax.tick_params(labelsize=8)
+# cbar.set_label('PW/decade',fontsize = 8)
+# plt.title('Trend of OMET anomaly (1979-2014)',fontsize = 9, y=1.05)
+# plt.show()
+# fig18.savefig(output_path + os.sep + "Map_OMET_ORAS4_anomaly_trend.jpeg",dpi=500)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))

@@ -2,9 +2,9 @@
 """
 Copyright Netherlands eScience Center
 
-Function        : Regression of climatological variable on OMET (ORAS4) with whitening
+Function        : Regression of climatological variable on OMET (GLORYS2V3) with whitening
 Author          : Yang Liu
-Date            : 2017.10.13
+Date            : 2017.11.10
 Last Update     : 2017.11.10
 Description     : The code aims to explore the association between climatological
                   variables with oceanic meridional energy transport (OMET).
@@ -14,7 +14,7 @@ Description     : The code aims to explore the association between climatologica
                   will be projected on meridional energy transport. This will enhance
                   our understanding of climate change. Notice that the time series
                   of input data will be whitened (the seasonal cycles are removed).
-                  The fields come from ERA-Interim surface level data, from 1979-2016.
+                  The fields come from ERA-Interim surface level data, from 1993-2014.
 
 Return Value    : Map of correlation
 Dependencies    : os, time, numpy, scipy, netCDF4, matplotlib, basemap
@@ -52,25 +52,25 @@ sns.set()
 ################################   Input zone  ######################################
 # specify data path
 # OMET
-datapath_OMET = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
+datapath_OMET = 'F:\DataBase\HPC_out\GLORYS2V3\postprocessing'
 # target climatological variables
 datapath_y = "F:\DataBase\ERA_Interim\Monthly"
 # specify output path for figures
-output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\OMET\ORAS4'
+output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\OMET\GLORYS2V3'
 # the threshold ( index of latitude) of the OMET
-lat_OMET = 233 # at 60 N
+lat_OMET = 788 # at 60 N
 # the range ( index of latitude) of the projection field
 lat_y = 94 # upto 20 N
 ####################################################################################
 print '*******************************************************************'
 print '*********************** extract variables *************************'
 print '*******************************************************************'
-# ORCA1_z42 grid infor (Madec and Imbard 1996)
-ji = 362
-jj = 292
-level = 42
+# ORCA025_z75 grid infor (Madec and Imbard 1996)
+ji = 1440
+jj = 1021
+level = 75
 # zonal integral
-dataset_OMET = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
+dataset_OMET = Dataset(datapath_OMET + os.sep + 'GLORYS2V3_model_monthly_orca025_E_zonal_int.nc')
 dataset_y = Dataset(datapath_y + os.sep + 'surface_monthly_regress_variables_197901-201612.nc')
 for k in dataset_OMET.variables:
     print dataset_OMET.variables['%s' % (k)]
@@ -80,15 +80,15 @@ for l in dataset_y.variables:
 
 # extract Oceanic meridional energy transport
 # dimension (year,month,latitude)
-OMET = dataset_OMET.variables['E'][21:,:,lat_OMET]/1000 # from Tera Watt to Peta Watt # start from 1979
+OMET = dataset_OMET.variables['E'][:,:,lat_OMET]/1000 # from Tera Watt to Peta Watt # start from 1993
 # extract variables from 20N to 90 N
 # sea level pressure
-SLP = dataset_y.variables['msl'][:432,0:lat_y+1,:]
+SLP = dataset_y.variables['msl'][168:432,0:lat_y+1,:] # from 1993 - 2014
 # sea surface temperature
-SST = dataset_y.variables['sst'][:432,0:lat_y+1,:]
+SST = dataset_y.variables['sst'][168:432,0:lat_y+1,:]
 mask_SST = np.ma.getmaskarray(SST[0,:,:])
 # sea ice cover
-ci = dataset_y.variables['ci'][:432,0:lat_y+1,:]
+ci = dataset_y.variables['ci'][168:432,0:lat_y+1,:]
 mask_ci = np.ma.getmaskarray(ci[0,:,:])
 # longitude
 lon = dataset_y.variables['longitude'][:]
@@ -105,7 +105,7 @@ print '*******************************************************************'
 print '*********************** prepare variables *************************'
 print '*******************************************************************'
 # take the time series of E
-OMET_series = OMET.reshape(432)
+OMET_series = OMET.reshape(264)
 
 print '*******************************************************************'
 print '*************************** whitening *****************************'
@@ -148,14 +148,14 @@ for i in month_ind:
     OMET_white[:,i] = OMET[:,i] - OMET_seansonal_cycle[i]
 
 # take the time series of whitened OMET
-OMET_white_series = OMET_white.reshape(432)
+OMET_white_series = OMET_white.reshape(264)
 
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
 # running mean is calculated on time series
 # define the running window for the running mean
-window = 120 # in month
+window = 60 # in month
 # calculate the running mean and sum of OMET
 OMET_running_mean = np.zeros(len(OMET_series)-window+1)
 #OMET_running_sum = np.zeros(len(OMET_series)-window+1)
@@ -174,33 +174,33 @@ print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
 # index and namelist of years for time series and running mean time series
-index = np.arange(1,433,1)
-index_year = np.arange(1979,2015,1)
+index = np.arange(1,265,1)
+index_year = np.arange(1993,2015,1)
 
-index_running_mean = np.arange(1,433-window+1,1)
-index_year_running_mean = np.arange(1979+window/12-1,2015,1)
+index_running_mean = np.arange(1,265-window+1,1)
+index_year_running_mean = np.arange(1993+window/12-1,2015,1)
 
 # plot the OMET after removing seasonal cycle
 fig1 = plt.figure()
-plt.plot(index,OMET_white_series,'b-',label='ECMWF')
-plt.title('Oceanic Meridional Energy Transport Anomaly at 60N (1979-2014)')
+plt.plot(index,OMET_white_series,'b-',label='GLORYS2V3')
+plt.title('Oceanic Meridional Energy Transport Anomaly at 60N (1993-2014)')
 #plt.legend()
 fig1.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432, 37), index_year)
+plt.xticks(np.linspace(0, 264, 23), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig1.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_time_series_1979_2014.jpg', dpi = 500)
+fig1.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_time_series_1993_2014.jpg', dpi = 500)
 
 # plot the running mean of OMET after removing seasonal cycle
 fig0 = plt.figure()
-plt.plot(index_running_mean,OMET_white_running_mean,'b-',label='ERA-Interim')
-plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1979-2014)' % (window))
+plt.plot(index_running_mean,OMET_white_running_mean,'b-',label='GLORYS2V3')
+plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1993-2014)' % (window))
 #plt.legend()
 fig0.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432-window, 37-window/12), index_year_running_mean)
+plt.xticks(np.linspace(0, 265-window, 23-window/12), index_year_running_mean)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -210,11 +210,11 @@ fig0.savefig(output_path + os.sep + 'regression' + os.sep +'OMET_anomaly_60N_run
 fig2 = plt.figure()
 plt.plot(index,OMET_series,'b--',label='time series')
 plt.plot(index[window-1:],OMET_running_mean,'r-',linewidth=2.0,label='running mean')
-plt.title('Running Mean of OMET at 60N with a window of %d months (1979-2014)' % (window))
+plt.title('Running Mean of OMET at 60N with a window of %d months (1993-2014)' % (window))
 #plt.legend()
 fig2.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432, 37), index_year)
+plt.xticks(np.linspace(0, 264, 23), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -224,11 +224,11 @@ fig2.savefig(output_path + os.sep + 'regression' + os.sep +'OMET_60N_running_mea
 fig3 = plt.figure()
 plt.plot(index,OMET_white_series,'b--',label='time series')
 plt.plot(index[window-1:],OMET_white_running_mean,'r-',linewidth=2.0,label='running mean')
-plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1979-2014)' % (window))
+plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1993-2014)' % (window))
 #plt.legend()
 fig3.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432, 37), index_year)
+plt.xticks(np.linspace(0, 264, 23), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -243,8 +243,8 @@ freq_FFT_OMET = np.fft.fftfreq(len(FFT_OMET),d=1)
 mag_FFT_OMET = abs(FFT_OMET)
 # Plot OMET in Frequency domain
 fig4 = plt.figure()
-plt.plot(freq_FFT_OMET[0:200],mag_FFT_OMET[0:200],'b-',label='ORAS4')
-plt.title('Fourier Transform of OMET at 60N (1979-2014)')
+plt.plot(freq_FFT_OMET[0:200],mag_FFT_OMET[0:200],'b-',label='GLORYS2V3')
+plt.title('Fourier Transform of OMET at 60N (1993-2014)')
 #plt.legend()
 fig4.set_size_inches(12, 5)
 plt.xlabel("Times per month")
@@ -252,7 +252,7 @@ plt.xlabel("Times per month")
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig4.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_60N_FFT_1979_2014.jpg', dpi = 500)
+fig4.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_60N_FFT_1993_2014.jpg', dpi = 500)
 
 # Fast Fourier Transform of OMET anomalies
 FFT_OMET_white = np.fft.fft(OMET_white_series)
@@ -260,8 +260,8 @@ freq_FFT_OMET_white = np.fft.fftfreq(len(FFT_OMET_white),d=1)
 mag_FFT_OMET_white = abs(FFT_OMET_white)
 # Plot the anomaly of OMET in Frequency domain
 fig5 = plt.figure()
-plt.plot(freq_FFT_OMET_white[0:200],mag_FFT_OMET_white[0:200],'b-',label='ORAS4')
-plt.title('Fourier Transform of OMET Anomaly at 60N (1979-2014)')
+plt.plot(freq_FFT_OMET_white[0:200],mag_FFT_OMET_white[0:200],'b-',label='GLORYS2V3')
+plt.title('Fourier Transform of OMET Anomaly at 60N (1993-2014)')
 #plt.legend()
 fig5.set_size_inches(12, 5)
 plt.xlabel("Times per month")
@@ -269,7 +269,7 @@ plt.xlabel("Times per month")
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig5.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_1979_2014.jpg', dpi = 500)
+fig5.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_1993_2014.jpg', dpi = 500)
 
 # Plot the running mean of OMET anomaly in Frequency domain
 FFT_OMET_white_running_mean = np.fft.fft(OMET_white_running_mean)
@@ -277,8 +277,8 @@ freq_FFT_OMET_white_running_mean = np.fft.fftfreq(len(FFT_OMET_white_running_mea
 mag_FFT_OMET_white_running_mean = abs(FFT_OMET_white_running_mean)
 # Plot the running mean of OMET in Frequency domain
 fig6 = plt.figure()
-plt.plot(freq_FFT_OMET_white_running_mean[0:60],mag_FFT_OMET_white_running_mean[0:60],'b-',label='ORAS4')
-plt.title('Fourier Transform of Running Mean (%d) of OMET Anomalies at 60N (1979-2014)' % (window))
+plt.plot(freq_FFT_OMET_white_running_mean[0:60],mag_FFT_OMET_white_running_mean[0:60],'b-',label='GLORYS2V3')
+plt.title('Fourier Transform of Running Mean (%d) of OMET Anomalies at 60N (1993-2014)' % (window))
 #plt.legend()
 fig6.set_size_inches(12, 5)
 plt.xlabel("Times per month")
@@ -286,7 +286,7 @@ plt.xlabel("Times per month")
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig6.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_running_mean_%d_1979_2014.jpg' % (window), dpi = 500)
+fig6.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_running_mean_%d_1993_2014.jpg' % (window), dpi = 500)
 
 print '*******************************************************************'
 print '**************************** trend ********************************'
@@ -323,7 +323,7 @@ m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75
 xx, yy = np.meshgrid(lon,lat)
 XX, YY = m(xx, yy)
 # define color range for the contourf
-color = np.linspace(-45,45,19) # for SLP
+color = np.linspace(-60,60,25) # for SLP
 # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
 #cs = m.contour(XX,YY,a*12,color)
 #plt.clabel(cs, fontsize=7, inline=1)
@@ -334,7 +334,7 @@ cbar.ax.tick_params(labelsize=8)
 #cbar.set_ticks(np.arange(-1,1.1,0.2))
 #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
 cbar.set_label('Pa/Decade',fontsize = 8)
-plt.title('Trend of Sea Level Pressure Anomalies (1979-2014)',fontsize = 9, y=1.05)
+plt.title('Trend of Sea Level Pressure Anomalies (1993-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig7.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_SLP.jpeg",dpi=500)
 
@@ -358,14 +358,14 @@ m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75
 xx, yy = np.meshgrid(lon,lat)
 XX, YY = m(xx, yy)
 # define color range for the contourf
-color = np.linspace(-0.8,0.8,17)
+color = np.linspace(-1.0,1.0,21)
 # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
 cs = m.contourf(XX,YY,np.ma.masked_where(mask_SST,a*12*10),color,cmap='coolwarm')
 # add color bar
 cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
 cbar.ax.tick_params(labelsize=8)
 cbar.set_label('Celsius/Decade',fontsize = 8)
-plt.title('Trend of Sea Surface Temperature Anomalies (1979-2014)',fontsize = 9, y=1.05)
+plt.title('Trend of Sea Surface Temperature Anomalies (1993-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig8.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_SST.jpeg",dpi=500)
 
@@ -389,17 +389,17 @@ m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75
 xx, yy = np.meshgrid(lon,lat)
 XX, YY = m(xx, yy)
 # define color range for the contourf
-color = np.linspace(-0.15,0.15,21)
+color = np.linspace(-0.18,0.18,19)
 # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
 cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci,a*12*10),color,cmap='coolwarm')
 # add color bar
 cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.3f')
 cbar.ax.tick_params(labelsize=8)
-cbar.set_ticks(np.arange(-0.15,0.20,0.05))
-cbar_labels = ['-15%','-10%','-5%','0%','5%','10%','15%']
+cbar.set_ticks(np.arange(-0.18,0.20,0.06))
+cbar_labels = ['-18%','-12%','-6%','0%','6%','12%','18%']
 cbar.ax.set_xticklabels(cbar_labels)
 cbar.set_label('Percentage/Decade',fontsize = 8)
-plt.title('Trend of the Sea Ice Concentration Anomalies (1979-2014)',fontsize = 9, y=1.05)
+plt.title('Trend of the Sea Ice Concentration Anomalies (1993-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig9.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_Ice.jpeg",dpi=500)
 
@@ -521,6 +521,7 @@ cbar.ax.tick_params(labelsize=8)
 #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
 cbar.set_label('Correlation Coefficient',fontsize = 8)
 # locate the indices of p_value matrix where p<0.05 (99.5% confident)
+p_value[mask_SST==1] = 1.0
 i, j = np.where(p_value<=0.05)
 # get the coordinate on the map (lon,lat) and plot scatter dots
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
@@ -548,6 +549,7 @@ cs = m.contourf(XX,YY,slope,color,cmap='coolwarm')
 cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
 cbar.ax.tick_params(labelsize=8)
 cbar.set_label('Regression Coefficient Celsius/PW',fontsize = 8)
+p_value[mask_SST==1] = 1.0
 i, j = np.where(p_value<=0.05)
 # get the coordinate on the map (lon,lat) and plot scatter dots
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
@@ -574,7 +576,7 @@ m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75
 xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
 XX, YY = m(xx, yy)
 # define color range for the contourf
-color = np.linspace(-0.25,0.25,11)
+color = np.linspace(-0.30,0.30,13)
 # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
 cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci,r_value),color,cmap='coolwarm') # ci_white
 # add color bar
@@ -582,6 +584,7 @@ cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
 cbar.ax.tick_params(labelsize=8)
 cbar.set_label('Correlation Coefficient',fontsize = 8)
 # locate the indices of p_value matrix where p<0.05 (99.5% confident)
+p_value[mask_ci==1] = 1.0
 i, j = np.where(p_value<=0.05)
 # get the coordinate on the map (lon,lat) and plot scatter dots
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
@@ -602,7 +605,7 @@ m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75
 xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
 XX, YY = m(xx, yy)
 # define color range for the contourf
-color = np.linspace(-0.65,0.65,27)
+color = np.linspace(-0.75,0.75,31)
 # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
 cs = m.contourf(XX,YY,slope,color,cmap='coolwarm')
 # add color bar
@@ -612,6 +615,7 @@ cbar.ax.tick_params(labelsize=8)
 cbar_labels = ['-65%','-30%','0%','30%','65%']
 cbar.ax.set_xticklabels(cbar_labels)
 cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
+p_value[mask_ci==1] = 1.0
 i, j = np.where(p_value<=0.05)
 # get the coordinate on the map (lon,lat) and plot scatter dots
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map

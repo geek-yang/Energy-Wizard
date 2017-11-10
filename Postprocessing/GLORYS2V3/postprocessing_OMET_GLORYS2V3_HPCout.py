@@ -15,7 +15,7 @@ Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, matplotlib
 variables       : Meridional Energy Transport               E
                   Land-Sea Mask                             mask
-Caveat!!        : The full dataset is from 1992 to 2014. The data coverage is the entire globe.
+Caveat!!        : The full dataset is from 1993 to 2014. The data coverage is the entire globe.
 """
 
 import numpy as np
@@ -125,7 +125,7 @@ T_series_E = np.transpose(series_E)
 T_series_E_white = np.transpose(series_E_white)
 
 index = np.arange(1,len(year)*len(month)+1,1)
-index_year = np.arange(1992,1992+len(year)+1,1)
+index_year = np.arange(1993,1993+len(year)+1,1)
 axis_ref = np.zeros(len(index))
 
 print '*******************************************************************'
@@ -134,15 +134,15 @@ print '*******************************************************************'
 # 60 N total meridional energy transport time series
 fig1 = plt.figure()
 plt.plot(index,T_series_E[788,:]/1000,'b-',label='GLORYS2V3') # lat = 60N
-plt.title('Oceanic Meridional Energy Transport time series at %d N (1992-2014)' % (Lat_num))
+plt.title('Oceanic Meridional Energy Transport time series at %d N (1993-2014)' % (Lat_num))
 #plt.legend()
 fig1.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 276, 24), index_year)
+plt.xticks(np.linspace(0, 264, 23), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig1.savefig(output_path + os.sep + 'OMET_GLORYS2V3_%dN_total_time_series_1992_2014.jpg' % (Lat_num), dpi = 500)
+fig1.savefig(output_path + os.sep + 'OMET_GLORYS2V3_%dN_total_time_series_1993_2014.jpg' % (Lat_num), dpi = 500)
 
 print '*******************************************************************'
 print '*********************** time series shades ************************'
@@ -154,17 +154,17 @@ fig2 = plt.figure()
 #plt.contour(x,y,T_series_E/1000, linewidth=0.05, colors='k')
 # cmap 'jet' 'RdYlBu' 'coolwarm'
 plt.contourf(x,y,T_series_E[579:,:]/1000,cmap='coolwarm') # from 20N-90N
-plt.title('Oceanic Meridional Energy Transport time series(1992-2014)' )
+plt.title('Oceanic Meridional Energy Transport time series(1993-2014)' )
 fig2.set_size_inches(12, 5)
 #add color bar
 cbar = plt.colorbar()
 cbar.set_label('PW (1E+15W)')
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 276, 24), index_year)
+plt.xticks(np.linspace(0, 264, 23), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Latitude (Globe)")
 plt.show()
-fig2.savefig(output_path + os.sep + 'OMET_GLORYS2V3_time_series_1992_2014_shades.jpg', dpi = 500)
+fig2.savefig(output_path + os.sep + 'OMET_GLORYS2V3_time_series_1993_2014_shades.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '*************************** x-y lines  ****************************'
@@ -173,13 +173,13 @@ print '*******************************************************************'
 fig3 = plt.figure()
 plt.axhline(y=0, color='r',ls='--')
 plt.plot(latitude_aux,np.mean(series_E,0)/1000,'b-',label='GLORYS2V3')
-plt.title('Oceanic Meridional Energy Transport (1992-2014)' )
+plt.title('Oceanic Meridional Energy Transport (1993-2014)' )
 #plt.legend()
 plt.xlabel("Latitudes")
 #plt.xticks()
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig3.savefig(output_path + os.sep + 'OMET_GLORYS2V3_mean_1992_2014.jpg', dpi = 500)
+fig3.savefig(output_path + os.sep + 'OMET_GLORYS2V3_mean_1993_2014.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '************************* wind rose plots *************************'
@@ -187,14 +187,14 @@ print '*******************************************************************'
 
 angle = np.linspace(0, 2 * np.pi, 13)
 # np.repeat
-angle_series = np.tile(angle[:-1],23)
+angle_series = np.tile(angle[:-1],22)
 month_str = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 # wind rose of time series
 fig4 = plt.figure()
 plt.axes(polar = True)
 plt.plot(angle_series,T_series_E[788,:]/1000,'b--',label='GLORYS2V3')
-plt.title('Oceanic Meridional Energy Transport at %d N (1992-2014)' % (Lat_num), y=1.07)
+plt.title('Oceanic Meridional Energy Transport at %d N (1993-2014)' % (Lat_num), y=1.07)
 #plt.legend()
 #fig10.set_size_inches(14, 4)
 #plt.xlabel("Time")
@@ -203,14 +203,14 @@ plt.yticks(np.linspace(0,1,5),color='r',size =12)
 #plt.xticks(rotation=60)
 #plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig4.savefig(output_path + os.sep + 'OMET_GLORYS2V3_%dN_total_windrose_1992_2014.jpg' % (Lat_num), dpi = 500)
+fig4.savefig(output_path + os.sep + 'OMET_GLORYS2V3_%dN_total_windrose_1993_2014.jpg' % (Lat_num), dpi = 500)
 
 # wind rose of time series after removing seasonal cycles
 
 fig5 = plt.figure()
 plt.axes(polar = True)
 plt.plot(angle_series,T_series_E_white[788,:]/1000,'b--',label='GLORYS2V3')
-plt.title('Oceanic Meridional Energy Transport anomaly at %d N (1992-2014)' % (Lat_num), y=1.07)
+plt.title('Oceanic Meridional Energy Transport anomaly at %d N (1993-2014)' % (Lat_num), y=1.07)
 #plt.legend()
 #fig10.set_size_inches(14, 4)
 #plt.xlabel("Time")
@@ -219,7 +219,7 @@ plt.yticks(np.linspace(-0.1,0.1,5),color='r',size =12)
 #plt.xticks(rotation=60)
 #plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig5.savefig(output_path + os.sep + 'OMET_GLORYS2V3_%dN_total_windrose_white_1992_2014.jpg' % (Lat_num), dpi = 500)
+fig5.savefig(output_path + os.sep + 'OMET_GLORYS2V3_%dN_total_windrose_white_1993_2014.jpg' % (Lat_num), dpi = 500)
 
 print '*******************************************************************'
 print '********************** spacial distribution ***********************'
@@ -249,8 +249,8 @@ fig6.suptitle('Oceanic Meridional Energy Transport in 1993 (GLORYS2V3)')
 ax = plt.subplot(projection=ccrs.PlateCarree())
 #ax = plt.axes(projection=ccrs.NorthPolarStereo())
 # Set limits
-#ax.set_global()
-ax.set_extent([-180,180,30,90],crs=ccrs.PlateCarree())
+ax.set_global()
+#ax.set_extent([-180,180,30,90],crs=ccrs.PlateCarree())
 # Draw coastlines
 ax.coastlines(linewidth=0.25)
 # set gridlines and ticks
