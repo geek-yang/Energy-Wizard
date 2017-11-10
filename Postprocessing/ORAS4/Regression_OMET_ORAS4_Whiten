@@ -5,8 +5,8 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on OMET (ORAS4) with whitening
 Author          : Yang Liu
 Date            : 2017.10.13
-Last Update     : 2017.10.20
-Description     : The code aims to explore the assotiation between climatological
+Last Update     : 2017.11.10
+Description     : The code aims to explore the association between climatological
                   variables with oceanic meridional energy transport (OMET).
                   The statistical method employed here is linear regression. A
                   number of fields (SST, SLP, Sea ice, geopotential, etc.),
@@ -252,7 +252,7 @@ plt.xlabel("Times per month")
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig4.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_60N_FFT_1979_2016.jpg', dpi = 500)
+fig4.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_60N_FFT_1979_2014.jpg', dpi = 500)
 
 # Fast Fourier Transform of OMET anomalies
 FFT_OMET_white = np.fft.fft(OMET_white_series)
@@ -261,7 +261,7 @@ mag_FFT_OMET_white = abs(FFT_OMET_white)
 # Plot the anomaly of OMET in Frequency domain
 fig5 = plt.figure()
 plt.plot(freq_FFT_OMET_white[0:200],mag_FFT_OMET_white[0:200],'b-',label='ORAS4')
-plt.title('Fourier Transform of OMET Anomaly at 60N (1979-2016)')
+plt.title('Fourier Transform of OMET Anomaly at 60N (1979-2014)')
 #plt.legend()
 fig5.set_size_inches(12, 5)
 plt.xlabel("Times per month")
@@ -269,7 +269,7 @@ plt.xlabel("Times per month")
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig5.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_1979_2016.jpg', dpi = 500)
+fig5.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_1979_2014.jpg', dpi = 500)
 
 # Plot the running mean of OMET anomaly in Frequency domain
 FFT_OMET_white_running_mean = np.fft.fft(OMET_white_running_mean)
@@ -278,7 +278,7 @@ mag_FFT_OMET_white_running_mean = abs(FFT_OMET_white_running_mean)
 # Plot the running mean of OMET in Frequency domain
 fig6 = plt.figure()
 plt.plot(freq_FFT_OMET_white_running_mean[0:60],mag_FFT_OMET_white_running_mean[0:60],'b-',label='ORAS4')
-plt.title('Fourier Transform of Running Mean (%d) of OMET Anomalies at 60N (1979-2016)' % (window))
+plt.title('Fourier Transform of Running Mean (%d) of OMET Anomalies at 60N (1979-2014)' % (window))
 #plt.legend()
 fig6.set_size_inches(12, 5)
 plt.xlabel("Times per month")
@@ -286,7 +286,7 @@ plt.xlabel("Times per month")
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig6.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_running_mean_%d_1979_2016.jpg' % (window), dpi = 500)
+fig6.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_running_mean_%d_1979_2014.jpg' % (window), dpi = 500)
 
 print '*******************************************************************'
 print '**************************** trend ********************************'
@@ -334,7 +334,7 @@ cbar.ax.tick_params(labelsize=8)
 #cbar.set_ticks(np.arange(-1,1.1,0.2))
 #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
 cbar.set_label('Pa/Decade',fontsize = 8)
-plt.title('Trend of Sea Level Pressure Anomalies (1979-2016)',fontsize = 9, y=1.05)
+plt.title('Trend of Sea Level Pressure Anomalies (1979-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig7.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_SLP.jpeg",dpi=500)
 
@@ -365,7 +365,7 @@ cs = m.contourf(XX,YY,np.ma.masked_where(mask_SST,a*12*10),color,cmap='coolwarm'
 cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
 cbar.ax.tick_params(labelsize=8)
 cbar.set_label('Celsius/Decade',fontsize = 8)
-plt.title('Trend of Sea Surface Temperature Anomalies (1979-2016)',fontsize = 9, y=1.05)
+plt.title('Trend of Sea Surface Temperature Anomalies (1979-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig8.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_SST.jpeg",dpi=500)
 
@@ -399,7 +399,7 @@ cbar.set_ticks(np.arange(-0.15,0.20,0.05))
 cbar_labels = ['-15%','-10%','-5%','0%','5%','10%','15%']
 cbar.ax.set_xticklabels(cbar_labels)
 cbar.set_label('Percentage/Decade',fontsize = 8)
-plt.title('Trend of the Sea Ice Concentration Anomalies (1979-2016)',fontsize = 9, y=1.05)
+plt.title('Trend of the Sea Ice Concentration Anomalies (1979-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig9.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_Ice.jpeg",dpi=500)
 
