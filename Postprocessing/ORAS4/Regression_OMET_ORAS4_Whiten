@@ -505,8 +505,8 @@ m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l
 # draw coastlines
 m.drawcoastlines(linewidth=0.25)
 # draw parallels and meridians
-m.drawparallels(np.arange(60,81,10),fontsize = 7)
-m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+m.drawparallels(np.arange(60,81,10),fontsize = 7,linewidth=0.75)
+m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75)
 # x,y coordinate - lon, lat
 xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
 XX, YY = m(xx, yy)
@@ -568,8 +568,8 @@ m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l
 # draw coastlines
 m.drawcoastlines(linewidth=0.25)
 # draw parallels and meridians
-m.drawparallels(np.arange(60,81,10),fontsize = 7)
-m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7)
+m.drawparallels(np.arange(60,81,10),fontsize = 7,linewidth=0.75)
+m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75)
 # x,y coordinate - lon, lat
 xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
 XX, YY = m(xx, yy)
