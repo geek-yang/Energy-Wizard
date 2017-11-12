@@ -147,6 +147,11 @@ for i in year_ind:
 
 OMET_interpolate_white_series = OMET_interpolate_white.reshape(len(year)*len(month),len(latitude_AMET))
 
+fig99 = plt.figure()
+plt.plot(OMET_interpolate_white_series[:,lat_AMET],'r-',label='interpolate')
+plt.plot(OMET_white_series[:,lat_OMET_cut],'b-',label='original')
+plt.legend()
+plt.show()
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -197,7 +202,7 @@ index_year = np.arange(1979,2015,1)
 fig1 = plt.figure()
 plt.plot(index,AMET_series[:,lat_AMET],'r-',label='ERA-Interim')
 plt.plot(index,OMET_series[:,lat_OMET_cut],'b-',label='ORAS4')
-plt.plot(index,AMET_series[:,lat_AMET]+OMET_interpolate_series[:,lat_OMET_cut],'g--',label='Total')
+plt.plot(index,AMET_series[:,lat_AMET]+OMET_interpolate_series[:,lat_AMET],'g--',label='Total')
 plt.title('Meridional Energy Transport at 60 N (1979-2014)')
 plt.legend()
 fig1.set_size_inches(12, 5)
@@ -212,7 +217,7 @@ fig1.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_60N_total_time_series_197
 fig2 = plt.figure()
 plt.plot(index,AMET_white_series[:,lat_AMET],'r-',label='ERA-Interim')
 plt.plot(index,OMET_white_series[:,lat_OMET_cut],'b-',label='ORAS4')
-plt.plot(index,AMET_white_series[:,lat_AMET]+OMET_interpolate_white_series[:,lat_OMET_cut],'g--',label='Total')
+plt.plot(index,AMET_white_series[:,lat_AMET]+OMET_interpolate_white_series[:,lat_AMET],'g--',label='Total')
 plt.title('Meridional Energy Transport Anomalies at 60 N (1979-2014)')
 plt.legend()
 fig2.set_size_inches(12, 5)
