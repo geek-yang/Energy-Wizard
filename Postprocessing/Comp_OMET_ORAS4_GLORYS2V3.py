@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic meridional energy transport (ORAS4,GLORYS2V3)
 Author          : Yang Liu
 Date            : 2017.11.6
-Last Update     : 2017.11.7
+Last Update     : 2017.11.12
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF
@@ -105,7 +105,9 @@ print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
 # running mean is calculated on time series
 # define the running window for the running mean
-window = 60 # in month
+window = 12 # in month
+#window = 60 # in month
+#window = 120 # in month
 # calculate the running mean and sum of OMET
 # GLORYS2V3
 OMET_GLORYS2V3_running_mean = np.zeros(len(OMET_GLORYS2V3_series)-window+1)
@@ -145,11 +147,11 @@ index_year_1993 = np.arange(1993,2015,1)
 index_1979 = np.arange(1,433,1)
 index_year_1979 = np.arange(1979,2015,1)
 
-index_running_mean_1993 = np.arange(169,433-window+1,1)
-index_year_running_mean_1993 = np.arange(1993+window/12,2015,1)
-
-index_running_mean_1979 = np.arange(1,433-window+1,1)
-index_year_running_mean_1979 = np.arange(1979+window/12,2015,1)
+# index_running_mean_1993 = np.arange(169,433-window+1,1)
+# index_year_running_mean_1993 = np.arange(1993+window/12,2015,1)
+#
+# index_running_mean_1979 = np.arange(1,433-window+1,1)
+# index_year_running_mean_1979 = np.arange(1979+window/12,2015,1)
 
 # plot the OMET after removing seasonal cycle
 fig1 = plt.figure()
@@ -168,13 +170,13 @@ fig1.savefig(output_path + os.sep + 'Comp_OMET_anomaly_60N_time_series_1979_2014
 
 # plot the running mean of OMET after removing seasonal cycle
 fig0 = plt.figure()
-plt.plot(index_running_mean_1979,OMET_ORAS4_white_running_mean,'b-',label='ORAS4')
-plt.plot(index_running_mean_1993,OMET_GLORYS2V3_white_running_mean,'r-',label='GLORYS2V3')
+plt.plot(index_1979[window-1:],OMET_ORAS4_white_running_mean,'b-',label='ORAS4')
+plt.plot(index_1993[window-1:],OMET_GLORYS2V3_white_running_mean,'r-',label='GLORYS2V3')
 plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1979-2014)' % (window))
 #plt.legend()
 fig0.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432-window, 37-window/12), index_year_running_mean_1979)
+plt.xticks(np.linspace(0, 432, 37), index_year_1979)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
