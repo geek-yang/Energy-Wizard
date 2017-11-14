@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from HPC cloud (GLORYS2V3)
 Author          : Yang Liu
 Date            : 2017.11.9
-Last Update     : 2017.11.9
+Last Update     : 2017.11.14
 Description     : The code aims to postprocess the output from the HPC cloud
                   regarding the computation of oceainic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from Mercator Ocean.
@@ -78,6 +78,9 @@ for point in dataset_point.variables:
 E = dataset.variables['E'][:]
 # spacial distribution
 E_point = dataset_point.variables['E'][:]
+# Meridional Overturning Circulation Stream function
+Psi_glo = dataset.variables['Psi_glo'][:] # the unit is 1E+6 (Sv)
+Psi_atl = dataset.variables['Psi_atl'][:] # the unit is 1E+6 (Sv)
 
 year = dataset.variables['year'][:]
 month = dataset.variables['month'][:]
@@ -128,6 +131,9 @@ index = np.arange(1,len(year)*len(month)+1,1)
 index_year = np.arange(1993,1993+len(year)+1,1)
 axis_ref = np.zeros(len(index))
 
+# monthly mean of Meridional Overturning Circulation
+Psi_glo_mean = np.mean(Psi_glo,1)
+Psi_atl_mean = np.mean(Psi_atl,1)
 print '*******************************************************************'
 print '*********************** time series plots *************************'
 print '*******************************************************************'
@@ -182,6 +188,44 @@ plt.show()
 fig3.savefig(output_path + os.sep + 'OMET_GLORYS2V3_mean_1993_2014.jpg', dpi = 500)
 
 print '*******************************************************************'
+print '*************************** Contour  ******************************'
+print '*******************************************************************'
+# Annual mean of Meridional Overturning Circulation
+# Globe
+fig11 = plt.figure()
+X , Y = np.meshgrid(latitude_aux,level)
+contour_level = np.arange(-40,40,4)
+plt.contour(X,Y,np.mean(Psi_glo_mean,0),linewidth= 0.2)
+cs = plt.contourf(X,Y,np.mean(Psi_glo_mean,0),contour_level,linewidth= 0.2,cmap='RdYlGn')
+plt.title('Stokes Stream Function of Global Ocean')
+plt.xlabel("Laitude")
+plt.xticks(np.linspace(-90,90,13))
+plt.ylabel("Ocean Depth")
+cbar = plt.colorbar(orientation='horizontal')
+cbar.set_label('Transport of mass 1E+6 m3/s')
+#invert the y axis
+plt.gca().invert_yaxis()
+plt.show()
+fig11.savefig(output_path + os.sep + "OMET_GLORYS2V3_StreamFunction_Globe.png",dpi=500)
+
+# Atlantic
+fig12 = plt.figure()
+X , Y = np.meshgrid(latitude_aux[371:],level) # from 30S to 90N
+contour_level = np.arange(-30,30,3)
+plt.contour(X,Y,np.mean(Psi_atl_mean[:,:,371:],0),linewidth= 0.2)
+cs = plt.contourf(X,Y,np.mean(Psi_atl_mean[:,:,371:],0),contour_level,linewidth= 0.2,cmap='RdYlGn')
+plt.title('Stokes Stream Function of Global Ocean')
+plt.xlabel("Laitude")
+plt.xticks(np.linspace(-30,90,9))
+plt.ylabel("Ocean Depth")
+cbar = plt.colorbar(orientation='horizontal')
+cbar.set_label('Transport of mass 1E+6 m3/s')
+#invert the y axis
+plt.gca().invert_yaxis()
+plt.show()
+fig12.savefig(output_path + os.sep + "OMET_GLORYS2V3_StreamFunction_Atlantic.png",dpi=500)
+
+print '*******************************************************************'
 print '************************* wind rose plots *************************'
 print '*******************************************************************'
 
@@ -228,49 +272,49 @@ print '*******************************************************************'
 # For each plot, a cube has to been constructed first
 # spacial distribution of AMET - mean of 36 years
 
-latitude_cube = iris.coords.AuxCoord(latitude,standard_name='latitude',units='degrees')
-longitude_cube = iris.coords.AuxCoord(longitude,standard_name='longitude',units='degrees')
-E_point_mean = np.mean(np.mean(E_point,0),0)
-E_point_mean_mask = np.ma.masked_where(vmask == 0, E_point_mean)
-cube_space_mean = iris.cube.Cube(E_point_mean_mask,long_name='Oceanic Meridional Energy Transport',
-                                 var_name='OMET',units='PW',aux_coords_and_dims=[(latitude_cube,(0,1)),(longitude_cube,(0,1))])
-projection = ccrs.NorthPolarStereo()
-cube_space_mean_regrid, extent = iris.analysis.cartography.project(cube_space_mean, projection, nx=360, ny=180)
-E_point_mean_regrid = cube_space_mean_regrid.data
-y_coord = cube_space_mean_regrid.coord('projection_y_coordinate').points
-x_coord = cube_space_mean_regrid.coord('projection_x_coordinate').points
-
-print cube_space_mean_regrid
-# support NetCDF
-iris.FUTURE.netcdf_promote = True
-fig6 =plt.figure()
-fig6.suptitle('Oceanic Meridional Energy Transport in 1993 (GLORYS2V3)')
-# Set up axes and title
-ax = plt.subplot(projection=ccrs.PlateCarree())
-#ax = plt.axes(projection=ccrs.NorthPolarStereo())
-# Set limits
-ax.set_global()
-#ax.set_extent([-180,180,30,90],crs=ccrs.PlateCarree())
-# Draw coastlines
-ax.coastlines(linewidth=0.25)
-# set gridlines and ticks
-gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1,
-                 color='gray', alpha=0.5,linestyle='--')
-gl.xlabels_top = False
-gl.xlabel_style = {'size': 11, 'color': 'gray'}
-#gl.xlines = False
-#gl.set_xticks()
-#gl.set_yticks()
-gl.xformatter = LONGITUDE_FORMATTER
-gl.ylabel_style = {'size': 11, 'color': 'gray'}
-#ax.ylabels_left = False
-gl.yformatter = LATITUDE_FORMATTER
-# plot with Iris quickplot pcolormesh
-cs = iplt.pcolormesh(cube_space_mean_regrid/1000,cmap='coolwarm',vmin=-0.7,vmax=0.7)
-cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
-cbar.set_label('PW (1E+15W)')
-iplt.show()
-fig6.savefig(output_path + os.sep + 'Map_OMET_GLORYS2V3_mean.jpg',dpi = 500)
+# latitude_cube = iris.coords.AuxCoord(latitude,standard_name='latitude',units='degrees')
+# longitude_cube = iris.coords.AuxCoord(longitude,standard_name='longitude',units='degrees')
+# E_point_mean = np.mean(np.mean(E_point,0),0)
+# E_point_mean_mask = np.ma.masked_where(vmask == 0, E_point_mean)
+# cube_space_mean = iris.cube.Cube(E_point_mean_mask,long_name='Oceanic Meridional Energy Transport',
+#                                  var_name='OMET',units='PW',aux_coords_and_dims=[(latitude_cube,(0,1)),(longitude_cube,(0,1))])
+# projection = ccrs.NorthPolarStereo()
+# cube_space_mean_regrid, extent = iris.analysis.cartography.project(cube_space_mean, projection, nx=1440, ny=900)
+# E_point_mean_regrid = cube_space_mean_regrid.data
+# y_coord = cube_space_mean_regrid.coord('projection_y_coordinate').points
+# x_coord = cube_space_mean_regrid.coord('projection_x_coordinate').points
+#
+# print cube_space_mean_regrid
+# # support NetCDF
+# iris.FUTURE.netcdf_promote = True
+# fig6 =plt.figure()
+# fig6.suptitle('Oceanic Meridional Energy Transport in 1993 (GLORYS2V3)')
+# # Set up axes and title
+# ax = plt.subplot(projection=ccrs.PlateCarree())
+# #ax = plt.axes(projection=ccrs.NorthPolarStereo())
+# # Set limits
+# ax.set_global()
+# #ax.set_extent([-180,180,30,90],crs=ccrs.PlateCarree())
+# # Draw coastlines
+# ax.coastlines(linewidth=0.25)
+# # set gridlines and ticks
+# gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1,
+#                  color='gray', alpha=0.5,linestyle='--')
+# gl.xlabels_top = False
+# gl.xlabel_style = {'size': 11, 'color': 'gray'}
+# #gl.xlines = False
+# #gl.set_xticks()
+# #gl.set_yticks()
+# gl.xformatter = LONGITUDE_FORMATTER
+# gl.ylabel_style = {'size': 11, 'color': 'gray'}
+# #ax.ylabels_left = False
+# gl.yformatter = LATITUDE_FORMATTER
+# # plot with Iris quickplot pcolormesh
+# cs = iplt.pcolormesh(cube_space_mean_regrid/1000,cmap='coolwarm',vmin=-0.7,vmax=0.7)
+# cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
+# cbar.set_label('PW (1E+15W)')
+# iplt.show()
+# fig6.savefig(output_path + os.sep + 'Map_OMET_GLORYS2V3_mean.jpg',dpi = 500)
 
 # fig17 =plt.figure()
 # # setup north polar stereographic basemap
