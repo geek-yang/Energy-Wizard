@@ -179,22 +179,22 @@ def mass_correction_tendency(datapath,year,month,var_start,var_end,var_last,days
     if month == 12:
         year_next = year + 1
         if year_next < 1992:
-            datapath_var = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
         elif year_next < 2001:
-            datapath_var = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
         elif year_next < 2011:
-            datapath_var = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
         else:
-            datapath_var = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year_next) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.%d0101.SUB.nc4' % (year_next) # month-1+1
     else:
         if year < 1992:
-            datapath_var = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
         elif year < 2001:
-            datapath_var = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
         elif year < 2011:
-            datapath_var = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
         else:
-            datapath_var = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
+            datapath_next = datapath + os.sep + 'merra%d' % (year) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.%d%s01.SUB.nc4' % (year,namelist_month[month]) # month-1+1
     # get the variable key
     var_next = Dataset(datapath_next)
     # extract data
@@ -715,13 +715,13 @@ if __name__=="__main__":
     # Initialize the variable key of the last day of the last month for the computation of tendency terms in mass correction
     year_last = start_year - 1
     if year_last < 1992:
-        datapath_var = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
+        datapath_last = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
     elif year_last < 2001:
-        datapath_var = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
+        datapath_last = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
     elif year_last < 2011:
-        datapath_var = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
+        datapath_last = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
     else:
-        datapath_var = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
+        datapath_last = datapath + os.sep + 'merra%d' % (year_last) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.%d1231.SUB.nc4' % (year_last)
     var_last = Dataset(datapath_last)
     # loop for calculation
     for i in period:
