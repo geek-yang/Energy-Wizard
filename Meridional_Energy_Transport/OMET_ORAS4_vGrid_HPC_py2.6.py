@@ -199,7 +199,7 @@ def stream_function(v_key,e1v):
     # increase the dimension of vmask
     vmask_4D = np.repeat(vmask[np.newaxis,:,:,:],len(index_month),0)
     tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
-    tmaskatl_4D = np.repeat(tmaskatl[np.newaxis,:,:,:],len(index_month),0)
+    tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
     # choose the integration order
     int_order = 1  # 1 - from sea bottom to sea surface 2 from sea surfaca to sea bottom
     if int_order == 1:
