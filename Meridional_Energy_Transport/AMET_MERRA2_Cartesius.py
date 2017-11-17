@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(Cartesius customised)
 Author          : Yang Liu
 Date            : 2017.11.15
-Last Update     : 2017.11.15
+Last Update     : 2017.11.16
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -114,14 +114,17 @@ B = np.array([
 B = B[::-1]
 
 ################################   Input zone  ######################################
+#get input from shell
+# this aims for running serial program with one node on Cartesius
+line_in = sys.stdin.readline()
 # specify data path
 #datapath = 'F:\DataBase\ERA_Interim\Subdaily'
 datapath = '/projects/0/blueactn/reanalysis/MERRA2/subdaily'
 # time of the data, which concerns with the name of input
 # starting time (year)
-start_year = 1980
+start_year = int(line_in)
 # Ending time, if only for 1 year, then it should be the same as starting year
-end_year = 1980
+end_year = int(line_in)
 # specify output path for the netCDF4 file
 #output_path = 'F:\DataBase\ERA_Interim\Subdaily'
 output_path = '/projects/0/blueactn/reanalysis/MERRA2/output'
