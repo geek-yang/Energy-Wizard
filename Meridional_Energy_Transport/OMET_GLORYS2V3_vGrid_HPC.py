@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3) on HPC
 Author          : Yang Liu
 Date            : 2017.11.7
-Last Update     : 2017.11.10
+Last Update     : 2017.11.19
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from
                   Mercator Ocean. The complete computaiton is accomplished
@@ -178,6 +178,9 @@ def stream_function(uv_key,e1v):
     # extract variables
     #u = uv_key.variables['vozocrtx'][0,:,:,:]
     v = uv_key.variables['vomecrty'][0,:,:,:]
+    # set the filled value to be 0
+    #np.ma.set_fill_value(u,0)
+    np.ma.set_fill_value(v,0)
     # define the stream function psi
     psi_globe = np.zeros((level,jj,ji),dtype=float)
     psi_atlantic = np.zeros((level,jj,ji),dtype=float)
@@ -190,34 +193,34 @@ def stream_function(uv_key,e1v):
         # global meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] +\
-                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] +\
+                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
             else:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] +\
-                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] +\
+                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
         # Atlantic meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_0[i] +\
-                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] +\
+                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
             else:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] +\
-                             e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] +\
+                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i]
             else:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] + psi_globe[i-1,:,:]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:]
     # take the zonal integral
     psi_stream_globe = np.sum(psi_globe,2)/1e+6 # the unit is changed to Sv
     psi_stream_atlantic = np.sum(psi_atlantic,2)/1e+6 # the unit is changed to Sv
@@ -279,6 +282,8 @@ def meridional_energy_transport(theta_key, uv_key):
     theta = theta_key.variables['votemper'][0,:,:,:] # the unit of theta is Celsius!
     #u = u_key.variables['vozocrtx'][0,:,:,:]
     v = uv_key.variables['vomecrty'][0,:,:,:]
+    # set the filled value to be 0
+    np.ma.set_fill_value(v,0)
     print 'Extracting variables successfully!'
     #logging.info("Extracting variables successfully!")
     # calculate the meridional velocity at T grid
@@ -294,12 +299,12 @@ def meridional_energy_transport(theta_key, uv_key):
     partial = 1 # switch for the partial cells 1 = include & 0 = exclude
     for i in np.arange(level):
         if partial == 1: # include partial cells
-            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:] *\
+            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
                                      T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:] +\
-                                     constant['rho'] * constant['cp'] * v[i,:,:] *\
+                                     constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
                                      T_vgrid[i,:,:] * e1v * e3t_adjust[i,:,:] * vmask[i,:,:]
         else: # exclude partial cells
-            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:] *\
+            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
                                      T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:]
     # take the vertical integral
     Internal_E_int = np.zeros((jj,ji))
@@ -470,7 +475,7 @@ if __name__=="__main__":
     # plot the zonal int of all time
     zonal_int_plot(E_pool_zonal_int)
     # plot the stream function
-    visualization_stream_function(psi_pool_zonal_glo,psi_pool_zonal_atl)
+    #visualization_stream_function(psi_pool_zonal_glo,psi_pool_zonal_atl)
     # create NetCDF file and save the output
     create_netcdf_point(E_pool_point,output_path)
     create_netcdf_zonal_int(E_pool_zonal_int,psi_pool_zonal_glo,psi_pool_zonal_atl,output_path)
