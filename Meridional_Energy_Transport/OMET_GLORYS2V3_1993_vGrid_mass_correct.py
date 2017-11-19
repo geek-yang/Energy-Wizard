@@ -1,0 +1,526 @@
+#!/usr/bin/env python
+"""
+Copyright Netherlands eScience Center
+Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3)
+Author          : Yang Liu
+Date            : 2017.10.2
+Last Update     : 2017.11.19
+Description     : The code aims to calculate the oceanic meridional energy
+                  transport based on oceanic reanalysis dataset GLORYS2V3 from
+                  Mercator Ocean. The complete computaiton is accomplished
+                  on model level (original ORCA025_z75 grid). All the interpolations
+                  are made on the V grid. The procedure is generic and is able
+                  to adapt any ocean reanalysis datasets, with some changes.
+Return Value    : NetCFD4 data file
+Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, logging
+variables       : Potential Temperature                     Theta
+                  Zonal Current Velocity                    u
+                  Meridional Current Velocity               v
+                  Sea Surface Height                        ssh
+                  Zonal Grid Spacing Scale Factors          e1
+                  Meridional Grid Spacing Scale Factors     e2
+                  Land-Sea Mask                             mask
+Caveat!!        : The full dataset is from 1993.
+                  Direction of Axis:
+                  Model Level: surface to bottom
+                  The data is monthly mean
+                  The variables (T,U,V) of GLORYS2V3 are saved in the form of masked
+                  arrays. The mask has filled value of 1E+30 (in order to maintain
+                  the size of the netCDF file and make full use of the storage). When
+                  take the mean of intergral, this could result in abnormal large results.
+                  With an aim to avoid this problem, it is important to re-set the filled
+                  value to be 0 and then take the array with filled value during calculation.
+                  (use "masked_array.filled()")
+"""
+import numpy as np
+import seaborn as sns
+#import scipy as sp
+import time as tttt
+from netCDF4 import Dataset,num2date
+import os
+import platform
+import sys
+import logging
+import matplotlib
+# generate images without having a window appear
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, cm
+import cartopy.crs as ccrs
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+import iris
+import iris.plot as iplt
+import iris.quickplot as qplt
+
+##########################################################################
+###########################   Units vacabulory   #########################
+# cpT:  [J / kg C] * [C]     = [J / kg]
+# v*rho cpT dxdz = [m/s] * [J / kg] * [kg/m3] * m * m = [J / s] = [Wat]
+
+# gz in [m2 / s2] = [ kg m2 / kg s2 ] = [J / kg]
+##########################################################################
+
+# print the system structure and the path of the kernal
+print platform.architecture()
+print os.path
+
+# switch on the seaborn effect
+sns.set()
+
+# calculate the time for the code execution
+start_time = tttt.time()
+
+# Redirect all the console output to a file
+#sys.stdout = open('F:\DataBase\ORAS4\console.out','w')
+#sys.stdout = open('/project/Reanalysis/ORAS4/console_E.out','w')
+
+# logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
+#logging.basicConfig(filename = 'F:\DataBase\ORAS4\history.log', filemode = 'w',level = logging.DEBUG,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#logging.basicConfig(filename = '/project/Reanalysis/ORAS4/history_E.log',
+#                    filemode = 'w', level = logging.DEBUG,
+#                    format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# define the constant:
+constant ={'g' : 9.80616,      # gravititional acceleration [m / s2]
+           'R' : 6371009,      # radius of the earth [m]
+           'cp': 3987,         # heat capacity of sea water [J/(Kg*C)]
+           'rho': 1027,        # sea water density [Kg/m3]
+            }
+
+################################   Input zone  ######################################
+# specify data path
+datapath = 'F:\DataBase\GLORYS\S2V3\Monthly'
+#datapath = '/project/Reanalysis/ORAS4'
+# time of the data, which concerns with the name of input
+# starting time (year)
+start_year = 1993
+# Ending time, if only for 1 year, then it should be the same as starting year
+end_year = 1993
+# specify output path for the netCDF4 file
+output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\OMET\GLORYS2V3'
+#output_path = '/project/Reanalysis/ERA_Interim/Subdaily/Model'
+####################################################################################
+
+def var_key(datapath, year, month):
+    # get the path to each datasets
+    print "Start retrieving datasets"
+    #logging.info("Start retrieving variables theta,s,u,v for from %d (y)" % (year)
+    datapath_theta = datapath + os.sep + 'T' + os.sep + 'GLORYS2V3_ORCA025_%d%s15_R20130808_gridT.nc' % (year,month)
+    datapath_uv = datapath + os.sep + 'UV' + os.sep + 'GLORYS2V3_ORCA025_%d%s15_R20130808_gridUV.nc' % (year,month)
+
+    # get the variable keys
+    theta_key = Dataset(datapath_theta)
+    #s_key = Dataset(datapath_s)
+    uv_key = Dataset(datapath_uv)
+    #zos_key = Dataset(datapath_zos)
+
+    print "Retrieving datasets for the %d (year) %s (month) successfully!" % (year, month)
+    #logging.info("Retrieving variables for the year %d successfully!" % (year))
+    return theta_key, uv_key
+
+def var_coordinate(datapath):
+    print "Start retrieving the datasets of ORCA025 coordinate and mask info"
+    #logging.info('Start retrieving the datasets of ORCA025 coordinate and mask info')
+    # get the variable keys
+    mesh_mask_key = Dataset(datapath+ os.sep + 'G2V3_mesh_mask_myocean.nc')
+    #grid_T_key = Dataset(datapath+ os.sep + 'coordinates_grid_T.nc')
+    #grid_U_key = Dataset(datapath+ os.sep + 'coordinates_grid_U.nc')
+    #grid_V_key = Dataset(datapath+ os.sep + 'coordinates_grid_V.nc')
+    #extract variables
+    # lat-lon-depth coordinate info
+    nav_lat = mesh_mask_key.variables['nav_lat'][:]
+    nav_lon = mesh_mask_key.variables['nav_lon'][:]
+    deptht = mesh_mask_key.variables['deptht'][:]
+    # lat-lon coordinate of V grid
+    gphiv = mesh_mask_key.variables['gphiv'][0,:,:] # lat from -78 to -89
+    glamv = mesh_mask_key.variables['glamv'][0,:,:] # lon from -179 to 179
+    # land-sea mask
+    tmask = mesh_mask_key.variables['tmask'][0,:,:,:]
+    umask = mesh_mask_key.variables['umask'][0,:,:,:]
+    vmask = mesh_mask_key.variables['vmask'][0,:,:,:]
+    # grid spacing scale factors (zonal)
+    e1t = mesh_mask_key.variables['e1t'][0,:,:]
+    e2t = mesh_mask_key.variables['e2t'][0,:,:]
+    #e1u = mesh_mask_key.variables['e1u'][0,:,:]
+    #e2u = mesh_mask_key.variables['e2u'][0,:,:]
+    e1v = mesh_mask_key.variables['e1v'][0,:,:]
+    e2v = mesh_mask_key.variables['e2v'][0,:,:]
+    # take the bathymetry
+    mbathy = mesh_mask_key.variables['mbathy'][0,:,:]
+    # depth of each layer
+    e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
+    # depth of partial cells
+    e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:]
+    # Here the coordinate and mask from coordinates_grid_T/U/V are the same with
+    # those from mesh_mask
+    #lat_grid_T = grid_T_key.variables['lat'][:]
+    #lon_grid_T = grid_T_key.variables['lon'][:]
+    #tmask_grid_T = grid_T_key.variables['tmask'][:]
+
+    #lat_grid_U = grid_U_key.variables['lat'][:]
+    #lon_grid_U = grid_U_key.variables['lon'][:]
+    #umask_grid_U = grid_U_key.variables['umask'][:]
+
+    #lat_grid_V = grid_V_key.variables['lat'][:]
+    #lon_grid_V = grid_V_key.variables['lon'][:]
+    #vmask_grid_V = grid_V_key.variables['vmask'][:]
+
+    #Comparison
+    #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % np.array_equal(tmask,tmask_grid_T)
+
+    return nav_lat, nav_lon, deptht, tmask, umask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps
+
+def mass_correction(uv_key):
+    '''
+    This function is used to correct the mass budget.
+    '''
+    print "Start the mass correction."
+    # correct the mass budget
+    # extract variables
+    u = uv_key.variables['vozocrtx'][0,:,:,:]
+    v = uv_key.variables['vomecrty'][0,:,:,:]
+    # set the filled value to be 0
+    np.ma.set_fill_value(u,0)
+    np.ma.set_fill_value(v,0)
+    # interpolate u on v grid
+    u_vgrid = np.zeros((level,jj,ji),dtype=float)
+    # calculate the exception
+    # at north pole
+    u_vgrid[:,-1,0] = (u[:,-1,-1].filled() + u[:,-1,0].filled())/2
+    u_vgrid[:,-1,1:] = (u[:,-1,0:-1].filled() + u[:,-1,1:].filled())/2
+    # for the rest
+    for i in np.arange(jj-1):
+        for j in np.arange(ji):
+            if j == 0:
+                u_vgrid[:,i,j] = ((u[:,i,-1].filled() + u[:,i,0].filled())/2 + (u[:,i+1,-1].filled() + u[:,i+1,0].filled())/2)/2
+            else:
+                u_vgrid[:,i,j] = ((u[:,i,j-1].filled() + u[:,i,j].filled())/2 + (u[:,i+1,j-1].filled() + u[:,i+1,j].filled())/2)/2
+    # mask the u field after interpolation
+    u_vgrid = u_vgrid * vmask
+    # calculate the mass residual based on continuity equation (divergence free for incompressible fluid)
+    # calculate the mass flux
+    mass_flux_u = np.zeros((level,jj,ji),dtype=float)
+    mass_flux_v = np.zeros((level,jj,ji),dtype=float)
+    for i in np.arange(level):
+            mass_flux_u[i,:,:] = u_vgrid[i,:,:] * e3t_0[i]
+            mass_flux_v[i,:,:] = v[i,:,:].filled() * e3t_0[i]
+    # take the vertical integral
+    mass_flux_u_int = np.sum(mass_flux_u,0)
+    mass_flux_v_int = np.sum(mass_flux_v,0)
+    # calculate the divergence of flux
+    div_mass_flux_u = np.zeros((jj,ji),dtype=float)
+    div_mass_flux_v = np.zeros((jj,ji),dtype=float)
+
+    for i in np.arange(ji):
+        if i == 0:
+            div_mass_flux_u[:,i] = (mass_flux_u_int[:,i+1] - mass_flux_u_int[:,-1]) / (e1v[:,i+1]/2+e1v[:,i]+e1v[:,-1]/2)
+        elif i == ji-1:
+            div_mass_flux_u[:,j] = (mass_flux_u_int[:,0] - mass_flux_u_int[:,i-1]) / (e1v[:,0]/2+e1v[:,i]+e1v[:,i-1]/2)
+        else:
+            div_mass_flux_u[:,j] = (mass_flux_u_int[:,i+1] - mass_flux_u_int[:,i-1]) / (e1v[:,i+1]/2+e1v[:,i]+e1v[:,i-1]/2)
+
+    for i in np.arange(jj):
+        if i == 0:
+            div_mass_flux_v[i,:] = mass_flux_v_int[i,:] / (e2v[i,:]/2)
+        elif i == jj-1:
+            div_mass_flux_v[i,:] = mass_flux_v_int[i,:] / (e2v[i,:]/2)
+        else:
+            div_mass_flux_v[i,:] = (mass_flux_v_int[i+1,:] - mass_flux_v_int[i-1,:]) / (e2v[i+1,:]/2+e2v[i,:]+e2v[i-1,:]/2)
+    # define the mass transport matrix at each grid point
+    mass_residual = np.zeros((jj,ji),dtype=float)
+    # calculate the mass residual based on continuity equation
+    mass_residual = div_mass_flux_u + div_mass_flux_v
+    print "Complete the calculation of mass residual."
+    # take the bathymetry
+    # attention! We should not mask the depth array for the sake of following computation
+    max_bathy = np.zeros((jj,ji),dtype = float)
+    for i in np.arange(jj):
+        for j in np.arange(ji):
+            counter = mbathy[i,j]
+            max_bathy[i,j] = deptht[counter]
+    # create the velocity correction matrix
+    uc = np.zeros((jj,ji),dtype=float)
+    vc = np.zeros((jj,ji),dtype=float)
+    uc = mass_residual[:,:] * e1v / max_bathy * vmask[0,:,:]
+    vc = mass_residual[:,:] * e2v / max_bathy * vmask[0,:,:]
+
+    print "Barotropic current velocity is obtained from mass residual."
+
+    return uc, vc
+
+def stream_function(uv_key,e1v):
+    '''
+    This function is used to calculate the mass transport.
+    The unit is Sv (1E+6 m3/s)
+    '''
+    #dominant equation for stream function
+    # psi = e1v(m) * rho(kg/m3) * v(m/s) * dz(m) = (kg/s)
+    # extract variables
+    #u = uv_key.variables['vozocrtx'][:]
+    v = uv_key.variables['vomecrty'][0,:,:,:] * vmask
+    # set the filled value to be 0
+    np.ma.set_fill_value(v,0)
+    # define the stream function psi
+    psi = np.zeros((level,jj,ji),dtype=float)
+    # expand the grid size matrix e1v to avoid more loops
+    e1v_3D = np.repeat(e1v[np.newaxis,:,:],level,0)
+    # choose the integration order
+    int_order = 1  # 1 - from sea bottom to sea surface 2 from sea surfaca to sea bottom
+    if int_order == 1:
+        # take the integral from sea botton to the surface
+        for i in (level - np.arange(level) -1 ):
+            if i == level -1:
+                psi[i,:,:] = e1v_3D[i,:,:] * (v[i,:,:].filled() - vc) * vmask[i,:,:] * e3t_0[i] #+\
+                             #e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
+            else:
+                psi[i,:,:] = e1v_3D[i,:,:] * (v[i,:,:].filled() - vc) * vmask[i,:,:] * e3t_0[i] + psi[i+1,:,:] #+\
+                             #e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
+    elif int_order == 2:
+        # take the integral from sea surface to the bottom
+        for i in np.arange(level):
+            if i == 0:
+                psi[i,:,:] = e1v_3D[i,:,:] * (v[i,:,:].filled() - vc) * vmask[i,:,:] * e3t_0[i]
+            else:
+                psi[i,:,:] = e1v_3D[i,:,:] * (v[i,:,:].filled() - vc) * vmask[i,:,:] * e3t_0[i] + psi[i-1,:,:]
+    # take the zonal integral
+    psi_stream = np.sum(psi * vmask,2)/1e+6 # the unit is changed to Sv
+
+    return psi_stream
+
+def visualization_stream_function(psi_util):
+    psi_mean = np.mean(psi_util,0)
+    fig0 = plt.figure()
+    X , Y = np.meshgrid(gphiv[:,1060],deptht)
+    #color = np.linspace(-1,1,10)
+    plt.contour(X,Y,psi_mean,linewidth= 0.2)
+    cs = plt.contourf(X,Y,psi_mean,linewidth= 0.2,cmap='RdYlGn')
+    plt.title('Stokes Stream Function of Global Ocean')
+    plt.xlabel("Laitude")
+    plt.xticks(np.linspace(-90,90,13))
+    plt.ylabel("Ocean Depth")
+    cbar = plt.colorbar(orientation='horizontal')
+    cbar.set_label('Transport of mass 1E+6 m3/s')
+    #invert the y axis
+    plt.gca().invert_yaxis()
+    plt.show()
+    fig0.savefig(output_path + os.sep + "OMET_GLORYS2V3_StreamFunction.jpeg",dpi=500)
+
+    return psi_mean
+
+def meridional_energy_transport(theta_key, uv_key):
+    '''
+    This function is used to correct the mass budget.
+    '''
+    # extract variables
+    print "Start extracting variables for the quantification of meridional energy transport."
+    theta = theta_key.variables['votemper'][0,:,:,:] # the unit of theta is Celsius!
+    #u = uv_key.variables['vozocrtx'][0,:,:,:]
+    v = uv_key.variables['vomecrty'][0,:,:,:]
+    # set the filled value to be 0
+    np.ma.set_fill_value(theta,0)
+    np.ma.set_fill_value(v,0)
+    print 'Extracting variables successfully!'
+    #logging.info("Extracting variables successfully!")
+    # calculate the meridional velocity at V grid
+    T_vgrid = np.zeros((level,jj,ji),dtype=float)
+    # Interpolation of T on V grid through Nearest-Neighbor method
+    for i in np.arange(jj):
+        if i == jj-1:
+            T_vgrid[:,i,:] = theta[:,i,:]
+        else:
+            T_vgrid[:,i,:] = (theta[:,i,:] + theta[:,i+1,:])/2
+    # calculate heat flux at each grid point
+    Internal_E_flux = np.zeros((level,jj,ji),dtype=float)
+    partial = 1 # switch for the partial cells 1 = include & 0 = exclude
+    for i in np.arange(level):
+        if partial == 1: # include partial cells
+            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * (v[i,:,:] - vc) *\
+                                     T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:] +\
+                                     constant['rho'] * constant['cp'] * (v[i,:,:] - vc) *\
+                                     T_vgrid[i,:,:] * e1v * e3t_adjust[i,:,:] * vmask[i,:,:]
+        else: # exclude partial cells
+            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * (v[i,:,:] - vc) *\
+                                     T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:]
+    # take the vertical integral
+    Internal_E_int = np.zeros((jj,ji))
+    Internal_E_int = np.sum(Internal_E_flux * vmask,0)/1e+12
+    print '*****************************************************************************'
+    print "**** Computation of meridional energy transport in the ocean is finished ****"
+    print "************         The result is in tera-watt (1E+12)          ************"
+    print '*****************************************************************************'
+    return Internal_E_int
+
+def regridding(E_ori, mask):
+    E_mask = np.ma.masked_where(mask == 0, E_ori)
+    # use Iris lib for interpolation/regridding
+    # support NetCDF
+    iris.FUTURE.netcdf_promote = True
+    # choose interpolation method
+    method_int = 2 # ! 1 = bilinear interpolation ! 2 = nearest neghbour interpolation
+    if method_int == 1:
+        # prepare the cube
+        latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+        longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
+        cube_ori = iris.cube.Cube(E_mask,long_name='Oceanic Meridional Energy Transport',
+                                  var_name='OMET',units='TW',
+                                  aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
+        # choose the coordinate system for Cube (for regrid module)
+        coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+        # Feed cube with coordinate system
+        cube_ori.coord('latitude').coord_system = coord_sys
+        cube_ori.coord('longitude').coord_system = coord_sys
+        print cube_ori
+        # create grid_cube for regridding, this is a dummy cube with desired grid
+        lat_grid = np.linspace(-90, 90, 901)
+        lon_grid = np.linspace(-180, 180, 1441)
+        # interpolate_points = [('latitude', np.linspace(-90, 90, 181)),
+        #                       ('longitude', np.linspace(-180, 181, 361))]
+        lat_aux = iris.coords.DimCoord(lat_grid, standard_name='latitude',
+                                       units='degrees_north', coord_system='GeogCS')
+        lon_aux = iris.coords.DimCoord(lon_grid, standard_name='longitude',
+                                       units='degrees_east', coord_system='GeogCS')
+        dummy_data = np.zeros((len(lat_grid), len(lon_grid)))
+        aux_cube = iris.cube.Cube(dummy_data,dim_coords_and_dims=[(lat_aux, 0), (lon_aux, 1)])
+        # Feed cube with coordinate system
+        aux_cube.coord('latitude').guess_bounds()
+        aux_cube.coord('longitude').guess_bounds()
+        aux_cube.coord('latitude').coord_system = coord_sys
+        aux_cube.coord('longitude').coord_system = coord_sys
+        # create a weight matrix for regridding
+        weights = np.ones(cube_ori.shape)
+        # interpolate from ORCA grid to rectilinear grid through bilinear interpolation
+        # The method uses point in cell interpolation and then perform the bilinear interpolation
+        # based on distance and weight
+        cube_regrid = iris.experimental.regrid.regrid_weighted_curvilinear_to_rectilinear(cube_ori,weights,aux_cube)
+        ##################################################################################################
+        # Unfortunately, normal iris modules can not handle the curvilinear grid, only the
+        #cube_interpolate = iris.analysis.interpolate.linear(cube_ori, interpolate_points)
+        #cube_interpolate = iris.cube.Cube.interpolate(cube_ori,interpolate_points,iris.analysis.Linear())
+        #cube_interpolate = cube_ori.interpolate(interpolate_points,iris.analysis.Linear())
+        #cube_interpolate = iris.analysis.interpolate.regrid(cube_ori, aux_cube, mode = 'linear')
+        ###################################################################################################
+    else:
+        # define the cube for the use of iris package
+        latitude = iris.coords.AuxCoord(gphiv,standard_name='latitude',units='degrees')
+        longitude = iris.coords.AuxCoord(glamv,standard_name='longitude',units='degrees')
+        cube_ori = iris.cube.Cube(E_mask,long_name='Oceanic Meridional Energy Transport',
+                            var_name='OMET',units='PW',aux_coords_and_dims=[(latitude,(0,1)),(longitude,(0,1))])
+        print cube_ori
+        # choose the projection map type
+        projection = ccrs.PlateCarree()
+        # Transform cube to target projection
+        cube_regrid, extent = iris.analysis.cartography.project(cube_ori, projection, nx=1440, ny=900)
+    # interpolation complete!!
+    print cube_regrid
+    E_regrid = cube_regrid.data
+    y_coord = cube_regrid.coord('latitude').points
+
+    return cube_regrid, E_regrid, y_coord
+
+def visualization(cube_regrid):
+    # support NetCDF
+    iris.FUTURE.netcdf_promote = True
+    print cube_regrid
+    fig2 = plt.figure()
+    fig2.suptitle('Oceanic Meridional Energy Transport in 1993 (GLORYS2V3)')
+    # Set up axes and title
+    #ax = plt.subplot(projection=ccrs.PlateCarree())
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    # Set limits
+    ax.set_global()
+    # Draw coastlines
+    ax.coastlines()
+    # set gridlines and ticks
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1,
+                 color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    gl.xlabel_style = {'size': 11, 'color': 'gray'}
+    #gl.xlines = False
+    #gl.set_xticks()
+    #gl.set_yticks()
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.ylabel_style = {'size': 11, 'color': 'gray'}
+    #ax.ylabels_left = False
+    gl.yformatter = LATITUDE_FORMATTER
+    # plot with Iris quickplot pcolormesh
+    cs = iplt.pcolormesh(cube_regrid/1000,cmap='coolwarm',vmin=-0.5,vmax=0.5)
+    # Add a citation to the plot.
+    #iplt.citation(iris.plot.BREWER_CITE)
+    cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
+    cbar.set_label('PW (1E+15W)')
+    iplt.show()
+    fig2.savefig(output_path + os.sep + 'OMET_GLORYS2V3.jpg',dpi = 500)
+
+    # extract the interpolated values from cube
+    #E_interpolation = cube_regrid.data
+
+    #return E_interpolation
+
+def zonal_int_plot(E_point_annual):
+    # take the zonal means
+    E_zonal_int = np.sum(E_point_annual,2)
+    E_zonal_int_mean = np.mean(E_zonal_int,0)/1000
+    fig3 = plt.figure()
+    plt.plot(gphiv[:,1060],E_zonal_int_mean)
+    plt.xlabel("Latitude")
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig3.savefig(output_path + os.sep + 'OMET_GLORYS2V3_globe.jpg',dpi = 500)
+
+    return E_zonal_int
+
+if __name__=="__main__":
+    # create the year index
+    period = np.arange(start_year,end_year+1,1)
+    namelist_month = ['01','02','03','04','05','06','07','08','09','10','11','12']
+    index_month = np.arange(12)
+    # ORCA1_z42 info (Madec and Imbard 1996)
+    ji = 1440
+    jj = 1021
+    level = 75
+    # extract the mesh_mask and coordinate information
+    nav_lat, nav_lon, deptht, tmask, umask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps = var_coordinate(datapath)
+    # construct partialer depth matrix
+    # include the partial cell to the layers above, due to the presence of variabels (t,u,v)
+    e3t_adjust = np.zeros((level,jj,ji),dtype = float)
+    for i in np.arange(1,level,1):
+        for j in np.arange(jj):
+            for k in np.arange(ji):
+                if i == mbathy[j,k]:
+                    e3t_adjust[i-1,j,k] = e3t_ps[j,k]
+    #create a data pool to save the OMET for each year and month
+    E_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
+    E_pool_zonal_int = np.zeros((len(period),12,jj),dtype = float)
+    E_pool_point_regrid = np.zeros((len(period),900,1440),dtype = float)
+    E_pool_zonal_psi = np.zeros((12,level,jj),dtype = float) # Only for calculation, not saved
+    uc_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
+    vc_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
+    # loop for calculation
+    for i in period:
+        for j in index_month:
+            # get the key of each variable
+            theta_key, uv_key = var_key(datapath, i, namelist_month[j])
+            # mass budget correction
+            uc, vc = mass_correction(uv_key)
+            uc_pool_point[i-1993,j,:,:] = uc
+            vc_pool_point[i-1993,j,:,:] = vc
+            # calculate the stokes stream function and plot
+            psi = stream_function(uv_key,e1v)
+            E_pool_zonal_psi[j,:,:] = psi
+            # calculate the meridional energy transport in the ocean
+            E_point = meridional_energy_transport(theta_key, uv_key)
+            E_pool_point[i-1993,j,:,:] = E_point
+        # plot the stream function
+        psi_mean = visualization_stream_function(E_pool_zonal_psi)
+        # take the mean value over the entire year for visualization
+        E_point_mean = np.mean(E_pool_point[i-1993,:,:,:],0)
+        # regridding for visualization
+        cube_regrid, E_regrid, y_coord = regridding(E_point_mean, vmask[0,:,:])
+        E_pool_point_regrid[i-1993,:,:] = E_regrid
+        #visualization
+        visualization(cube_regrid)
+        # plot the meridional energy transport in the ocean
+        E_zonal_int = zonal_int_plot(E_pool_point[i-1993,:,:,:])
+        E_pool_zonal_int[i-1993,:,:] = E_zonal_int
+
+print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
