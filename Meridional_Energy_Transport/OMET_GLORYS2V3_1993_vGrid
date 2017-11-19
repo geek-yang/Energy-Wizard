@@ -21,6 +21,7 @@ variables       : Potential Temperature                     Theta
                   Meridional Grid Spacing Scale Factors     e2
                   Land-Sea Mask                             mask
 Caveat!!        : The full dataset is from 1993.
+                  
 """
 import numpy as np
 import seaborn as sns
@@ -411,8 +412,6 @@ if __name__=="__main__":
         for j in index_month:
             # get the key of each variable
             theta_key, uv_key = var_key(datapath, i, namelist_month[j])
-            # mass budget correction
-            s
             # calculate the stokes stream function and plot
             psi = stream_function(uv_key,e1v)
             E_pool_zonal_psi[j,:,:] = psi
