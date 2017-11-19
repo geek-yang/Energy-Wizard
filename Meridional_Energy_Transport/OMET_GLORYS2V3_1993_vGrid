@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3)
 Author          : Yang Liu
 Date            : 2017.10.2
-Last Update     : 2017.10.16
+Last Update     : 2017.11.19
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from
                   Mercator Ocean. The complete computaiton is accomplished
@@ -109,8 +109,8 @@ def var_key(datapath, year, month):
     return theta_key, uv_key
 
 def var_coordinate(datapath):
-    print "Start retrieving the datasets of ORCA1 coordinate and mask info"
-    #logging.info('Start retrieving the datasets of ORCA1 coordinate and mask info')
+    print "Start retrieving the datasets of ORCA025 coordinate and mask info"
+    #logging.info('Start retrieving the datasets of ORCA025 coordinate and mask info')
     # get the variable keys
     mesh_mask_key = Dataset(datapath+ os.sep + 'G2V3_mesh_mask_myocean.nc')
     #grid_T_key = Dataset(datapath+ os.sep + 'coordinates_grid_T.nc')
@@ -160,7 +160,6 @@ def var_coordinate(datapath):
 
     return nav_lat, nav_lon, deptht, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps
 
-
 def stream_function(uv_key,e1v):
     '''
     This function is used to calculate the mass transport.
@@ -169,8 +168,10 @@ def stream_function(uv_key,e1v):
     #dominant equation for stream function
     # psi = e1v(m) * rho(kg/m3) * v(m/s) * dz(m) = (kg/s)
     # extract variables
-    #u = uv_key.variables['uo'][:]
+    #u = uv_key.variables['vozocrtx'][:]
     v = uv_key.variables['vomecrty'][0,:,:,:]
+    # set the filled value to be 0
+    np.ma.set_fill_value(v,0)
     # define the stream function psi
     psi = np.zeros((level,jj,ji),dtype=float)
     # expand the grid size matrix e1v to avoid more loops
@@ -181,18 +182,18 @@ def stream_function(uv_key,e1v):
         # take the integral from sea botton to the surface
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] #+\
+                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] #+\
                              #e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
             else:
-                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] + psi[i+1,:,:] #+\
+                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi[i+1,:,:] #+\
                              #e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_adjust[i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i]
+                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i]
             else:
-                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:] * vmask[i,:,:] * e3t_0[i] + psi[i-1,:,:]
+                psi[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi[i-1,:,:]
     # take the zonal integral
     psi_stream = np.sum(psi,2)/1e+6 # the unit is changed to Sv
 
@@ -225,11 +226,13 @@ def meridional_energy_transport(theta_key, uv_key):
     # extract variables
     print "Start extracting variables for the quantification of meridional energy transport."
     theta = theta_key.variables['votemper'][0,:,:,:] # the unit of theta is Celsius!
-    #u = u_key.variables['vozocrtx'][:]
+    #u = uv_key.variables['vozocrtx'][0,:,:,:]
     v = uv_key.variables['vomecrty'][0,:,:,:]
+    # set the filled value to be 0
+    np.ma.set_fill_value(v,0)
     print 'Extracting variables successfully!'
     #logging.info("Extracting variables successfully!")
-    # calculate the meridional velocity at T grid
+    # calculate the meridional velocity at V grid
     T_vgrid = np.zeros((level,jj,ji),dtype=float)
     # Interpolation of T on V grid through Nearest-Neighbor method
     for i in np.arange(jj):
@@ -239,15 +242,15 @@ def meridional_energy_transport(theta_key, uv_key):
             T_vgrid[:,i,:] = (theta[:,i,:] + theta[:,i+1,:])/2
     # calculate heat flux at each grid point
     Internal_E_flux = np.zeros((level,jj,ji),dtype=float)
-    partial = 0 # switch for the partial cells 1 = include & 0 = exclude
+    partial = 1 # switch for the partial cells 1 = include & 0 = exclude
     for i in np.arange(level):
-        if partial == 0: # include partial cells
-            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:] *\
+        if partial == 1: # include partial cells
+            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
                                      T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:] +\
-                                     constant['rho'] * constant['cp'] * v[i,:,:] *\
+                                     constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
                                      T_vgrid[i,:,:] * e1v * e3t_adjust[i,:,:] * vmask[i,:,:]
         else: # exclude partial cells
-            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:] *\
+            Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
                                      T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:]
     # take the vertical integral
     Internal_E_int = np.zeros((jj,ji))
@@ -352,6 +355,8 @@ def visualization(cube_regrid):
     gl.yformatter = LATITUDE_FORMATTER
     # plot with Iris quickplot pcolormesh
     cs = iplt.pcolormesh(cube_regrid/1000,cmap='coolwarm',vmin=-0.5,vmax=0.5)
+    # Add a citation to the plot.
+    #iplt.citation(iris.plot.BREWER_CITE)
     cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
     cbar.set_label('PW (1E+15W)')
     iplt.show()
@@ -362,7 +367,7 @@ def visualization(cube_regrid):
 
     #return E_interpolation
 
-def zonal_int_plot(E_point_annual,y_coord):
+def zonal_int_plot(E_point_annual):
     # take the zonal means
     E_zonal_int = np.sum(E_point_annual,2)
     E_zonal_int_mean = np.mean(E_zonal_int,0)/1000
@@ -399,11 +404,15 @@ if __name__=="__main__":
     E_pool_zonal_int = np.zeros((len(period),12,jj),dtype = float)
     E_pool_point_regrid = np.zeros((len(period),900,1440),dtype = float)
     E_pool_zonal_psi = np.zeros((12,level,jj),dtype = float) # Only for calculation, not saved
+    uc_pool_point
+    vc_pool_point
     # loop for calculation
     for i in period:
         for j in index_month:
             # get the key of each variable
             theta_key, uv_key = var_key(datapath, i, namelist_month[j])
+            # mass budget correction
+            s
             # calculate the stokes stream function and plot
             psi = stream_function(uv_key,e1v)
             E_pool_zonal_psi[j,:,:] = psi
@@ -420,7 +429,7 @@ if __name__=="__main__":
         #visualization
         visualization(cube_regrid)
         # plot the meridional energy transport in the ocean
-        E_zonal_int = zonal_int_plot(E_pool_point[i-1993,:,:,:],y_coord)
+        E_zonal_int = zonal_int_plot(E_pool_point[i-1993,:,:,:])
         E_pool_zonal_int[i-1993,:,:] = E_zonal_int
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
