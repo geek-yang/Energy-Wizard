@@ -23,6 +23,13 @@ Caveat!!        : The full dataset is from 1993 to 2014.
                   Direction of Axis:
                   Model Level: surface to bottom
                   The data is monthly mean
+                  The variables (T,U,V) of GLORYS2V3 are saved in the form of masked
+                  arrays. The mask has filled value of 1E+30 (in order to maintain
+                  the size of the netCDF file and make full use of the storage). When
+                  take the mean of intergral, this could result in abnormal large results.
+                  With an aim to avoid this problem, it is important to re-set the filled
+                  value to be 0 and then take the array with filled value during calculation.
+                  (use "masked_array.filled()")
 """
 import numpy as np
 #import seaborn as sns
