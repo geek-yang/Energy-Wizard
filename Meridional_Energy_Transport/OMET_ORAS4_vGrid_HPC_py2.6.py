@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.18
-Last Update     : 2017.11.14
+Last Update     : 2017.11.20
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4 from ECMWF.
                   The complete computaiton is accomplished on model level (original ORCA1_z42 grid).
@@ -425,9 +425,12 @@ def create_netcdf_point (meridional_E_point_pool,output_path):
     # global attributes
     data_wrap.description = 'Monthly mean meridional energy transport on ORCA grid'
     # variable attributes
-    lat_wrap_var.units = 'degree_north'
-    lon_wrap_var.units = 'degree_east'
+    lat_wrap_var.units = 'ORCA1_latitude'
+    lon_wrap_var.units = 'ORCA1_longitude'
     E_total_wrap_var.units = 'tera watt'
+
+    lat_wrap_var.long_name = 'ORCA1 grid latitude'
+    lon_wrap_var.long_name = 'ORCA1 grid longitude'
     E_total_wrap_var.long_name = 'oceanic meridional energy transport'
     # writing data
     year_wrap_var[:] = period
@@ -466,6 +469,9 @@ def create_netcdf_regrid (meridional_E_point_regrid,output_path):
     lat_wrap_var.units = 'degree_north'
     lon_wrap_var.units = 'degree_east'
     E_total_wrap_var.units = 'tera watt'
+
+    lat_wrap_var.long_name = 'latitude'
+    lon_wrap_var.long_name = 'longitude'
     E_total_wrap_var.long_name = 'oceanic meridional energy transport'
     # writing data
     year_wrap_var[:] = period
@@ -507,15 +513,20 @@ def create_netcdf_zonal_int (meridional_E_zonal_int_pool,meridional_psi_zonal_gl
     # variable attributes
     lat_wrap_var.units = 'degree_north'
     E_total_wrap_var.units = 'tera watt'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    lev_wrap_var.units = 'm'
     psi_glo_wrap_var.units = 'Sv'
-    psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
     psi_atl_wrap_var.units = 'Sv'
+
+    lev_wrap_var.long_name = 'depth'
+    lat_wrap_var.long_name = 'auxillary latitude'
+    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
     psi_atl_wrap_var.long_name = 'Meridional overturning stream function of Atlantic ocean'
     # writing data
     year_wrap_var[:] = period
     lat_wrap_var[:] = gphiv[:,96]
     month_wrap_var[:] = np.arange(1,13,1)
+    lev_wrap_var[:] = nav_lev
     E_total_wrap_var[:] = meridional_E_zonal_int_pool
     psi_glo_wrap_var[:] = meridional_psi_zonal_glo
     psi_atl_wrap_var[:] = meridional_psi_zonal_atl

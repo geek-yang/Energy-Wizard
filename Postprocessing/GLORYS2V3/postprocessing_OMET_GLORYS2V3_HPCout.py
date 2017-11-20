@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from HPC cloud (GLORYS2V3)
 Author          : Yang Liu
 Date            : 2017.11.9
-Last Update     : 2017.11.14
+Last Update     : 2017.11.20
 Description     : The code aims to postprocess the output from the HPC cloud
                   regarding the computation of oceainic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from Mercator Ocean.
@@ -214,7 +214,7 @@ X , Y = np.meshgrid(latitude_aux[371:],level) # from 30S to 90N
 contour_level = np.arange(-30,30,3)
 plt.contour(X,Y,np.mean(Psi_atl_mean[:,:,371:],0),linewidth= 0.2)
 cs = plt.contourf(X,Y,np.mean(Psi_atl_mean[:,:,371:],0),contour_level,linewidth= 0.2,cmap='RdYlGn')
-plt.title('Stokes Stream Function of Global Ocean')
+plt.title('Stokes Stream Function of the Atlantic Ocean')
 plt.xlabel("Laitude")
 plt.xticks(np.linspace(-30,90,9))
 plt.ylabel("Ocean Depth")

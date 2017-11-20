@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3) on HPC
 Author          : Yang Liu
 Date            : 2017.11.7
-Last Update     : 2017.11.19
+Last Update     : 2017.11.20
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from
                   Mercator Ocean. The complete computaiton is accomplished
@@ -361,6 +361,9 @@ def create_netcdf_point (meridional_E_point_pool,output_path):
     lat_wrap_var.units = 'ORCA025_latitude'
     lon_wrap_var.units = 'ORCA025_longitude'
     E_total_wrap_var.units = 'tera watt'
+
+    lat_wrap_var.long_name = 'ORCA025 grid latitude'
+    lon_wrap_var.long_name = 'ORCA025 grid longitude'
     E_total_wrap_var.long_name = 'oceanic meridional energy transport'
     # writing data
     year_wrap_var[:] = period
@@ -403,10 +406,14 @@ def create_netcdf_zonal_int (meridional_E_zonal_int_pool, meridional_psi_zonal_g
     # variable attributes
     lat_wrap_var.units = 'degree_north'
     E_total_wrap_var.units = 'tera watt'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    lev_wrap_var.units = 'm'
     psi_glo_wrap_var.units = 'Sv'
-    psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
     psi_atl_wrap_var.units = 'Sv'
+
+    lev_wrap_var.long_name = 'depth'
+    lat_wrap_var.long_name = 'auxillary latitude'
+    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
     psi_atl_wrap_var.long_name = 'Meridional overturning stream function of Atlantic ocean'
     # writing data
     year_wrap_var[:] = period
