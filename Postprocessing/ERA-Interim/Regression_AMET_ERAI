@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (ERA-Interim) with whitening
 Author          : Yang Liu
 Date            : 2017.8.18
-Last Update     : 2017.10.20
+Last Update     : 2017.11.20
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -76,6 +76,7 @@ for l in dataset_y.variables:
 # extract atmospheric meridional energy transport
 # dimension (year,month,latitude)
 AMET = dataset_AMET.variables['E'][:,:,lat_AMET]/1000 # from Tera Watt to Peta Watt
+year = dataset_AMET.variables['year'][:]
 # extract variables from 20N to 90 N
 # sea level pressure
 SLP = dataset_y.variables['msl'][:,0:lat_y+1,:]
@@ -145,12 +146,26 @@ for i in month_ind:
 # take the time series of whitened AMET
 AMET_white_series = AMET_white.reshape(456)
 
+# Summer and winter only
+# summer refers to June(5), July(6), August(7)
+# winter refers to Dec(11), Jan(0), Feb(1)
+AMET_white_series_summer = np.zeros((len(AMET_white_series)/4),dtype=float)
+AMET_white_series_winter = np.zeros((len(AMET_white_series)/4),dtype=float)
+
+AMET_white_series_summer[0::3] = AMET_white_series[5::12] #June
+AMET_white_series_summer[1::3] = AMET_white_series[6::12] #July
+AMET_white_series_summer[2::3] = AMET_white_series[7::12] #August
+AMET_white_series_winter[2::3] = AMET_white_series[11::12] # December
+AMET_white_series_winter[0::3] = AMET_white_series[0::12] # Jan
+AMET_white_series_winter[1::3] = AMET_white_series[1::12] # Feb
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
 # running mean is calculated on time series
 # define the running window for the running mean
-window = 60 # in month
+window = 12 # in month
+#window = 60 # in month
+#window = 120 # in month
 # calculate the running mean and sum of AMET
 AMET_running_mean = np.zeros(len(AMET_series)-window+1)
 #AMET_running_sum = np.zeros(len(AMET_series)-window+1)
@@ -165,6 +180,18 @@ for i in np.arange(len(AMET_white_series)-window+1):
     AMET_white_running_mean[i] = np.mean(AMET_white_series[i:i+window])
     #AMET_white_running_sum[i] = np.sum(AMET_white_series[i:i+window])
 
+# Summer and winter only
+# summer refers to June(5), July(6), August(7)
+# winter refers to Dec(11), Jan(0), Feb(1)
+AMET_white_running_mean_summer = np.zeros(((len(AMET_white_running_mean)-1)/4),dtype=float) # -1 because of the nature of running mean
+AMET_white_running_mean_winter = np.zeros(((len(AMET_white_running_mean)-1)/4 + 1),dtype=float) # this is because the time series has 1 more December
+
+AMET_white_running_mean_summer[0::3] = AMET_white_running_mean[6::12] #June
+AMET_white_running_mean_summer[1::3] = AMET_white_running_mean[7::12] #July
+AMET_white_running_mean_summer[2::3] = AMET_white_running_mean[8::12] #August
+AMET_white_running_mean_winter[0::3] = AMET_white_running_mean[0::12] # December
+AMET_white_running_mean_winter[1::3] = AMET_white_running_mean[1::12] # Jan
+AMET_white_running_mean_winter[2::3] = AMET_white_running_mean[2::12] # Feb
 print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
@@ -172,11 +199,15 @@ print '*******************************************************************'
 index = np.arange(1,457,1)
 index_year = np.arange(1979,2017,1)
 
-index_running_mean = np.arange(1,457-window+1,1)
-index_year_running_mean = np.arange(1979+window/12-1,2017,1)
+#index_running_mean = np.arange(1,457-window+1,1)
+#index_year_running_mean = np.arange(1979+window/12-1,2017,1)
+
+index_summer = np.arange(1,115,1) # 38 years * 12 months / 4 seasons
+index_winter = np.arange(1,116,1) # 38 years * 12 months / 4 seasons + 1 December
 
 # plot the AMET after removing seasonal cycle
 fig1 = plt.figure()
+plt.axhline(y=0, color='g',ls='--')
 plt.plot(index,AMET_white_series,'b-',label='ECMWF')
 plt.title('Atmospheric Meridional Energy Transport Anomaly at 60N (1979-2016)')
 #plt.legend()
@@ -190,12 +221,13 @@ fig1.savefig(output_path + os.sep + 'AMET_anomaly_60N_time_series_1979_2016.jpg'
 
 # plot the running mean of AMET after removing seasonal cycle
 fig0 = plt.figure()
-plt.plot(index_running_mean,AMET_white_running_mean,'b-',label='ERA-Interim')
+plt.axhline(y=0, color='g',ls='--')
+plt.plot(index[window-1:],AMET_white_running_mean,'b-',label='ERA-Interim')
 plt.title('Running Mean of AMET Anomalies at 60N with a window of %d months (1979-2016)' % (window))
 #plt.legend()
 fig0.set_size_inches(13, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456-window, 39-window/12), index_year_running_mean)
+plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -203,6 +235,7 @@ fig0.savefig(output_path + os.sep + 'AMET_anomaly_60N_running_mean_window_%d_onl
 
 # plot the AMET with running mean
 fig2 = plt.figure()
+plt.axhline(y=0, color='g',ls='--')
 plt.plot(index,AMET_series,'b--',label='time series')
 plt.plot(index[window-1:],AMET_running_mean,'r-',linewidth=2.0,label='running mean')
 plt.title('Running Mean of AMET at 60N with a window of %d months (1979-2016)' % (window))
@@ -217,6 +250,7 @@ fig2.savefig(output_path + os.sep + 'AMET_60N_running_mean_window_%d_comp.jpg' %
 
 # plot the AMET after removing the seasonal cycling with running mean
 fig3 = plt.figure()
+plt.axhline(y=0, color='g',ls='--')
 plt.plot(index,AMET_white_series,'b--',label='time series')
 plt.plot(index[window-1:],AMET_white_running_mean,'r-',linewidth=2.0,label='running mean')
 plt.title('Running Mean of AMET Anomalies at 60N with a window of %d months (1979-2016)' % (window))
@@ -229,6 +263,62 @@ plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
 fig3.savefig(output_path + os.sep + 'AMET_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
 
+# plot the AMET anomalies at 60N in summer after removing seasonal cycle
+fig4 = plt.figure()
+plt.axhline(y=0, color='g',ls='--')
+plt.plot(index_summer,AMET_white_series_summer,'b-',label='ERA-Interim')
+plt.title('Atmospheric Meridional Energy Transport Anomaly in Summer at 60N (1979-2016)')
+#plt.legend()
+fig4.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 114, 39), index_year)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig4.savefig(output_path + os.sep + 'AMET_anomaly_summer_time_series_1979_2016.jpg', dpi = 500)
+
+# plot the AMET anomalies at 60N in winter after removing seasonal cycle
+fig5 = plt.figure()
+plt.axhline(y=0, color='g',ls='--')
+plt.plot(index_summer,AMET_white_series_winter,'b-',label='ERA-Interim')
+plt.title('Atmospheric Meridional Energy Transport Anomaly in Winter at 60N (1979-2016)')
+#plt.legend()
+fig5.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 114, 39), index_year)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig5.savefig(output_path + os.sep + 'AMET_anomaly_winter_time_series_1979_2016.jpg', dpi = 500)
+
+# plot the AMET anomalies at 60N in summer after removing seasonal cycle with a running mean of x months
+fig6 = plt.figure()
+plt.axhline(y=0, color='g',ls='--')
+plt.plot(index_summer[window/4:],AMET_white_running_mean_summer,'b-',label='ERA-Interim')
+plt.title('Atmospheric Meridional Energy Transport Anomaly in Summer at 60N with a running mean of %d months (1979-2016)' % (window))
+#plt.legend()
+fig6.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 114, 39), index_year)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig6.savefig(output_path + os.sep + 'AMET_anomaly_summer_60N_running_mean_window_%d.jpg' % (window), dpi = 500)
+
+# plot the AMET anomalies at 60N in winter after removing seasonal cycle
+fig7 = plt.figure()
+plt.axhline(y=0, color='g',ls='--')
+plt.plot(index_winter[window/4:],AMET_white_running_mean_winter,'b-',label='ERA-Interim')
+plt.title('Atmospheric Meridional Energy Transport Anomaly in Winter at 60N with a running mean of %d months (1979-2016)' % (window))
+#plt.legend()
+fig7.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(1, 115, 39), index_year)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig7.savefig(output_path + os.sep + 'AMET_anomaly_winter_60N_running_mean_window_%d.jpg' % (window), dpi = 500)
+
 print '*******************************************************************'
 print '********************* Fourier transform ***************************'
 print '*******************************************************************'
@@ -237,51 +327,51 @@ FFT_AMET = np.fft.fft(AMET_series)
 freq_FFT_AMET = np.fft.fftfreq(len(FFT_AMET),d=1)
 mag_FFT_AMET = abs(FFT_AMET)
 # Plot AMET in Frequency domain
-fig4 = plt.figure()
+fig8 = plt.figure()
 plt.plot(freq_FFT_AMET[0:200],mag_FFT_AMET[0:200],'b-',label='ECMWF')
 plt.title('Fourier Transform of AMET at 60N (1979-2016)')
 #plt.legend()
-fig4.set_size_inches(13, 5)
+fig8.set_size_inches(13, 5)
 plt.xlabel("Times per month")
 #plt.xticks(np.linspace(0, 456, 39), index_year)
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig4.savefig(output_path + os.sep + 'AMET_60N_FFT_1979_2016.jpg', dpi = 500)
+fig8.savefig(output_path + os.sep + 'AMET_60N_FFT_1979_2016.jpg', dpi = 500)
 
 # Fast Fourier Transform of AMET anomalies
 FFT_AMET_white = np.fft.fft(AMET_white_series)
 freq_FFT_AMET_white = np.fft.fftfreq(len(FFT_AMET_white),d=1)
 mag_FFT_AMET_white = abs(FFT_AMET_white)
 # Plot the anomaly of AMET in Frequency domain
-fig5 = plt.figure()
+fig9 = plt.figure()
 plt.plot(freq_FFT_AMET_white[0:200],mag_FFT_AMET_white[0:200],'b-',label='ECMWF')
 plt.title('Fourier Transform of AMET Anomaly at 60N (1979-2016)')
 #plt.legend()
-fig5.set_size_inches(13, 5)
+fig9.set_size_inches(13, 5)
 plt.xlabel("Times per month")
 #plt.xticks(np.linspace(0, 456, 39), index_year)
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig5.savefig(output_path + os.sep + 'AMET_anomaly_60N_FFT_1979_2016.jpg', dpi = 500)
+fig9.savefig(output_path + os.sep + 'AMET_anomaly_60N_FFT_1979_2016.jpg', dpi = 500)
 
 # Plot the running mean of AMET anomaly in Frequency domain
 FFT_AMET_white_running_mean = np.fft.fft(AMET_white_running_mean)
 freq_FFT_AMET_white_running_mean = np.fft.fftfreq(len(FFT_AMET_white_running_mean),d=1)
 mag_FFT_AMET_white_running_mean = abs(FFT_AMET_white_running_mean)
 # Plot the running mean of AMET in Frequency domain
-fig6 = plt.figure()
+fig10 = plt.figure()
 plt.plot(freq_FFT_AMET_white_running_mean[0:60],mag_FFT_AMET_white_running_mean[0:60],'b-',label='ECMWF')
 plt.title('Fourier Transform of Running Mean (%d) of AMET Anomalies at 60N (1979-2016)' % (window))
 #plt.legend()
-fig6.set_size_inches(13, 5)
+fig10.set_size_inches(13, 5)
 plt.xlabel("Times per month")
 #plt.xticks(np.linspace(0, 456, 39), index_year)
 #plt.xticks(rotation=60)
 plt.ylabel("Power spectrum density (PW^2/month)")
 plt.show()
-fig6.savefig(output_path + os.sep + 'AMET_anomaly_60N_FFT_running_mean_%d_1979_2016.jpg' % (window), dpi = 500)
+fig10.savefig(output_path + os.sep + 'AMET_anomaly_60N_FFT_running_mean_%d_1979_2016.jpg' % (window), dpi = 500)
 
 print '*******************************************************************'
 print '**************************** trend ********************************'
@@ -302,7 +392,7 @@ for i in np.arange(lat_y+1):
         # return value: coefficient matrix a and b, where a is the slope
         a[i,j], b[i,j] = np.linalg.lstsq(A,SLP_white[:,i,j])[0]
 # visualization through basemap
-fig7 = plt.figure()
+fig11 = plt.figure()
 # setup north polar stereographic basemap
 # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
 # lon_0 is at 6 o'clock
@@ -331,7 +421,7 @@ cbar.ax.tick_params(labelsize=8)
 cbar.set_label('Pa/Decade',fontsize = 8)
 plt.title('Trend of Sea Level Pressure Anomalies (1979-2016)',fontsize = 9, y=1.05)
 plt.show()
-fig7.savefig(output_path + os.sep + "Trend_ERAI_SLP.jpeg",dpi=500)
+fig11.savefig(output_path + os.sep + "Trend_ERAI_SLP.jpeg",dpi=500)
 
 # trend of SST
 # start the least square fitting
@@ -340,7 +430,7 @@ for i in np.arange(lat_y+1):
         # return value: coefficient matrix a and b, where a is the slope
         a[i,j], b[i,j] = np.linalg.lstsq(A,SST_white[:,i,j])[0]
 # visualization through basemap
-fig8 = plt.figure()
+fig12 = plt.figure()
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
 # draw coastlines
 m.drawcoastlines(linewidth=0.25)
@@ -362,7 +452,7 @@ cbar.ax.tick_params(labelsize=8)
 cbar.set_label('Celsius/Decade',fontsize = 8)
 plt.title('Trend of Sea Surface Temperature Anomalies (1979-2016)',fontsize = 9, y=1.05)
 plt.show()
-fig8.savefig(output_path + os.sep + "Trend_ERAI_SST.jpeg",dpi=500)
+fig12.savefig(output_path + os.sep + "Trend_ERAI_SST.jpeg",dpi=500)
 
 # trend of Sea Ice concentration
 # start the least square fitting
@@ -371,7 +461,7 @@ for i in np.arange(lat_y+1):
         # return value: coefficient matrix a and b, where a is the slope
         a[i,j], b[i,j] = np.linalg.lstsq(A,ci_white[:,i,j])[0]
 # visualization through basemap
-fig9 = plt.figure()
+fig13 = plt.figure()
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
 # draw coastlines
 m.drawcoastlines(linewidth=0.25)
@@ -396,7 +486,7 @@ cbar.ax.set_xticklabels(cbar_labels)
 cbar.set_label('Percentage/Decade',fontsize = 8)
 plt.title('Trend of the Sea Ice Concentration Anomalies (1979-2016)',fontsize = 9, y=1.05)
 plt.show()
-fig9.savefig(output_path + os.sep + "Trend_ERAI_Ice.jpeg",dpi=500)
+fig13.savefig(output_path + os.sep + "Trend_ERAI_Ice.jpeg",dpi=500)
 
 print '*******************************************************************'
 print '************************** regression *****************************'
@@ -425,7 +515,7 @@ for i in np.arange(lat_y+1):
         # return value: slope, intercept, r_value, p_value, stderr
         slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series,SLP_white_selected[:,i,j])
 # visualization through basemap
-fig10 = plt.figure()
+fig14 = plt.figure()
 # setup north polar stereographic basemap
 # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
 # lon_0 is at 6 o'clock
@@ -458,10 +548,10 @@ i, j = np.where(p_value<=0.05)
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
 plt.title('Regression of SLP Anomaly on AMET Anomaly across 60 N',fontsize = 9, y=1.05)
 plt.show()
-fig10.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI_white_correlation_coef.jpeg",dpi=500)
+fig14.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI_white_correlation_coef.jpeg",dpi=500)
 
 # plot regression coefficient
-fig11 = plt.figure()
+fig15 = plt.figure()
 # setup north polar stereographic basemap
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
 # draw coastlines
@@ -485,7 +575,7 @@ i, j = np.where(p_value<=0.05)
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
 plt.title('Regression of SLP Anomaly on AMET Anomaly across 60 N',fontsize = 9, y=1.05)
 plt.show()
-fig11.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI_white_regression_coef.jpeg",dpi=500)
+fig15.savefig(output_path + os.sep + "Regression_AMET_SLP_ERAI_white_regression_coef.jpeg",dpi=500)
 
 # linear regress SST on AMET (anomalies)
 # plot correlation coefficient
@@ -494,7 +584,7 @@ for i in np.arange(lat_y+1):
         # return value: slope, intercept, r_value, p_value, stderr
         slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series,SST_white_selected[:,i,j])
 # visualization through basemap
-fig12 = plt.figure()
+fig16 = plt.figure()
 # setup north polar stereographic basemap
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
 # draw coastlines
@@ -521,10 +611,10 @@ i, j = np.where(p_value<=0.05)
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
 plt.title('Regression of SST Anomaly on AMET Anomaly across 60 N ',fontsize = 9, y=1.05)
 plt.show()
-fig12.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI_white_correlation_coef.jpeg",dpi=500)
+fig16.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI_white_correlation_coef.jpeg",dpi=500)
 
 # plot regression coefficient
-fig13 = plt.figure()
+fig17 = plt.figure()
 # setup north polar stereographic basemap
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
 # draw coastlines
@@ -548,7 +638,7 @@ i, j = np.where(p_value<=0.05)
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
 plt.title('Regression of SST Anomaly on AMET Anomaly across 60 N',fontsize = 9, y=1.05)
 plt.show()
-fig13.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI_white_regression_coef.jpeg",dpi=500)
+fig17.savefig(output_path + os.sep + "Regression_AMET_SST_ERAI_white_regression_coef.jpeg",dpi=500)
 
 # linear regress Sea Ice Concentration on AMET (anomalies)
 # plot correlation coefficient
@@ -557,7 +647,7 @@ for i in np.arange(lat_y+1):
         # return value: slope, intercept, r_value, p_value, stderr
         slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series,ci_white_selected[:,i,j])
 # visualization through basemap
-fig14 = plt.figure()
+fig18 = plt.figure()
 # setup north polar stereographic basemap
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
 # draw coastlines
@@ -582,10 +672,10 @@ i, j = np.where(p_value<=0.05)
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
 plt.title('Regression of Sea Ice Concentration Anomaly on AMET Anomaly across 60 N',fontsize = 9, y=1.05)
 plt.show()
-fig14.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI_white_correlation_coef.jpeg",dpi=500)
+fig18.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI_white_correlation_coef.jpeg",dpi=500)
 
 # plot regression coefficient
-fig15 = plt.figure()
+fig19 = plt.figure()
 # setup north polar stereographic basemap
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
 # draw coastlines
@@ -612,6 +702,6 @@ i, j = np.where(p_value<=0.05)
 m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
 plt.title('Regression of Sea Ice Concentration Anomaly on AMET Anomaly across 60 N',fontsize = 9, y=1.05)
 plt.show()
-fig15.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI_white_regression_coef.jpeg",dpi=500)
+fig19.savefig(output_path + os.sep + "Regression_AMET_Ice_ERAI_white_regression_coef.jpeg",dpi=500)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
