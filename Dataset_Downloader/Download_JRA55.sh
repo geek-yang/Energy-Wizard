@@ -5,7 +5,7 @@
 #Function        : Download JRA55 Atmospheric Reanalysis Data
 #Author          : Yang Liu
 #Date            : 2017.11.28
-#Last Update     : 2017.11.28
+#Last Update     : 2017.12.03
 #Description     : The code aims to download atmospheric reanalysis data JRA55
 #                  from JDDS FTP. The data files have the format GRIB 1.
 #
@@ -55,15 +55,15 @@ do
       user $User $Password
       binary
       cd JRA-55/Hist/Daily/anl_mdl/${year}${month_list[$month]}
-      lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/gz
+      lcd /projects/0/blueactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/gz
       mget anl_mdl_hgt*
-      lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/T
+      lcd /projects/0/blueactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/T
       mget anl_mdl_tmp*
-      lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/u
+      lcd /projects/0/blueactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/u
       mget anl_mdl_ugrd*
-      lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/v
+      lcd /projects/0/blueactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/v
       mget anl_mdl_vgrd*
-      lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/q
+      lcd /projects/0/blueactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/q
       mget anl_mdl_spfh*
       bye
 End-Of-Session
@@ -71,7 +71,7 @@ End-Of-Session
       user $User $Password
       binary
       cd JRA-55/Hist/Daily/anl_surf/${year}${month_list[$month]}
-      lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/sp
+      lcd /projects/0/blueactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/sp
       mget anl_surf*
       bye
 End-Of-Session
