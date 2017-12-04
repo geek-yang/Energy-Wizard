@@ -63,7 +63,7 @@ do
       mget anl_mdl_ugrd*
       lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/v
       mget anl_mdl_vgrd*
-      lcd /projects/0/bluactn/reanalysis/JRA55/subdailyjra/${year}/jra${year}${month_list[$month]}/q
+      lcd /projects/0/bluactn/reanalysis/JRA55/subdaily/jra${year}/jra${year}${month_list[$month]}/q
       mget anl_mdl_spfh*
       bye
 End-Of-Session
