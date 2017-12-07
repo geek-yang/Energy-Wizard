@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare OMET of all reanalysis datasets from observation in the Atlantic
 Author          : Yang Liu
 Date            : 2017.12.06
-Last Update     : 2017.12.06
+Last Update     : 2017.12.07
 Description     : The code aims to plot and compare the meridional energy transport
                   in the ocean obtained from reanalysis data with direct observation
                   in the Atlantic Ocean. The oceanic meridional energy transport is
@@ -185,6 +185,12 @@ year_GLORYS2V3 = dataset_GLORYS2V3_point.variables['year'][11:]     # from 2004
 # nominal latitude
 lat_ORAS4 =  dataset_ORAS4_zonal.variables['latitude_aux'][:]
 lat_GLORYS2V3 = dataset_GLORYS2V3_zonal.variables['latitude_aux'][:]
+# latitude
+lat_ORAS4_ORCA = dataset_ORAS4_point.variables['latitude'][:]
+lat_GLORYS2V3_ORCA = dataset_GLORYS2V3_point.variables['latitude'][:]
+# longitude
+lon_ORAS4_ORCA = dataset_ORAS4_point.variables['longitude'][:]
+lon_GLORYS2V3_ORCA = dataset_GLORYS2V3_point.variables['longitude'][:]
 # mask
 mask_ORAS4 = dataset_mask_ORAS4.variables['vmask'][0,0,:,:]
 mask_GLORYS2V3 = dataset_mask_GLORYS2V3.variables['vmask'][0,0,:,:]
@@ -227,6 +233,7 @@ print '*******************************************************************'
 window = 12 # in month
 #window = 60 # in month
 #window = 120 # in month
+window_day = 90 # in days
 
 # calculate the running mean of AMET and OMET at differnt latitudes
 OMET_ORAS4_RAPID_series_running_mean = np.zeros((len(OMET_ORAS4_RAPID_series)-window+1),dtype=float)
@@ -237,15 +244,40 @@ OMET_GLORYS2V3_RAPID_series_running_mean = np.zeros((len(OMET_GLORYS2V3_RAPID_se
 for i in np.arange(len(OMET_GLORYS2V3_RAPID_series)-window+1):
         OMET_GLORYS2V3_RAPID_series_running_mean[i] = np.mean(OMET_GLORYS2V3_RAPID_series[i:i+window])
 
-OMET_RAPID_running_mean = np.zeros((len(OMET_RAPID)-window*30*2+1),dtype=float)
-for i in np.arange(len(OMET_RAPID)-window*30*2+1):
-        OMET_RAPID_running_mean[i] = np.mean(OMET_RAPID[i:i+window*30*2])
+OMET_RAPID_running_mean = np.zeros((len(OMET_RAPID)-window_day+1),dtype=float)
+for i in np.arange(len(OMET_RAPID)-window_day+1):
+        OMET_RAPID_running_mean[i] = np.mean(OMET_RAPID[i:i+window_day])
 
 print '*******************************************************************'
 print '**********************  Pin points on ORCA ************************'
 print '*******************************************************************'
-#fig1 = plt.figure()
+lat_ORCA1 = np.zeros(len(jj_ORCA1_RAPID),dtype=float)
+lon_ORCA1 = np.zeros(len(ii_ORCA1_RAPID),dtype=float)
 
+lat_ORCA025 = np.zeros(len(jj_ORCA025_RAPID),dtype=float)
+lon_ORCA025 = np.zeros(len(ii_ORCA025_RAPID),dtype=float)
+
+for i in np.arange(len(jj_ORCA1_RAPID)):
+    lat_ORCA1[i] = lat_ORAS4_ORCA[jj_ORCA1_RAPID[i],ii_ORCA1_RAPID[i]]
+    lon_ORCA1[i] = lon_ORAS4_ORCA[jj_ORCA1_RAPID[i],ii_ORCA1_RAPID[i]]
+
+for i in np.arange(len(jj_ORCA025_RAPID)):
+    lat_ORCA025[i] = lat_GLORYS2V3_ORCA[jj_ORCA025_RAPID[i],ii_ORCA025_RAPID[i]]
+    lon_ORCA025[i] = lon_GLORYS2V3_ORCA[jj_ORCA025_RAPID[i],ii_ORCA025_RAPID[i]]
+
+fig1 = plt.figure()
+m = Basemap(projection='cyl',llcrnrlat=0,urcrnrlat=90,llcrnrlon=-180,urcrnrlon=180,lon_0=0,lat_0=0,resolution='l')
+m.drawcoastlines(linewidth=0.25)
+m.drawparallels(np.arange(0,91,30),labels=[1,1,0,0],fontsize = 7)
+m.drawmeridians(np.arange(-180,181,60),labels=[0,0,0,1],fontsize = 7)
+XX1, YY1 = m(lon_ORCA1, lat_ORCA1)
+XX2, YY2 = m(lon_ORCA025, lat_ORCA025)
+# alpha bleding factor with map
+m.scatter(XX2,YY2,1.5,marker='o',color='r',alpha=0.6, edgecolor='none',label='ORCA025')
+m.scatter(XX1,YY1,3.5,marker='*',color='b',alpha=0.6, edgecolor='none',label='ORCA1')
+plt.title('The location of RAPID ARRAY on ORCA1 and ORCA025 grid',fontsize = 9, y=1.05)
+plt.show()
+fig1.savefig(output_path + os.sep + "location_ORCA_RAPID.jpeg",dpi=500)
 print '*******************************************************************'
 print '**********************  time series plots  ************************'
 print '*******************************************************************'
@@ -271,7 +303,7 @@ fig2.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_time_series.jpg', dpi
 fig3 = plt.figure()
 plt.plot(index[window-1:-12],OMET_ORAS4_RAPID_series_running_mean[:],'b-',label='ORAS4')
 plt.plot(index[window-1:-12],OMET_GLORYS2V3_RAPID_series_running_mean[:],'r-',label='GLORYS2V3')
-plt.plot(index_RAPID[window*30*2-1:],OMET_RAPID_running_mean[:-23],'g-',label='RAPID ARRAY')
+plt.plot(index_RAPID[window_day-1:],OMET_RAPID_running_mean[:-23],'g-',label='RAPID ARRAY')
 plt.title('Meridional Energy Transport in the ocean at 26.5 N with a running mean of %d months (02/04/2004 - 12/10/2015)' % (window))
 plt.legend()
 fig3.set_size_inches(12, 5)
@@ -280,5 +312,6 @@ plt.xticks(np.linspace(1, 12*12, 12), np.arange(2004,2016,1))
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig3.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_running_mean_%dm_time_series.jpg' % (window), dpi = 500)
+fig3.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_running_mean_%dm_90d_time_series.jpg' % (window), dpi = 500)
+
 # stream functions
