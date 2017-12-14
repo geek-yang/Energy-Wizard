@@ -1,23 +1,20 @@
 #!/usr/bin/env python
 """
 Copyright Netherlands eScience Center
-Function        : Bjerknes Compensation between AMET and OMET (ERA-Interim & ORAS4)
+Function        : Bjerknes Compensation between AMET and OMET (MERRA2 & GLROSY2V3)
 Author          : Yang Liu
-Date            : 2017.10.14
+Date            : 2017.12.14
 Last Update     : 2017.12.14
 Description     : The code aims to study the Bjerknes compensation between atmosphere
                   and ocean. The atmospheric meridional energy transport is calculated
-                  from reanalysis data ERA-Interim. The oceanic meridional energy
-                  transport is calculated from ORAS4.
+                  from reanalysis data MERRA2. The oceanic meridional energy
+                  transport is calculated from GLORYS2V3.
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, logging
-variables       : Atmospheric Meridional Energy Transport   ERA-Interim
-                  Oceanic Meridional Energy Transport       ORAS4
-Caveat!!        : The full dataset of ORAS4 is from 1958. However, a quality report from
-                  Magdalena from ECMWF indicates the quality of data for the first
-                  two decades are very poor. Hence we use the data from 1979. which
-                  is the start of satellite era.
-                  Data from 20N - 90N are taken into account!
+variables       : Atmospheric Meridional Energy Transport   MERRA2
+                  Oceanic Meridional Energy Transport       GLORYS2V3
+Caveat!!        : The full dataset of GLORYS2V3 is from 1993 to 2014.
+                  Data from 30N - 90N are taken into account!
 """
 import numpy as np
 import seaborn as sns
@@ -53,48 +50,42 @@ start_time = tttt.time()
 
 ################################   Input zone  ######################################
 # specify data path
-datapath_AMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
-datapath_OMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ORAS4/postprocessing'
+datapath_AMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/MERRA2/postprocessing'
+datapath_OMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GLORYS2V3/postprocessing'
 # specify output path for the netCDF4 file
-output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Bjerknes/ERAInterim_ORAS4'
+output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Bjerknes/MERRA2_GLORYS2V3'
 # index of latitude for insteret
 # 60N
-lat_OMET = 233
-lat_AMET_reverse = 40
+lat_OMET = 788
+lat_AMET = 80
 # after a cut to 20-90 N
-lat_OMET_cut = 53
-lat_AMET = 54
+lat_OMET_cut = 212
 # mask path
-mask_path = '/mnt/Associate/DataBase/ORAS/ORAS4/Monthly/model'
+#mask_path = 'F:\DataBase\GLORYS\S2V3\Monthly\Model'
 ####################################################################################
 print '*******************************************************************'
 print '*********************** extract variables *************************'
 print '*******************************************************************'
-dataset_AMET = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
-dataset_OMET = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_E_zonal_int.nc')
+dataset_AMET = Dataset(datapath_AMET + os.sep + 'AMET_MERRA2_model_daily_1980_2016_E_zonal_int.nc')
+dataset_OMET = Dataset(datapath_OMET + os.sep + 'GLORYS2V3_model_monthly_orca025_E_zonal_int.nc')
 
-dataset_AMET_point = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_point.nc')
-dataset_OMET_point = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_E_point.nc')
+#dataset_AMET_point = Dataset(datapath_AMET + os.sep + 'model_daily_075_1980_2016_E_point.nc')
+#dataset_OMET_point = Dataset(datapath_OMET + os.sep + 'GLORYS2V3_model_monthly_orca025_E_point.nc')
 
 for k in dataset_OMET.variables:
     print dataset_OMET.variables['%s' % (k)]
 for l in dataset_AMET.variables:
     print dataset_AMET.variables['%s' % (l)]
 
-# from 1979 to 2014
+# from 1993 to 2014
 # from 20N - 90N
-AMET_reverse = dataset_AMET.variables['E'][:-2,:,:]/1000 # from Tera Watt to Peta Watt
-OMET = dataset_OMET.variables['E'][21:,:,180:]/1000 # from Tera Watt to Peta Watt # start from 1979
+AMET = dataset_AMET.variables['E'][13:-2,:,:]/1000 # from Tera Watt to Peta Watt
+OMET = dataset_OMET.variables['E'][:,:,576:]/1000 # from Tera Watt to Peta Watt # start from 1993
 
-year = dataset_OMET.variables['year'][21:]    # from 1979 to 2014
+year = dataset_OMET.variables['year'][:]    # from 1993 to 2014
 month = dataset_OMET.variables['month'][:]
-latitude_OMET = dataset_OMET.variables['latitude_aux'][180:]
-latitude_AMET_reverse = dataset_AMET.variables['latitude'][:]
-
-# since OMET is from 20N - 90N, AMET is from 90N to 20N, we have to reverse it
-# for interpolation, x should be monotonically increasing
-latitude_AMET = latitude_AMET_reverse[::-1]
-AMET = AMET_reverse[:,:,::-1]
+latitude_OMET = dataset_OMET.variables['latitude_aux'][576:]
+latitude_AMET = dataset_AMET.variables['latitude'][:]
 
 print '*******************************************************************'
 print '*************************** whitening *****************************'
@@ -148,6 +139,7 @@ for i in year_ind:
 
 OMET_interpolate_white_series = OMET_interpolate_white.reshape(len(year)*len(month),len(latitude_AMET))
 
+#!!!!!!!!!! Test module for interpolation !!!!!!!!!!
 fig99 = plt.figure()
 plt.plot(OMET_interpolate_white_series[:,lat_AMET],'r-',label='interpolate')
 plt.plot(OMET_white_series[:,lat_OMET_cut],'b-',label='original')
@@ -161,7 +153,7 @@ print '*******************************************************************'
 window = 12 # in month
 #window = 60 # in month
 #window = 120 # in month
-#window = 180 # in month
+
 # calculate the running mean of AMET and OMET at 60N
 AMET_white_series_running_mean = np.zeros((len(AMET_white_series)-window+1,len(latitude_AMET)),dtype=float)
 OMET_interpolate_white_series_running_mean = np.zeros((len(OMET_interpolate_white_series)-window+1,len(latitude_AMET)),dtype=float)
@@ -175,10 +167,10 @@ print '*******************************************************************'
 print '*************************** x-y plots *****************************'
 print '*******************************************************************'
 fig0 = plt.figure()
-plt.plot(latitude_AMET,AMET_mean,'r-',label='ERA-Interim')
-plt.plot(latitude_OMET,OMET_mean,'b-',label='ORAS4')
+plt.plot(latitude_AMET,AMET_mean,'r-',label='MERRA2')
+plt.plot(latitude_OMET,OMET_mean,'b-',label='GLORYS2V3')
 plt.plot(latitude_AMET,AMET_mean + OMET_mean_interpolate,'g--',label='Total')
-plt.title('Meridional Energy Transport from ERA-Interim and ORAS4 (1979-2014)')
+plt.title('Meridional Energy Transport at 60 N (1993-2014)')
 plt.legend()
 #fig1.set_size_inches(5, 5)
 plt.xlabel("Latitude")
@@ -187,62 +179,61 @@ plt.xticks(np.linspace(20, 90, 8),labels)
 #plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig0.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_annual_mean_1979_2014.jpg', dpi = 500)
+fig0.savefig(output_path + os.sep + 'MERRA2_GLORYS2V3_annual_mean_1993_2014.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '*********************** time series plots *************************'
 print '*******************************************************************'
 # index and namelist of years for time series and running mean time series
-index = np.arange(1,433,1)
-index_year = np.arange(1979,2015,1)
+index = np.arange(1,265,1)
 
 #index_running_mean = np.arange(1,433-window+1,1)
-#index_year_running_mean = np.arange(1979+window/12-1,2015,1)
+#index_year_running_mean = np.arange(1993+window/12-1,2015,1)
 
 # time series plot of meridional energy transport at 60N
 fig1 = plt.figure()
-plt.plot(index,AMET_series[:,lat_AMET],'r-',label='ERA-Interim')
-plt.plot(index,OMET_series[:,lat_OMET_cut],'b-',label='ORAS4')
+plt.plot(index,AMET_series[:,lat_AMET],'r-',label='MERRA2')
+plt.plot(index,OMET_series[:,lat_OMET_cut],'b-',label='GLORYS2V3')
 plt.plot(index,AMET_series[:,lat_AMET]+OMET_interpolate_series[:,lat_AMET],'g--',label='Total')
-plt.title('Meridional Energy Transport at 60 N (1979-2014)')
+plt.title('Meridional Energy Transport at 60 N (1993-2014)')
 plt.legend()
 fig1.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432, 37), index_year)
+plt.xticks(np.linspace(0, 264, 23), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig1.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_60N_total_time_series_1979_2014.jpg', dpi = 500)
+fig1.savefig(output_path + os.sep + 'MERRA2_GLORYS2V3_60N_total_time_series_1993_2014.jpg', dpi = 500)
 
 # time series plot of meridional energy transport anomalies at 60N
 fig2 = plt.figure()
-plt.plot(index,AMET_white_series[:,lat_AMET],'r-',label='ERA-Interim')
-plt.plot(index,OMET_white_series[:,lat_OMET_cut],'b-',label='ORAS4')
+plt.plot(index,AMET_white_series[:,lat_AMET],'r-',label='MERRA2')
+plt.plot(index,OMET_white_series[:,lat_OMET_cut],'b-',label='GLORYS2V3')
 plt.plot(index,AMET_white_series[:,lat_AMET]+OMET_interpolate_white_series[:,lat_AMET],'g--',label='Total')
-plt.title('Meridional Energy Transport Anomalies at 60 N (1979-2014)')
+plt.title('Meridional Energy Transport Anomalies at 60 N (1993-2014)')
 plt.legend()
 fig2.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432, 37), year)
+plt.xticks(np.linspace(0, 264, 23), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig2.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_time_series_1979_2014.jpg', dpi = 500)
+fig2.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_time_series_1993_2014.jpg', dpi = 500)
 
 # time series plot of meridional energy transport anomalies at 60N with 10 years running mean
 fig3 = plt.figure()
-plt.plot(index[window-1:],AMET_white_series_running_mean[:,lat_AMET],'r-',label='ERA-Interim')
-plt.plot(index[window-1:],OMET_interpolate_white_series_running_mean[:,lat_AMET],'b-',label='ORAS4')
+plt.plot(index[window-1:],AMET_white_series_running_mean[:,lat_AMET],'r-',label='MERRA2')
+plt.plot(index[window-1:],OMET_interpolate_white_series_running_mean[:,lat_AMET],'b-',label='GLORYS2V3')
 plt.plot(index[window-1:],AMET_white_series_running_mean[:,lat_AMET]+OMET_interpolate_white_series_running_mean[:,lat_AMET],'g--',label='Total')
-plt.title('Meridional Energy Transport Anomalies with running mean of %d months at 60 N (1979-2014)' % (window))
+plt.title('Meridional Energy Transport Anomalies with running mean of %d months at 60 N (1993-2014)' % (window))
 plt.legend()
 fig3.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 432, 37), year)
+plt.xticks(np.linspace(0, 264, 23), year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig3.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_running_mean_%dmtime_series_1979_2014.jpg' % (window), dpi = 500)
+fig3.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_running_mean_%dmtime_series_1993_2014.jpg' % (window), dpi = 500)
 
 print '*******************************************************************'
 print '*********************** Regression plots **************************'
@@ -259,8 +250,8 @@ for i in np.arange(len(latitude_AMET)):
         slope[i],_,r_value[i],p_value[i],_ = scipy.stats.linregress(AMET_series[:,i],OMET_interpolate_series[:,i])
 # plot the correlation coefficient at each latitude
 fig4 = plt.figure()
-plt.plot(latitude_AMET,r_value,'r-',label='ERA-Interim')
-plt.title('Regression of OMET on AMET in the North Hemisphere (1979-2014)')
+plt.plot(latitude_AMET,r_value,'r-',label='Compensation')
+plt.title('Regression of OMET on AMET in the North Hemisphere (1993-2014)')
 plt.legend()
 fig4.set_size_inches(12, 5)
 plt.xlabel("Latitude")
@@ -268,7 +259,7 @@ plt.xlabel("Latitude")
 #plt.xticks(rotation=60)
 plt.ylabel("Correlation Coefficient")
 plt.show()
-fig4.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_regression_correlation_coef_1979_2014.jpg', dpi = 500)
+fig4.savefig(output_path + os.sep + 'MERRA2_GLORYS2V3_regression_correlation_coef_1993_2014.jpg', dpi = 500)
 #Regression with time lag
 
 # regress OMET on AMET after removing seasonal cycling
@@ -277,8 +268,8 @@ for i in np.arange(len(latitude_AMET)):
         slope[i],_,r_value[i],p_value[i],_ = scipy.stats.linregress(AMET_white_series[:,i],OMET_interpolate_white_series[:,i])
 # plot the correlation coefficient at each latitude
 fig5 = plt.figure()
-plt.plot(latitude_AMET,r_value,'r-',label='ERA-Interim')
-plt.title('Regression of OMET on AMET after remvoing climatology in the North Hemisphere (1979-2014)')
+plt.plot(latitude_AMET,r_value,'r-',label='Compensation')
+plt.title('Regression of OMET on AMET after remvoing climatology in the North Hemisphere (1993-2014)')
 plt.legend()
 fig5.set_size_inches(12, 5)
 plt.xlabel("Latitude")
@@ -286,16 +277,16 @@ plt.xlabel("Latitude")
 #plt.xticks(rotation=60)
 plt.ylabel("Correlation Coefficient")
 plt.show()
-fig5.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_white_regression_correlation_coef_1979_2014.jpg', dpi = 500)
+fig5.savefig(output_path + os.sep + 'MERRA2_GLORYS2V3_white_regression_correlation_coef_1993_2014.jpg', dpi = 500)
 
-# regress OMET on AMET after removing seasonal cycling with 120 months running means
+# regress OMET on AMET after removing seasonal cycling with x months running means
 for i in np.arange(len(latitude_AMET)):
         # return value: slope, intercept, r_value, p_value, stderr
         slope[i],_,r_value[i],p_value[i],_ = scipy.stats.linregress(AMET_white_series_running_mean[:,i],OMET_interpolate_white_series_running_mean[:,i])
 # plot the correlation coefficient at each latitude
 fig6 = plt.figure()
-plt.plot(latitude_AMET,r_value,'r-',label='ERA-Interim')
-plt.title('Regression of OMET on AMET after remvoing climatology with running mean of %d months in the North Hemisphere (1979-2014)' % (window))
+plt.plot(latitude_AMET,r_value,'r-',label='Compensation')
+plt.title('Regression of OMET on AMET after remvoing climatology with running mean of %d months in the North Hemisphere (1993-2014)' % (window))
 plt.legend()
 fig6.set_size_inches(12, 5)
 plt.xlabel("Latitude")
@@ -303,7 +294,7 @@ plt.xlabel("Latitude")
 #plt.xticks(rotation=60)
 plt.ylabel("Correlation Coefficient")
 plt.show()
-fig6.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_white_running_mean_%dm_regression_correlation_coef_1979_2014.jpg' % (window), dpi = 500)
+fig6.savefig(output_path + os.sep + 'MERRA2_GLORYS2V3_white_running_mean_%dm_regression_correlation_coef_1993_2014.jpg' % (window), dpi = 500)
 
 print '*******************************************************************'
 print '******************* Regression Lead/Lag plots *********************'
@@ -341,7 +332,7 @@ contour_level = np.array([-0.8,-0.6,-0.4,-0.3,-0.2,-0.1,0.0])
 cs = plt.contour(x,y,slope_2D.transpose(), contour_level, linewidth=0.05, cmap='jet')
 plt.clabel(cs, inline=1, fontsize=10)
 #plt.contourf(x,y,T_series_E[181:,:]/1000,cmap='coolwarm') # from 20N-90N
-plt.title('Lead/Lag regression of OMET on AMET with %d month running means(1979-2014)' % (window))
+plt.title('Lead/Lag regression of OMET on AMET with %d month running means(1993-2014)' % (window))
 fig7.set_size_inches(12, 5)
 #add color bar
 cbar = plt.colorbar(cs,orientation='vertical',shrink =0.8)
@@ -354,7 +345,7 @@ plt.xticks(np.linspace(-180, 180, 11), lead_year)
 #plt.xticks(rotation=60)
 plt.ylabel("Latitude")
 plt.show()
-fig7.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_running_mean_%dm_regression_lead_lag.jpg' % (window), dpi = 500)
+fig7.savefig(output_path + os.sep + 'MERRA2_GLORYS2V3_running_mean_%dm_regression_lead_lag.jpg' % (window), dpi = 500)
 
 
 # time lead/lag regression of anomalies without running means
@@ -380,7 +371,7 @@ contour_level = np.array([-0.3,-0.2,-0.1,0.0])
 cs = plt.contour(x,y,slope_2D.transpose(), contour_level, linewidth=0.05, cmap='jet')
 plt.clabel(cs, inline=1, fontsize=10)
 #plt.contourf(x,y,T_series_E[181:,:]/1000,cmap='coolwarm') # from 20N-90N
-plt.title('Lead/Lag regression of OMET on AMET anomalies (1979-2014)')
+plt.title('Lead/Lag regression of OMET on AMET anomalies (1993-2014)')
 fig8.set_size_inches(12, 5)
 #add color bar
 cbar = plt.colorbar(cs,orientation='vertical',shrink =0.8)
@@ -393,7 +384,7 @@ plt.xticks(np.linspace(-180, 180, 11), lead_year)
 #plt.xticks(rotation=60)
 plt.ylabel("Latitude")
 plt.show()
-fig8.savefig(output_path + os.sep + 'ERA-Interim_ORAS4_anomalies_regression_lead_lag.jpg', dpi = 500)
+fig8.savefig(output_path + os.sep + 'MERRA2_GLORYS2V3_anomalies_regression_lead_lag.jpg', dpi = 500)
 print '*******************************************************************'
 print '****************** maps (average of point data) *******************'
 print '*******************************************************************'

@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Bjerknes Compensation between AMET and OMET (ERA-Interim & GLROSY2V3)
 Author          : Yang Liu
 Date            : 2017.11.12
-Last Update     : 2017.11.12
+Last Update     : 2017.12.14
 Description     : The code aims to study the Bjerknes compensation between atmosphere
                   and ocean. The atmospheric meridional energy transport is calculated
                   from reanalysis data ERA-Interim. The oceanic meridional energy
@@ -50,16 +50,17 @@ start_time = tttt.time()
 
 ################################   Input zone  ######################################
 # specify data path
-datapath_AMET = 'F:\DataBase\HPC_out\ERAI\postprocessing'
-datapath_OMET = 'F:\DataBase\HPC_out\GLORYS2V3\postprocessing'
+datapath_AMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
+datapath_OMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GLORYS2V3/postprocessing'
 # specify output path for the netCDF4 file
-output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\Bjerknes\ERAInterim_GLORYS2V3'
+output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Bjerknes/ERAInterim_GLORYS2V3'
 # index of latitude for insteret
 # 60N
 lat_OMET = 788
-lat_AMET = 40
-# after a cut to 30-90 N
-lat_OMET_cut = 165
+lat_AMET_reverse = 40
+# after a cut to 20-90 N
+lat_OMET_cut = 212
+lat_AMET = 54
 # mask path
 #mask_path = 'F:\DataBase\GLORYS\S2V3\Monthly\Model'
 ####################################################################################
@@ -80,11 +81,11 @@ for l in dataset_AMET.variables:
 # from 1993 to 2014
 # from 30N - 90N
 AMET_reverse = dataset_AMET.variables['E'][14:-2,:,:]/1000 # from Tera Watt to Peta Watt
-OMET = dataset_OMET.variables['E'][:,:,623:]/1000 # from Tera Watt to Peta Watt # start from 1993
+OMET = dataset_OMET.variables['E'][:,:,576:]/1000 # from Tera Watt to Peta Watt # start from 1993
 
 year = dataset_OMET.variables['year'][:]    # from 1993 to 2014
 month = dataset_OMET.variables['month'][:]
-latitude_OMET = dataset_OMET.variables['latitude_aux'][623:]
+latitude_OMET = dataset_OMET.variables['latitude_aux'][576:]
 latitude_AMET_reverse = dataset_AMET.variables['latitude'][:]
 
 # since OMET is from 30N - 90N, AMET is from 90N to 30N, we have to reverse it
@@ -155,10 +156,10 @@ print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
 # running mean is calculated on time series
 # define the running window for the running mean
-#window = 12 # in month
-window = 60 # in month
+window = 12 # in month
+#window = 60 # in month
 #window = 120 # in month
-#window = 180 # in month
+
 # calculate the running mean of AMET and OMET at 60N
 AMET_white_series_running_mean = np.zeros((len(AMET_white_series)-window+1,len(latitude_AMET)),dtype=float)
 OMET_interpolate_white_series_running_mean = np.zeros((len(OMET_interpolate_white_series)-window+1,len(latitude_AMET)),dtype=float)
@@ -179,8 +180,8 @@ plt.title('Meridional Energy Transport at 60 N (1993-2014)')
 plt.legend()
 #fig1.set_size_inches(5, 5)
 plt.xlabel("Latitude")
-labels =['30','40','50','60','70','80','90']
-plt.xticks(np.linspace(30, 90, 7),labels)
+labels =['20','30','40','50','60','70','80','90']
+plt.xticks(np.linspace(20, 90, 8),labels)
 #plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
