@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Bjerknes Compensation between AMET and OMET (ERA-Interim & ORAS4)
 Author          : Yang Liu
 Date            : 2017.10.14
-Last Update     : 2017.11.12
+Last Update     : 2017.12.14
 Description     : The code aims to study the Bjerknes compensation between atmosphere
                   and ocean. The atmospheric meridional energy transport is calculated
                   from reanalysis data ERA-Interim. The oceanic meridional energy
@@ -53,27 +53,28 @@ start_time = tttt.time()
 
 ################################   Input zone  ######################################
 # specify data path
-datapath_AMET = 'F:\DataBase\HPC_out\ERAI\postprocessing'
-datapath_OMET = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
+datapath_AMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
+datapath_OMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ORAS4/postprocessing'
 # specify output path for the netCDF4 file
-output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\Bjerknes\ERAInterim_ORAS4'
+output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Bjerknes/ERAInterim_ORAS4'
 # index of latitude for insteret
 # 60N
 lat_OMET = 233
-lat_AMET = 40
-# after a cut to 30-90 N
-lat_OMET_cut = 42
+lat_AMET_reverse = 40
+# after a cut to 20-90 N
+lat_OMET_cut = 53
+lat_AMET = 54
 # mask path
-mask_path = 'F:\DataBase\ORAS\ORAS4\Monthly\Model'
+mask_path = '/mnt/Associate/DataBase/ORAS/ORAS4/Monthly/model'
 ####################################################################################
 print '*******************************************************************'
 print '*********************** extract variables *************************'
 print '*******************************************************************'
 dataset_AMET = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
-dataset_OMET = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
+dataset_OMET = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_E_zonal_int.nc')
 
 dataset_AMET_point = Dataset(datapath_AMET + os.sep + 'model_daily_075_1979_2016_E_point.nc')
-dataset_OMET_point = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_point.nc')
+dataset_OMET_point = Dataset(datapath_OMET + os.sep + 'oras4_model_monthly_orca1_E_point.nc')
 
 for k in dataset_OMET.variables:
     print dataset_OMET.variables['%s' % (k)]
@@ -83,14 +84,14 @@ for l in dataset_AMET.variables:
 # from 1979 to 2014
 # from 30N - 90N
 AMET_reverse = dataset_AMET.variables['E'][:-2,:,:]/1000 # from Tera Watt to Peta Watt
-OMET = dataset_OMET.variables['E'][21:,:,191:]/1000 # from Tera Watt to Peta Watt # start from 1979
+OMET = dataset_OMET.variables['E'][21:,:,180:]/1000 # from Tera Watt to Peta Watt # start from 1979
 
 year = dataset_OMET.variables['year'][21:]    # from 1979 to 2014
 month = dataset_OMET.variables['month'][:]
-latitude_OMET = dataset_OMET.variables['latitude_aux'][191:]
+latitude_OMET = dataset_OMET.variables['latitude_aux'][180:]
 latitude_AMET_reverse = dataset_AMET.variables['latitude'][:]
 
-# since OMET is from 30N - 90N, AMET is from 90N to 30N, we have to reverse it
+# since OMET is from 20N - 90N, AMET is from 90N to 20N, we have to reverse it
 # for interpolation, x should be monotonically increasing
 latitude_AMET = latitude_AMET_reverse[::-1]
 AMET = AMET_reverse[:,:,::-1]
