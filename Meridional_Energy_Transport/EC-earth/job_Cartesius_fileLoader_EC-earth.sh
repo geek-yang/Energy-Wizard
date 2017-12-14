@@ -5,7 +5,7 @@
 #Function        : Schedule and execute job for the post-processing of EC-Earth output on Cartesius
 #Author          : Yang Liu
 #Date            : 2017.12.13
-#Last Update     : 2017.12.13
+#Last Update     : 2017.12.14
 #Description     : The code aims to submit series of jobs to Cartesius for the post-processing
 #                  of EC-Earth model output. The file will be executed in job submission. The
 #                  post-processing mainly includes the computation of meridional energy transport
@@ -53,6 +53,7 @@ do
     cd ./00$counter
   fi
   # convert the spectral field to grid field
+  cp ICMGGECE3+${year}${month[${c_month}]} /projects/0/blueactn/reanalysis/temp/ICMGGECE3+${year}${month[${c_month}]}_gp
   cdo sp2gpl ICMSHECE3+${year}${month[${c_month}]} /projects/0/blueactn/reanalysis/temp/ICMSHECE3+${year}${month[${c_month}]}_sp2gpl
   # switch to the home directory
   cd /home/lwc16308/ecearth_postproc/AMET
@@ -65,6 +66,7 @@ do
   printf year${year}month${month[${c_month}]}"\n" > log_time.log
   # remove the temporary file
   rm /projects/0/blueactn/reanalysis/temp/ICMSHECE3+${year}${month[${c_month}]}_sp2gpl
+  rm /projects/0/blueactn/reanalysis/temp/ICMGGECE3+${year}${month[${c_month}]}_gp
   # increase the month counter
   c_month=$((c_month+1))
 done
