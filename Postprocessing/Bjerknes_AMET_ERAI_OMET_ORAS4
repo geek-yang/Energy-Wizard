@@ -17,7 +17,7 @@ Caveat!!        : The full dataset of ORAS4 is from 1958. However, a quality rep
                   Magdalena from ECMWF indicates the quality of data for the first
                   two decades are very poor. Hence we use the data from 1979. which
                   is the start of satellite era.
-                  Data from 30N - 90N are taken into account!
+                  Data from 20N - 90N are taken into account!
 """
 import numpy as np
 import seaborn as sns
@@ -82,7 +82,7 @@ for l in dataset_AMET.variables:
     print dataset_AMET.variables['%s' % (l)]
 
 # from 1979 to 2014
-# from 30N - 90N
+# from 20N - 90N
 AMET_reverse = dataset_AMET.variables['E'][:-2,:,:]/1000 # from Tera Watt to Peta Watt
 OMET = dataset_OMET.variables['E'][21:,:,180:]/1000 # from Tera Watt to Peta Watt # start from 1979
 
@@ -182,8 +182,8 @@ plt.title('Meridional Energy Transport from ERA-Interim and ORAS4 (1979-2014)')
 plt.legend()
 #fig1.set_size_inches(5, 5)
 plt.xlabel("Latitude")
-labels =['30','40','50','60','70','80','90']
-plt.xticks(np.linspace(30, 90, 7),labels)
+labels =['20','30','40','50','60','70','80','90']
+plt.xticks(np.linspace(20, 90, 8),labels)
 #plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
