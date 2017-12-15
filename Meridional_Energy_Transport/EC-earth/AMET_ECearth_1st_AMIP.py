@@ -576,7 +576,7 @@ if __name__=="__main__":
                 # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
                 if k == 0:
                     div_moisture_flux_u[j,k] = (moisture_flux_u_int[j,k+1] - moisture_flux_u_int[j,-1]) / (2 * dx[j])
-                elif k == (Dim_latitude-1) :
+                elif k == (Dim_longitude-1) :
                     div_moisture_flux_u[j,k] = (moisture_flux_u_int[j,0] - moisture_flux_u_int[j,k-1]) / (2 * dx[j])
                 else:
                     div_moisture_flux_u[j,k] = (moisture_flux_u_int[j,k+1] - moisture_flux_u_int[j,k-1]) / (2 * dx[j])
