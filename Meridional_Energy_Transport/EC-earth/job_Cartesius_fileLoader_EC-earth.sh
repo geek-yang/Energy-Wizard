@@ -5,7 +5,7 @@
 #Function        : Schedule and execute job for the post-processing of EC-Earth output on Cartesius
 #Author          : Yang Liu
 #Date            : 2017.12.13
-#Last Update     : 2017.12.14
+#Last Update     : 2017.12.15
 #Description     : The code aims to submit series of jobs to Cartesius for the post-processing
 #                  of EC-Earth model output. The file will be executed in job submission. The
 #                  post-processing mainly includes the computation of meridional energy transport
@@ -57,13 +57,14 @@ do
   cdo sp2gpl ICMSHECE3+${year}${month[${c_month}]} /projects/0/blueactn/reanalysis/temp/ICMSHECE3+${year}${month[${c_month}]}_sp2gpl
   # switch to the home directory
   cd /home/lwc16308/ecearth_postproc/AMET
+  echo 'Finish the conversion from spectral field to Gaussian grid'${year}${month[${c_month}]} >> log_time.log
+  date >> log_time.log
   # pass variable name from bash to python
-  touch input.txt
   echo ${year}${month[${c_month}]} > input.txt
   python AMET_ECearth_1st_AMIP.py < ./input.txt
-  rm input.txt
   # record
-  printf year${year}month${month[${c_month}]}"\n" > log_time.log
+  echo 'year and month'${year}${month[${c_month}]} >> log_time.log
+  date >> log_time.log
   # remove the temporary file
   rm /projects/0/blueactn/reanalysis/temp/ICMSHECE3+${year}${month[${c_month}]}_sp2gpl
   rm /projects/0/blueactn/reanalysis/temp/ICMGGECE3+${year}${month[${c_month}]}_gp

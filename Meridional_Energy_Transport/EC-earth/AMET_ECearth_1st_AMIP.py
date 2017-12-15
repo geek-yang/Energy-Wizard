@@ -14,7 +14,7 @@ Return Value    : GRIB1 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, pygrib
 variables       : Absolute Temperature              T         [K]
                   Specific Humidity                 q         [kg/kg]
-                  Surface pressure                  ps        [Pa]
+                  Surface pressure                  sp        [Pa]
                   Zonal Divergent Wind              u         [m/s]
                   Meridional Divergent Wind         v         [m/s]
 		          Geopotential 	                    gz        [m2/s2]
@@ -137,7 +137,7 @@ output_path = '/home/lwc16308/ecearth_postproc/output'
 ####################################################################################
 ###############################   stdout and log  ##################################
 # Redirect all the console output to a file
-sys.stdout = open('/home/lwc16308/ecearth_postproc/console_E.out')
+sys.stdout = open('/home/lwc16308/ecearth_postproc/console_E.out','w')
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 logging.basicConfig(filename = '/home/lwc16308/ecearth_postproc/history_E.log',
                     filemode = 'w', level = logging.DEBUG,
@@ -162,7 +162,7 @@ def var_key_retrive(file_time):
     print "# messages monotonically! Thus, for the sake of processing time,         #"
     print "#                  PLEASE DON'T RETRIVE BACKWARD!                        #"
     print "##########################################################################"
-                                                    #
+
     print "Start retrieving datasets ICMSHECE and ICMGGECE for the time %d" % (file_time)
     logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time %d" % (file_time))
     ICMSHECE = pygrib.open(datapath + os.sep + 'ICMSHECE3+%d_sp2gpl' % (file_time))
