@@ -608,9 +608,9 @@ if __name__=="__main__":
         for j in np.arange(Dim_latitude):
             for k in np.arange(Dim_longitude):
                 # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
-                if j == 0:
+                if k == 0:
                     div_mass_flux_u[j,k] = (mass_flux_u_int[j,k+1] - mass_flux_u_int[j,-1]) / (2 * dx[j])
-                elif j == (Dim_longitude-1) :
+                elif k == (Dim_longitude-1) :
                     div_mass_flux_u[j,k] = (mass_flux_u_int[j,0] - mass_flux_u_int[j,k-1]) / (2 * dx[j])
                 else:
                     div_mass_flux_u[j,k] = (mass_flux_u_int[j,k+1] - mass_flux_u_int[j,k-1]) / (2 * dx[j])
