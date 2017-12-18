@@ -17,8 +17,8 @@ variables       : Absolute Temperature              T         [K]
                   Surface pressure                  sp        [Pa]
                   Zonal Divergent Wind              u         [m/s]
                   Meridional Divergent Wind         v         [m/s]
-		          Geopotential 	                    gz        [m2/s2]
-Caveat!!	    : The dataset is for the entire globe from -90N - 90N.
+		  Geopotential 	                    gz        [m2/s2]
+Caveat!!	: The dataset is for the entire globe from -90N - 90N.
                   The model uses TL511 spectral resolution with N256 Gaussian Grid.
                   For postprocessing, the spectral fields will be converted to grid.
                   The spatial resolution of Gaussian grid is 512 (lat) x 1024 (lon)
