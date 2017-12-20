@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport from EC-earth (Cartesius)
 Author          : Yang Liu
 Date            : 2017.12.07
-Last Update     : 2017.12.14
+Last Update     : 2017.12.18
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on the output from EC-Earth simulation.
                   The complete procedure includes the calculation of the mass budget
@@ -196,11 +196,11 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     logging.info("Start making plots for the total meridional energy transport and each component.")
     # calculate monthly mean of total energy transport
     # unit change from tera to peta (from 1E+12 to 1E+15)
-    E_total_monthly_mean = np.mean(E_total,0)/1000
-    E_internal_monthly_mean = np.mean(E_internal,0)/1000
-    E_latent_monthly_mean = np.mean(E_latent,0)/1000
-    E_geopotential_monthly_mean = np.mean(E_geopotential,0)/1000
-    E_kinetic_monthly_mean = np.mean(E_kinetic,0)/1000
+    E_total_monthly_mean = E_total/1000
+    E_internal_monthly_mean = E_internal/1000
+    E_latent_monthly_mean = E_latent/1000
+    E_geopotential_monthly_mean = E_geopotential/1000
+    E_kinetic_monthly_mean = E_kinetic/1000
     # Plot the total meridional energy transport against the latitude
     fig1 = plt.figure()
     plt.plot(latitude,E_total_monthly_mean,'b-',label='EC-earth')
@@ -651,10 +651,10 @@ if __name__=="__main__":
     moisture_start = np.sum((q_start * dp_start), 0) # start of the current month
     moisture_end = np.sum((q_end * dp_end), 0) # end of the current month
     # compute the moisture tendency (one day has 86400s)
-    moisture_tendency = (moisture_end - moisture_start) / (len(days)*86400) / constant['g']
+    moisture_tendency = (moisture_end - moisture_start) / (days*86400) / constant['g']
     print 'The calculation of precipitable water tendency is finished !!'
     print 'Begin the calculation of surface pressure tendency'
-    sp_tendency = (sp_end - sp_start) / (len(days)*86400) / constant['g']
+    sp_tendency = (sp_end - sp_start) / (days*86400) / constant['g']
     print 'The calculation of surface pressure tendency is finished !!'
     logging.info("Finish calculating the moisture tendency and surface pressure tendency")
     print "Finish calculating the moisture tendency and surface pressure tendency"
