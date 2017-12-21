@@ -331,6 +331,8 @@ def mass_correction_divergence(u,v,q,dp):
     # take the vertical integral
     moisture_flux_u_int = np.sum(moisture_flux_u,1)
     moisture_flux_v_int = np.sum(moisture_flux_v,1)
+    # save memory
+    del moisture_flux_u, moisture_flux_v
     # calculate the divergence of moisture flux
     div_moisture_flux_u = np.zeros(moisture_flux_u_int.shape,dtype = float)
     div_moisture_flux_v = np.zeros(moisture_flux_v_int.shape,dtype = float)
@@ -363,6 +365,8 @@ def mass_correction_divergence(u,v,q,dp):
     # take the vertical integral
     mass_flux_u_int = np.sum(mass_flux_u,1)
     mass_flux_v_int = np.sum(mass_flux_v,1)
+    # save memory
+    del mass_flux_u, mass_flux_v
     # calculate the divergence of moisture flux
     div_mass_flux_u = np.zeros(mass_flux_u_int.shape,dtype = float)
     div_mass_flux_v = np.zeros(mass_flux_v_int.shape,dtype = float)
@@ -411,6 +415,8 @@ def meridional_energy_transport_divergence(z,T,u,v,q,dp):
     latent_flux_int = np.sum(latent_flux, 1)
     geopotential_flux_int = np.sum(geopotential_flux, 1)
     kinetic_flux_int = np.sum(kinetic_flux, 1)
+    # save memory
+    del internal_flux, latent_flux, geopotential_flux, kinetic_flux
     # mass correction component
     heat_flux_int = np.sum(constant['cp'] * T * dp / constant['g'],1)
     vapor_flux_int = np.sum(constant['Lv'] * q * dp / constant['g'],1)
@@ -773,6 +779,8 @@ if __name__=="__main__":
             ####################################################################
             ######                     Mass Correction                   #######
             ####################################################################
+            # save memory
+            del z, T, u, v, q
             print 'Begin the calulation of precipitable water tendency'
             moisture_start = np.sum((q_start * dp_start), 0) # start of the current month
             moisture_end = np.sum((q_end * dp_end), 0) # end of the current month
