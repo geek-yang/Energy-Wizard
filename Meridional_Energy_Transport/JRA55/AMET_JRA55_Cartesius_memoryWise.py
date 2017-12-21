@@ -644,8 +644,8 @@ if __name__=="__main__":
     #Dim_year = len(period)
     # calculate zonal & meridional grid size on earth
     # the earth is taken as a perfect sphere, instead of a ellopsoid
-    dx_benchmark = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / len(longitude)
-    dy_benchmark = np.pi * constant['R'] / (len(latitude)-1)
+    dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / len(longitude)
+    dy = np.pi * constant['R'] / (len(latitude)-1)
     ####################################################################
     ###  Create space for stroing intermediate variables and outputs ###
     ####################################################################
@@ -670,8 +670,8 @@ if __name__=="__main__":
         for j in index_month:
             rounds = 0 # for the optimization of memory
             # reset dx to benchmark
-            dx = dx_benchmark
-            dy = dy_benchmark
+            #dx = dx_benchmark
+            #dy = dy_benchmark
             # determine how many days are there in a month
             if j in long_month_list:
                 days = 31
@@ -825,8 +825,8 @@ if __name__=="__main__":
             # calculate zonal & meridional grid size on earth
             # the earth is taken as a perfect sphere, instead of a ellopsoid
             # strictly make dx at polar to be 0
-            dx[0] = 0
-            dx[-1] = 0
+            #dx[0] = 0
+            #dx[-1] = 0
             # mass correction component
             correction_internal_flux_int = vc * np.mean(pool_heat_flux_int,0)
             correction_latent_flux_int = vc * np.mean(pool_vapor_flux_int,0)
