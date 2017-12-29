@@ -43,12 +43,12 @@ do
     year=$((year+1))
   fi
   # start the post-processing
-  if [ $counter -gt 9 ]
-  then
-    cd ./0$counter
-  elif [ $counter -gt 99 ]
+  if [ $counter -gt 99 ]
   then
     cd ./$counter
+  elif [ $counter -gt 9 ]
+  then
+    cd ./0$counter
   else
     cd ./00$counter
   fi
