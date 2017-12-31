@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (JRA55)(Cartesius,memory wise)
 Author          : Yang Liu
 Date            : 2017.11.27
-Last Update     : 2017.12.21
+Last Update     : 2017.12.31
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset JRA 55 from
                   JMA (Japan). The complete procedure includes the calculation of
@@ -20,10 +20,10 @@ variables       : Absolute Temperature              T         [K]
                   Zonal Divergent Wind              u         [m/s]
                   Meridional Divergent Wind         v         [m/s]
 		          Geopotential Height 	            z         [gpm]
-Caveat!!	    : The dataset is the complete dataset of MERRA2 from -90N - 90N.
+Caveat!!	    : The dataset is the complete dataset of JRA55 from -90N - 90N.
 		          Attention should be paid when calculating the meridional grid length (dy)!
                   Direction of Axis:
-                  Model Level: TOA to surface
+                  Model Level: surface to TOA
                   Latitude: North to South (90 to -90)
                   Lontitude: West to East (0 to 360)
                   Time: 00:00 06:00 12:00 18:00 (6 hourly)
@@ -156,6 +156,8 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
     print '*******************************************************************'
     print "Start retrieving datasets %d (y) - %s (m) for 3D variables" % (year,namelist_month[month-1])
     logging.info("Start retrieving 3D variables T,q,u,v,z for from %d (y) - %s (m)" % (year,namelist_month[month-1]))
+    # get the base message counter for surface pressure
+    counter_accumulate = counter_surface - 1
     if rounds == 0:
         # for the first 10 days
         key_10d_hgt = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.007_hgt.reg_tl319.%d%s0100_%d%s1018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
@@ -205,7 +207,7 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
             counter_message = counter_message + 1
         # for surface pressure
         counter_time = 0
-        while (counter_surface <= 10*4):
+        while (counter_surface <= counter_accumulate + 10*4):
             key_sp = key_sp_year.message(counter_surface)
             sp[counter_time,:,:] = key_sp.values
             counter_time = counter_time + 1
@@ -259,7 +261,7 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
             counter_message = counter_message + 1
         # for surface pressure
         counter_time = 0
-        while (counter_surface <= 10*4*2):
+        while (counter_surface <= counter_accumulate + 10*4):
             key_sp = key_sp_year.message(counter_surface)
             sp[counter_time,:,:] = key_sp.values
             counter_time = counter_time + 1
@@ -315,7 +317,7 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
             counter_message = counter_message + 1
         # for surface pressure
         counter_time = 0
-        while (counter_surface <= days*4):
+        while (counter_surface <= counter_accumulate + (days-20)*4):
             key_sp = key_sp_year.message(counter_surface)
             sp[counter_time,:,:] = key_sp.values
             counter_time = counter_time + 1
