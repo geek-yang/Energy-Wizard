@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim)
 Author          : Yang Liu
 Date            : 2017.11.6
-Last Update     : 2018.1.2
+Last Update     : 2018.1.3
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF
@@ -559,6 +559,11 @@ plt.legend()
 plt.show()
 fig14.savefig(output_path + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_anomaly_60N.jpg', dpi = 500)
 
+print '*******************************************************************'
+print '******************   highlight the difference   *******************'
+print '****************   contour of time series (lat)   *****************'
+print '*******************************************************************'
+
 #=========================================================================#
 #-----------------------   Statistical Matrix   ---------------------------
 #=========================================================================#
@@ -566,7 +571,7 @@ fig14.savefig(output_path + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_anomaly_60N.jp
 print '*******************************************************************'
 print '********************** standard deviation  ************************'
 print '*******************************************************************'
-# calculate the standard deviation of OMET
+# calculate the standard deviation of AMET
 # ERA-Interim
 AMET_E_ERAI_std = np.std(AMET_E_ERAI_series)
 print 'The standard deviation of AMET from ERA-Interim is (in peta Watt):'
@@ -589,7 +594,7 @@ print AMET_E_MERRA2_white_std
 print '*******************************************************************'
 print '*************************** mean value  ***************************'
 print '*******************************************************************'
-# calculate the mean of OMET
+# calculate the mean of AMET
 # ERA-Interim
 AMET_E_ERAI_mean = np.mean(AMET_E_ERAI_series)
 print 'The mean of AMET from ERA-Interim is (in peta Watt):'
