@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (MERRA2)(Cartesius customised)
 Author          : Yang Liu
 Date            : 2017.11.15
-Last Update     : 2017.11.16
+Last Update     : 2018.1.3
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset MERRA II
                   from NASA. The complete procedure includes the calculation of
@@ -489,6 +489,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig1.savefig(output_path + os.sep + 'pngs' + os.sep + 'AMET_MERRA2_total_%d.png' % (year), dpi = 400)
+    plt.close(fig1)
 
     # Plot the meridional internal energy transport against the latitude
     fig2 = plt.figure()
@@ -503,6 +504,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig2.savefig(output_path + os.sep + 'pngs' + os.sep + 'AMET_MERRA2_internal_%d.png' % (year), dpi = 400)
+    plt.close(fig2)
 
     # Plot the meridional latent energy transport against the latitude
     fig3 = plt.figure()
@@ -517,6 +519,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig3.savefig(output_path + os.sep + 'pngs' + os.sep + 'AMET_MERRA2_latent_%d.png' % (year), dpi = 400)
+    plt.close(fig3)
 
     # Plot the meridional geopotential energy transport against the latitude
     fig4 = plt.figure()
@@ -531,6 +534,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig4.savefig(output_path + os.sep + 'pngs' + os.sep + 'AMET_MERRA2_geopotential_%d.png' % (year), dpi = 400)
+    plt.close(fig4)
 
     # Plot the meridional kinetic energy transport against the latitude
     fig5 = plt.figure()
@@ -545,6 +549,7 @@ def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_pa
     plt.ylabel("Meridional Energy Transport (PW)")
     #plt.show()
     fig5.savefig(output_path + os.sep + 'pngs' + os.sep + 'AMET_MERRA2_kinetic_%d.png' % (year), dpi = 400)
+    plt.close(fig5)
     logging.info("The generation of plots for the total meridional energy transport and each component is complete!")
 
 # save output datasets
@@ -900,7 +905,7 @@ if __name__=="__main__":
         create_netcdf_point(meridional_E_point_pool,meridional_E_internal_point_pool,
                             meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,
                             meridional_E_kinetic_point_pool,uc_point_pool,vc_point_pool,output_path,i)
-    print 'Computation of meridional energy transport on model level for ERA-Interim is complete!!!'
+    print 'Computation of meridional energy transport on model level for MERRA2 is complete!!!'
     print 'The output is in sleep, safe and sound!!!'
     logging.info("The full pipeline of the quantification of meridional energy transport in the atmosphere is accomplished!")
 
