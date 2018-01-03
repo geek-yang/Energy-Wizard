@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport (JRA55)(Cartesius,memory wise)
 Author          : Yang Liu
 Date            : 2017.11.27
-Last Update     : 2017.12.31
+Last Update     : 2018.1.3
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset JRA 55 from
                   JMA (Japan). The complete procedure includes the calculation of
@@ -166,8 +166,8 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
         key_10d_vgrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.034_vgrd.reg_tl319.%d%s0100_%d%s1018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
         key_10d_spfh = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.051_spfh.reg_tl319.%d%s0100_%d%s1018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
         key_sp_year = pygrib.open(datapath + os.sep + 'jra_surf' + os.sep + 'anl_surf.001_pres.reg_tl319.%d010100_%d123118' %(year,year))
-        print "Retrieving datasets successfully and return the variable key!"
-        logging.info("Retrieving 3D variables from %d (y) - %s (m) successfully!" % (year,namelist_month[month-1]))
+        print "Retrieving datasets successfully and return the variable key (1-10)!"
+        logging.info("Retrieving 3D variables from %d (y) - %s (m) successfully (1-10)!" % (year,namelist_month[month-1]))
         print '*******************************************************************'
         print '********************** extract target fields **********************'
         print '*******************************************************************'
@@ -212,6 +212,13 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
             sp[counter_time,:,:] = key_sp.values
             counter_time = counter_time + 1
             counter_surface = counter_surface + 1
+        # close all the grib files
+        key_10d_hgt.close()
+        key_10d_tmp.close()
+        key_10d_ugrd.close()
+        key_10d_vgrd.close()
+        key_10d_spfh.close()
+        key_sp_year.close()
 
     # for the second 10 days
     elif rounds == 1:
@@ -221,8 +228,8 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
         key_20d_vgrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.034_vgrd.reg_tl319.%d%s1100_%d%s2018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
         key_20d_spfh = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.051_spfh.reg_tl319.%d%s1100_%d%s2018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
         key_sp_year = pygrib.open(datapath + os.sep + 'jra_surf' + os.sep + 'anl_surf.001_pres.reg_tl319.%d010100_%d123118' %(year,year))
-        print "Retrieving datasets successfully and return the variable key!"
-        logging.info("Retrieving 3D variables from %d (y) - %s (m) successfully!" % (year,namelist_month[month-1]))
+        print "Retrieving datasets successfully and return the variable key (10-20)!"
+        logging.info("Retrieving 3D variables from %d (y) - %s (m) successfully (10-20)!" % (year,namelist_month[month-1]))
         print '*******************************************************************'
         print '********************** extract target fields **********************'
         print '*******************************************************************'
@@ -266,6 +273,13 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
             sp[counter_time,:,:] = key_sp.values
             counter_time = counter_time + 1
             counter_surface = counter_surface + 1
+        # close all the grib files
+        key_20d_hgt.close()
+        key_20d_tmp.close()
+        key_20d_ugrd.close()
+        key_20d_vgrd.close()
+        key_20d_spfh.close()
+        key_sp_year.close()
 
     # for the rest of days
     else:
@@ -322,11 +336,20 @@ def var_3D_key_retrieve(datapath, year, month, days, counter_surface, rounds):
             sp[counter_time,:,:] = key_sp.values
             counter_time = counter_time + 1
             counter_surface = counter_surface + 1
+        # close all the grib files
+        key_30d_hgt.close()
+        key_30d_tmp.close()
+        key_30d_ugrd.close()
+        key_30d_vgrd.close()
+        key_30d_spfh.close()
+        key_sp_year.close()
+
     # return all the fields
     return z, T, u, v, q, sp, counter_surface
 
 def mass_correction_divergence(u,v,q,dp):
     print 'Begin the calculation of divergent verically integrated moisture flux.'
+    logging.info("Begin the calculation of divergent verically integrated moisture flux.")
     # calculte the mean moisture flux for a certain month
     moisture_flux_u = u * q * dp / constant['g']
     moisture_flux_v = v * q * dp / constant['g']
@@ -360,6 +383,7 @@ def mass_correction_divergence(u,v,q,dp):
     print 'The calculation of divergent verically integrated moisture flux is finished !!'
 
     print 'Begin the calculation of divergent verically integrated mass flux.'
+    logging.info("Begin the calculation of divergent verically integrated mass flux.")
     # calculte the mean mass flux for a certain month
     mass_flux_u = u * dp / constant['g']
     # take the vertical integral
@@ -394,6 +418,7 @@ def mass_correction_divergence(u,v,q,dp):
     print 'The calculation of divergent verically integrated mass flux is finished !!'
 
     print 'Calculate precipitable water!!'
+    logging.info("Calculate precipitable water.")
     # calculate precipitable water
     precipitable_water = q * dp / constant['g']
     # take the vertical integral
@@ -403,6 +428,7 @@ def mass_correction_divergence(u,v,q,dp):
 
 def meridional_energy_transport_divergence(z,T,u,v,q,dp):
     print 'Start calculating meridional energy transport on model level'
+    logging.info("Start calculating meridional energy transport on model level.")
     # calculate each component of total energy
     # Internal Energy cpT
     internal_flux = constant['cp'] * v * T * dp / constant['g']
