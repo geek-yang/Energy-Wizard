@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic meridional energy transport (ORAS4,GLORYS2V3)
 Author          : Yang Liu
 Date            : 2017.11.6
-Last Update     : 2017.11.12
+Last Update     : 2018.1.3
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF
@@ -17,6 +17,7 @@ Caveat!!	    :
 """
 
 import numpy as np
+import seaborn as sns
 import time as tttt
 from netCDF4 import Dataset,num2date
 import os
@@ -40,10 +41,10 @@ sns.set()
 ################################   Input zone  ######################################
 # specify data path
 # OMET
-datapath_ORAS4 = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
-datapath_GLORYS2V3 = 'F:\DataBase\HPC_out\GLORYS2V3\postprocessing'
+datapath_ORAS4 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ORAS4/postprocessing'
+datapath_GLORYS2V3 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GLORYS2V3/postprocessing'
 # specify output path for figures
-output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\OMET\Comparison'
+output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/OMET/Comparison'
 # the threshold ( index of latitude) of the OMET
 lat_GLORYS2V3 = 788 # at 60 N
 lat_ORAS4 = 233 # at 60 N
@@ -62,7 +63,7 @@ jj_025 = 1021
 level_025 = 75
 # zonal integral
 dataset_GLORYS2V3 = Dataset(datapath_GLORYS2V3 + os.sep + 'GLORYS2V3_model_monthly_orca025_E_zonal_int.nc')
-dataset_ORAS4 = Dataset(datapath_ORAS4 + os.sep + 'oras4_model_monthly_orca1_1958_2014_E_zonal_int.nc')
+dataset_ORAS4 = Dataset(datapath_ORAS4 + os.sep + 'oras4_model_monthly_orca1_E_zonal_int.nc')
 # extract Oceanic meridional energy transport
 # dimension (year,month,latitude)
 # full latitude
@@ -141,6 +142,7 @@ print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
 # index and namelist of years for time series and running mean time series
+index_1993_begin = np.arange(1,265,1)
 index_1993 = np.arange(169,433,1) # starting from index of year 1993
 index_year_1993 = np.arange(1993,2015,1)
 
@@ -166,7 +168,7 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig1.savefig(output_path + os.sep + 'Comp_OMET_anomaly_60N_time_series_1979_2014.jpg', dpi = 500)
+fig1.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_OMET_anomaly_60N_time_series_1979_2014.jpg', dpi = 500)
 
 # plot the running mean of OMET after removing seasonal cycle
 fig0 = plt.figure()
@@ -181,7 +183,7 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig0.savefig(output_path + os.sep +'Comp_OMET_anomaly_60N_running_mean_window_%d_only.jpg' % (window), dpi = 500)
+fig0.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_OMET_anomaly_60N_running_mean_window_%d_only.jpg' % (window), dpi = 500)
 
 # plot the OMET with running mean
 fig2 = plt.figure()
@@ -215,7 +217,7 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig3.savefig(output_path + os.sep + 'Comp_OMET_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+fig3.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_OMET_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
 
 print '*******************************************************************'
 print '*************************** x-y lines  ****************************'
@@ -233,9 +235,45 @@ plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
 fig4.savefig(output_path + os.sep + 'Comp_OMET_annual_mean.jpg', dpi = 500)
+
+print '*******************************************************************'
+print '******************   highlight the difference   *******************'
+print '*******************************************************************'
+fig5 = plt.figure()
+plt.plot(index_1993_begin,OMET_GLORYS2V3_white_series-OMET_ORAS4_white_series[168:],'b-',linewidth=1.0,label='GLORYS2V3-ORAS4')
+plt.title('Difference between GLORYS2V3 and ORAS4 (time series) at 60N')
+#plt.legend()
+fig5.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 264, 23), index_year_1993)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport residual (PW)")
+plt.legend()
+plt.show()
+fig5.savefig(output_path + os.sep + 'Comp_OMET_GLORYS2V3_minus_ORAS4_60N.jpg', dpi = 500)
+
+print '*******************************************************************'
+print '******************   highlight the difference   *******************'
+print '****************   contour of time series (lat)   *****************'
+print '*******************************************************************'
+
+#=========================================================================#
+#-----------------------   Statistical Matrix   ---------------------------
+#=========================================================================#
+
 print '*******************************************************************'
 print '********************** standard deviation  ************************'
 print '*******************************************************************'
+# calculate the standard deviation of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_series)
+print 'The standard deviation of OMET from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_std
+# ORAS4
+OMET_ORAS4_std = np.std(OMET_ORAS4_series)
+print 'The standard deviation of OMET from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_std
+
 # calculate the standard deviation of OMET anomaly
 # GLORYS2V3
 OMET_GLORYS2V3_white_std = np.std(OMET_GLORYS2V3_white_series)
@@ -245,3 +283,26 @@ print OMET_GLORYS2V3_white_std
 OMET_ORAS4_white_std = np.std(OMET_ORAS4_white_series)
 print 'The standard deviation of OMET anomaly from ORAS4 is (in peta Watt):'
 print OMET_ORAS4_white_std
+
+print '*******************************************************************'
+print '*************************** mean value  ***************************'
+print '*******************************************************************'
+# calculate the mean of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_mean = np.mean(OMET_GLORYS2V3_series)
+print 'The mean of OMET from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_mean
+# ORAS4
+OMET_ORAS4_mean = np.mean(OMET_ORAS4_series)
+print 'The mean of OMET from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_mean
+
+# calculate the standard deviation of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_white_mean = np.std(OMET_GLORYS2V3_white_series)
+print 'The mean of OMET anomaly from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_white_mean
+# ORAS4
+OMET_ORAS4_white_mean = np.mean(OMET_ORAS4_white_series)
+print 'The mean of OMET anomaly from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_white_mean

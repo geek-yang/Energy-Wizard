@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim)
 Author          : Yang Liu
 Date            : 2017.11.6
-Last Update     : 2017.11.28
+Last Update     : 2018.1.3
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF
@@ -15,10 +15,16 @@ variables       : Meridional Total Energy Transport           E         [Tera-Wa
                   Meridional Latent Energy Transport          E_Lvq     [Tera-Watt]
                   Meridional Geopotential Energy Transport    E_gz      [Tera-Watt]
                   Meridional Kinetic Energy Transport         E_uv2     [Tera-Watt]
-
-Caveat!!	    :
+Caveat!!        : Spatial and temporal coverage
+                  Temporal
+                  ERA-Interim 1979 - 2016
+                  MERRA2      1980 - 2016
+                  Spatial
+                  ERA-Interim 20N - 90N
+                  MERRA2      20N - 90N
 """
 
+import seaborn as sns
 import numpy as np
 import time as tttt
 from netCDF4 import Dataset,num2date
@@ -31,12 +37,15 @@ import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+# switch on the seaborn effect
+sns.set()
+
 ################################   Input zone  ######################################
 # specify data path
-datapath_ERAI = 'F:\DataBase\HPC_out\ERAI\postprocessing'
-datapath_MERRA2 = 'F:\DataBase\HPC_out\MERRA2\postprocessing'
+datapath_ERAI = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
+datapath_MERRA2 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/MERRA2/postprocessing'
 # specify output path for the netCDF4 file
-output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\AMET\Comparison'
+output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/AMET/Comparison'
 # index of latitude for insteret
 # 60N
 lat_ERAI = 40 # at 60 N
@@ -87,8 +96,8 @@ AMET_E_gz_MERRA2 = dataset_MERRA2.variables['E_gz'][:,:,lat_MERRA2]/1000
 AMET_E_uv2_ERAI = dataset_ERAI.variables['E_uv2'][:,:,lat_ERAI]/1000
 AMET_E_uv2_MERRA2 = dataset_MERRA2.variables['E_uv2'][:,:,lat_MERRA2]/1000
 
-year_ERAI = dataset_ERAI.variables['year'][:]        # from 1979 to 2014
-year_MERRA2 = dataset_MERRA2.variables['year'][:]    # from 1980 to 2014
+year_ERAI = dataset_ERAI.variables['year'][:]        # from 1979 to 2016
+year_MERRA2 = dataset_MERRA2.variables['year'][:]    # from 1980 to 2016
 
 latitude_ERAI = dataset_ERAI.variables['latitude'][:]
 latitude_MERRA2 = dataset_MERRA2.variables['latitude'][:]
@@ -439,7 +448,7 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig8.savefig(output_path + os.sep +'Comp_AMET_E_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+fig8.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
 
 #internal energy
 fig9 = plt.figure()
@@ -456,7 +465,7 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig9.savefig(output_path + os.sep +'Comp_AMET_E_cpT_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+fig9.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_cpT_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
 
 # latent heat
 fig10 = plt.figure()
@@ -473,7 +482,7 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig10.savefig(output_path + os.sep +'Comp_AMET_E_Lvq_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+fig10.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_Lvq_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
 
 # geopotential
 fig11 = plt.figure()
@@ -490,7 +499,7 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig11.savefig(output_path + os.sep +'Comp_AMET_E_gz_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+fig11.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_gz_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
 
 # kinetic energy
 fig12 = plt.figure()
@@ -507,17 +516,100 @@ plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig12.savefig(output_path + os.sep +'Comp_AMET_E_uv2_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+fig12.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_uv2_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+
+print '*******************************************************************'
+print '******************   highlight the difference   *******************'
+print '*******************************************************************'
+# caculate the differnce between datasets for each component
+# ERA-Interim minus MERRA2
+# time series at 60N
+fig13 = plt.figure()
+plt.plot(index_1980_2016,AMET_E_ERAI_series[12:] - AMET_E_MERRA2_series,'b-',linewidth=1.0,label='Total')
+plt.plot(index_1980_2016,AMET_E_cpT_ERAI_series[12:] - AMET_E_cpT_MERRA2_series,'r-',linewidth=1.0,label='cpT')
+plt.plot(index_1980_2016,AMET_E_Lvq_ERAI_series[12:] - AMET_E_Lvq_MERRA2_series,'m-',linewidth=1.0,label='Lvq')
+plt.plot(index_1980_2016,AMET_E_gz_ERAI_series[12:] - AMET_E_gz_MERRA2_series,'g-',linewidth=1.0,label='gz')
+plt.plot(index_1980_2016,AMET_E_uv2_ERAI_series[12:] - AMET_E_uv2_MERRA2_series,'c-',linewidth=1.0,label='uv2')
+plt.title('Difference between ERA-Interim and MERRA2 (time series) at 60N')
+plt.legend()
+fig13.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport residual (PW)")
+plt.legend()
+plt.show()
+fig13.savefig(output_path + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_60N.jpg', dpi = 500)
+
+# anomaly of time series at 60N
+fig14 = plt.figure()
+plt.plot(index_1980_2016,AMET_E_ERAI_white_series[12:] - AMET_E_MERRA2_white_series,'b-',linewidth=1.0,label='Total')
+plt.plot(index_1980_2016,AMET_E_cpT_ERAI_white_series[12:] - AMET_E_cpT_MERRA2_white_series,'r-',linewidth=1.0,label='cpT')
+plt.plot(index_1980_2016,AMET_E_Lvq_ERAI_white_series[12:] - AMET_E_Lvq_MERRA2_white_series,'m-',linewidth=1.0,label='Lvq')
+plt.plot(index_1980_2016,AMET_E_gz_ERAI_white_series[12:] - AMET_E_gz_MERRA2_white_series,'g-',linewidth=1.0,label='gz')
+plt.plot(index_1980_2016,AMET_E_uv2_ERAI_white_series[12:] - AMET_E_uv2_MERRA2_white_series,'c-',linewidth=1.0,label='uv2')
+plt.title('Difference between ERA-Interim and MERRA2 anomalies (time series) at 60N')
+plt.legend()
+fig14.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport residual (PW)")
+plt.legend()
+plt.show()
+fig14.savefig(output_path + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_anomaly_60N.jpg', dpi = 500)
+
+print '*******************************************************************'
+print '******************   highlight the difference   *******************'
+print '****************   contour of time series (lat)   *****************'
+print '*******************************************************************'
+
+#=========================================================================#
+#-----------------------   Statistical Matrix   ---------------------------
+#=========================================================================#
 
 print '*******************************************************************'
 print '********************** standard deviation  ************************'
 print '*******************************************************************'
+# calculate the standard deviation of AMET
+# ERA-Interim
+AMET_E_ERAI_std = np.std(AMET_E_ERAI_series)
+print 'The standard deviation of AMET from ERA-Interim is (in peta Watt):'
+print AMET_E_ERAI_std
+# MERRA2
+AMET_E_MERRA2_std = np.std(AMET_E_MERRA2_series)
+print 'The standard deviation of AMET anomaly from MERRA2 is (in peta Watt):'
+print AMET_E_MERRA2_std
+
 # calculate the standard deviation of OMET anomaly
-# GLORYS2V3
+# ERA-Interim
 AMET_E_ERAI_white_std = np.std(AMET_E_ERAI_white_series)
 print 'The standard deviation of AMET anomaly from ERA-Interim is (in peta Watt):'
 print AMET_E_ERAI_white_std
-# ORAS4
+# MERRA2
 AMET_E_MERRA2_white_std = np.std(AMET_E_MERRA2_white_series)
 print 'The standard deviation of AMET anomaly from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_white_std
+
+print '*******************************************************************'
+print '*************************** mean value  ***************************'
+print '*******************************************************************'
+# calculate the mean of AMET
+# ERA-Interim
+AMET_E_ERAI_mean = np.mean(AMET_E_ERAI_series)
+print 'The mean of AMET from ERA-Interim is (in peta Watt):'
+print AMET_E_ERAI_mean
+# MERRA2
+AMET_E_MERRA2_mean = np.mean(AMET_E_MERRA2_series)
+print 'The mean of AMET anomaly from MERRA2 is (in peta Watt):'
+print AMET_E_MERRA2_mean
+
+# calculate the standard deviation of OMET anomaly
+# ERA-Interim
+AMET_E_ERAI_white_mean = np.mean(AMET_E_ERAI_white_series)
+print 'The mean of AMET anomaly from ERA-Interim is (in peta Watt):'
+print AMET_E_ERAI_white_mean
+# MERRA2
+AMET_E_MERRA2_white_mean = np.mean(AMET_E_MERRA2_white_series)
+print 'The mean of AMET anomaly from MERRA2 is (in peta Watt):'
+print AMET_E_MERRA2_white_mean
