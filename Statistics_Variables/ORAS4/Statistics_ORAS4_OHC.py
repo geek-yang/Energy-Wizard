@@ -284,8 +284,6 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     OHC_glo_zonal_wrap_var.units = 'tera joule'
     OHC_atl_zonal_wrap_var.units = 'tera joule'
 
-    psi_glo_vert_wrap_var.units = 'Sv'
-    psi_atl_vert_wrap_var.units = 'Sv'
     OHC_glo_vert_wrap_var.units = 'tera joule'
     OHC_atl_vert_wrap_var.units = 'tera joule'
     OHC_glo_vert_0_500_wrap_var.units = 'tera joule'
