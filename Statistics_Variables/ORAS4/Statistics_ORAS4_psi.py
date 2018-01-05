@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (ORAS4)
 Author          : Yang Liu
 Date            : 2018.1.4
-Last Update     : 2018.1.4
+Last Update     : 2018.1.5
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -68,11 +68,11 @@ start_time = tttt.time()# gz in [m2 / s2] = [ kg m2 / kg s2 ] = [J / kg]
 
 # Redirect all the console output to a file
 #sys.stdout = open('F:\DataBase\ORAS4\console.out','w')
-sys.stdout = open('/project/Reanalysis/ORAS4/Monthly/Model/console_E.out','w')
+sys.stdout = open('/project/Reanalysis/ORAS4/Monthly/Model/console_psi.out','w')
 
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 #logging.basicConfig(filename = 'F:\DataBase\ORAS4\history.log', filemode = 'w',level = logging.DEBUG,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.basicConfig(filename = '/project/Reanalysis/ORAS4/Monthly/Model/history_E.log',
+logging.basicConfig(filename = '/project/Reanalysis/ORAS4/Monthly/Model/history_psi.log',
                     filemode = 'w', level = logging.DEBUG,
                     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -171,11 +171,7 @@ def var_coordinate(datapath):
     #lon_grid_V = grid_V_key.variables['lon'][:]
     #vmask_grid_V = grid_V_key.variables['vmask'][:]
 
-    #Comparison
-    #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % \
-    #       np.array_equal(tmask,tmask_grid_T)
-
-    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0
+    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0
 
 def mass_transport(v_key,e1v):
     '''
@@ -215,167 +211,77 @@ def mass_transport(v_key,e1v):
 
     return psi_globe_zonal_int, psi_atlantic_zonal_int, psi_globe_vert_int, psi_atlantic_vert_int
 
-def ocean_heat_content(theta_key):
-    '''
-    Compute the meridional energy transport in the ocean
-    '''
-    # extract variables
-    print "Start extracting variables for the quantification of meridional energy transport."
-    theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
-    print 'Extracting variables successfully!'
-    #logging.info("Extracting variables successfully!")
-    # calculate heat flux at each grid point
-    OHC_globe = np.zeros((len(index_month),level,jj,ji),dtype=float)
-    OHC_atlantic = np.zeros((len(index_month),level,jj,ji),dtype=float)
-    # expand the grid size matrix e1v to avoid more loops
-    e1t_3D = np.repeat(e1t[np.newaxis,:,:],level,0)
-    e1t_4D = np.repeat(e1t_3D[np.newaxis,:,:,:],len(index_month),0)
-    e2t_3D = np.repeat(e2t[np.newaxis,:,:],level,0)
-    e2t_4D = np.repeat(e2t_3D[np.newaxis,:,:,:],len(index_month),0)
-    # increase the dimension of vmask
-    tmask_4D = np.repeat(tmask[np.newaxis,:,:,:],len(index_month),0)
-    tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
-    tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
-    for i in np.arange(level):
-        OHC_globe[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:]
-        OHC_atlantic[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
-    # take the zonal integral
-    OHC_globe_zonal_int = np.sum(OHC_globe,3)/1e+12 # the unit is changed to tera joule
-    OHC_atlantic_zonal_int = np.sum(OHC_atlantic,3)/1e+12 # the unit is changed to tera joule
-    # take the vertical integral
-    OHC_globe_vert_int = np.sum(OHC_globe,1)/1e+12 # the unit is changed to tera joule
-    OHC_atlantic_vert_int = np.sum(OHC_atlantic,1)/1e+12 # the unit is changed to tera joule
-    # ocean heat content for certain layers
-    # surface to 500m
-    OHC_globe_vert_0_500 = np.sum(OHC_globe[:,0:22,:,:],1)/1e+12 # the unit is changed to tera joule
-    OHC_atlantic_vert_0_500 = np.sum(OHC_atlantic[:,0:22,:,:],1)/1e+12 # the unit is changed to tera joule
-    # 500m to 1000m
-    OHC_globe_vert_500_1000 = np.sum(OHC_globe[:,23:26,:,:],1)/1e+12         # layer 26 is in between 800 - 1200
-    OHC_atlantic_vert_500_1000 = np.sum(OHC_atlantic[:,23:26,:,:],1)/1e+12   # layer 26 is in between 800 - 1200
-    # 1000m to 2000m
-    OHC_globe_vert_1000_2000 = np.sum(OHC_globe[:,26:30,:,:],1)/1e+12        # layer 26 is in between 800 - 1200
-    OHC_atlantic_vert_1000_2000 = np.sum(OHC_atlantic[:,26:30,:,:],1)/1e+12  # layer 26 is in between 800 - 1200
-    # 2000 to bottom
-    OHC_globe_vert_2000_inf = np.sum(OHC_globe[:,31:,:,:],1)/1e+12
-    OHC_atlantic_vert_2000_inf = np.sum(OHC_atlantic[:,31:,:,:],1)/1e+12
-    print '*****************************************************************************'
-    print "*****    Computation of ocean heat content in the ocean is finished     *****"
-    print "************         The result is in tera-joule (1E+12)         ************"
-    print '*****************************************************************************'
-    return OHC_globe_zonal_int, OHC_atlantic_zonal_int, OHC_globe_vert_int, OHC_atlantic_vert_int,\
-           OHC_globe_vert_0_500, OHC_atlantic_vert_0_500, OHC_globe_vert_500_1000, OHC_atlantic_vert_500_1000,\
-           OHC_globe_vert_1000_2000, OHC_atlantic_vert_1000_2000, OHC_globe_vert_2000_inf, OHC_atlantic_vert_2000_inf
-
-def field_statistics(theta_key, u_key, v_key):
-    # extract variables
-    print "Start extracting variables for the quantification of meridional energy transport."
-    theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
-    u = u_key.variables['uo'][:]
-    v = v_key.variables['vo'][:]
-    print 'Extracting variables successfully!'
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
-    # Due to the nature of the land-sea mask, when we take the mean value we can not
-    # use the np.mean to calculate it from the original field, as there are so many
-    # empty points. Instead, we must calculate the sum of each variable and then
-    # devide the sum of mask.
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!# 
-
-
-def create_netcdf_point (meridional_E_point_pool,output_path):
+def create_netcdf_point (psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_vert, psi_pool_atl_vert,output_path):
     print '*******************************************************************'
     print '*********************** create netcdf file ************************'
-    print '***********************    OMET on ORCA   *************************'
+    print '********************    statistics on ORCA   **********************'
     print '*******************************************************************'
-    logging.info("Start creating netcdf file for total meridional energy transport at each grid point.")
+    logging.info("Start creating netcdf file for the statistics of fields at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'oras4_model_monthly_orca1_E_point.nc' ,'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path + os.sep + 'oras4_model_monthly_orca1_psi_point.nc' ,'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',12)
     lat_wrap_dim = data_wrap.createDimension('j',jj)
     lon_wrap_dim = data_wrap.createDimension('i',ji)
-    # create coordinate variables for 3-dimensions
-    # 1D
-    year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
-    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
-    # 2D
-    lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('j','i'))
-    lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('j','i'))
-    # 4D
-    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','j','i'))
-    # global attributes
-    data_wrap.description = 'Monthly mean meridional energy transport on ORCA grid'
-    # variable attributes
-    lat_wrap_var.units = 'ORCA1_latitude'
-    lon_wrap_var.units = 'ORCA1_longitude'
-    E_total_wrap_var.units = 'tera watt'
-
-    lat_wrap_var.long_name = 'ORCA1 grid latitude'
-    lon_wrap_var.long_name = 'ORCA1 grid longitude'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
-    # writing data
-    year_wrap_var[:] = period
-    lat_wrap_var[:] = gphiv
-    lon_wrap_var[:] = glamv
-    month_wrap_var[:] = np.arange(1,13,1)
-    E_total_wrap_var[:] = meridional_E_point_pool
-    # close the file
-    data_wrap.close()
-    print "Create netcdf file successfully"
-    logging.info("The generation of netcdf files for the total meridional energy transport on each grid point is complete!!")
-
-def create_netcdf_zonal_int (meridional_E_zonal_int_pool,meridional_psi_zonal_glo, meridional_psi_zonal_atl,output_path):
-    print '*******************************************************************'
-    print '*********************** create netcdf file ************************'
-    print '***********************    OMET on ORCA   *************************'
-    print '*******************************************************************'
-    logging.info("Start creating netcdf file for total meridional energy transport at each grid point.")
-    # wrap the datasets into netcdf file
-    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'oras4_model_monthly_orca1_E_zonal_int.nc' ,'w',format = 'NETCDF3_64BIT')
-    # create dimensions for netcdf data
-    year_wrap_dim = data_wrap.createDimension('year',len(period))
-    month_wrap_dim = data_wrap.createDimension('month',12)
-    lat_wrap_dim = data_wrap.createDimension('latitude_aux',jj)
     lev_wrap_dim = data_wrap.createDimension('lev',level)
-    # create coordinate variables for 3-dimensions
+    # create variables
     # 1D
     year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
     month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
-    lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('latitude_aux',))
+    lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('j',))
     lev_wrap_var = data_wrap.createVariable('lev',np.float32,('lev',))
-    # 3D
-    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude_aux'))
+    # 2D
+    gphiv_wrap_var = data_wrap.createVariable('gphiv',np.float32,('j','i'))
+    glamv_wrap_var = data_wrap.createVariable('glamv',np.float32,('j','i'))
     # 4D
-    psi_glo_wrap_var = data_wrap.createVariable('Psi_glo',np.float64,('year','month','lev','latitude_aux'))
-    psi_atl_wrap_var = data_wrap.createVariable('Psi_atl',np.float64,('year','month','lev','latitude_aux'))
-    # global attributes
-    data_wrap.description = 'Monthly mean zonal integral of meridional energy transport on ORCA grid'
-    # variable attributes
-    lat_wrap_var.units = 'degree_north'
-    E_total_wrap_var.units = 'tera watt'
-    lev_wrap_var.units = 'm'
-    psi_glo_wrap_var.units = 'Sv'
-    psi_atl_wrap_var.units = 'Sv'
+    psi_glo_zonal_wrap_var = data_wrap.createVariable('psi_glo_zonal',np.float64,('year','month','lev','j'))
+    psi_atl_zonal_wrap_var = data_wrap.createVariable('psi_atl_zonal',np.float64,('year','month','lev','j'))
 
-    lev_wrap_var.long_name = 'depth'
+    psi_glo_vert_wrap_var = data_wrap.createVariable('psi_glo_vert',np.float64,('year','month','j','i'))
+    psi_atl_vert_wrap_var = data_wrap.createVariable('psi_atl_vert',np.float64,('year','month','j','i'))
+
+    # global attributes
+    data_wrap.description = 'Monthly mean mass transport on ORCA grid'
+    # variable attributes
+    lev_wrap_var.units = 'm'
+    gphiv_wrap_var.units = 'ORCA1_latitude_vgrid'
+    glamv_wrap_var.units = 'ORCA1_longitude_vgrid'
+
+    psi_glo_zonal_wrap_var.units = 'Sv'
+    psi_atl_zonal_wrap_var.units = 'Sv'
+
+    psi_glo_vert_wrap_var.units = 'Sv'
+    psi_atl_vert_wrap_var.units = 'Sv'
+
     lat_wrap_var.long_name = 'auxillary latitude'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
-    psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
-    psi_atl_wrap_var.long_name = 'Meridional overturning stream function of Atlantic ocean'
+    lev_wrap_var.long_name = 'depth'
+    gphiv_wrap_var.long_name = 'ORCA1 vgrid latitude'
+    glamv_wrap_var.long_name = 'ORCA1 vgrid longitude'
+
+    psi_glo_zonal_wrap_var.long_name = 'Global Meridional Mass Transport (zonal integral)'
+    psi_atl_zonal_wrap_var.long_name = 'Atlantic Meridional Mass Transport (zonal integral)'
+
+    psi_glo_vert_wrap_var.long_name = 'Global Meridional Mass Transport (vertical integral)'
+    psi_atl_vert_wrap_var.long_name = 'Atlantic Meridional Mass Transport (vertical integral)'
     # writing data
     year_wrap_var[:] = period
-    lat_wrap_var[:] = gphiv[:,96]
     month_wrap_var[:] = np.arange(1,13,1)
+    lat_wrap_var[:] = gphiv[:,96]
     lev_wrap_var[:] = nav_lev
-    E_total_wrap_var[:] = meridional_E_zonal_int_pool
-    psi_glo_wrap_var[:] = meridional_psi_zonal_glo
-    psi_atl_wrap_var[:] = meridional_psi_zonal_atl
+    gphiv_wrap_var[:] = gphiv
+    glamv_wrap_var[:] = glamv
+
+    psi_glo_zonal_wrap_var[:] = psi_pool_glo_zonal
+    psi_atl_zonal_wrap_var[:] = psi_pool_atl_zonal
+
+    psi_glo_vert_wrap_var[:] = psi_pool_glo_vert
+    psi_atl_vert_wrap_var[:] = psi_pool_atl_vert
     # close the file
     data_wrap.close()
     print "Create netcdf file successfully"
-    logging.info("The generation of netcdf files for the total meridional energy transport on each grid point is complete!!")
+    logging.info("The generation of netcdf files for the mass transport in ORAS4 on each grid point is complete!!")
 
 if __name__=="__main__":
     # create the year index
@@ -386,24 +292,12 @@ if __name__=="__main__":
     jj = 292
     level = 42
     # extract the mesh_mask and coordinate information
-    nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0 = var_coordinate(datapath)
-    # create a data pool to save the OMET for each year and month
-    # zonal integral (vertical profile)
-    OHC_pool_glo_zonal = np.zeros((len(period),12,level,jj),dtype = float)
-    OHC_pool_atl_zonal = np.zeros((len(period),12,level,jj),dtype = float)
-    # vertical integral (horizontal profile)
-    OHC_pool_glo_vert = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_atl_vert = np.zeros((len(period),12,jj,ji),dtype = float)
-    # vertical integral (horizontal profile) and OHC for certain layers
-    OHC_pool_glo_vert_0_500 = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_atl_vert_0_500 = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_glo_vert_500_1000 = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_atl_vert_500_1000 = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_glo_vert_1000_2000 = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_atl_vert_1000_2000 = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_glo_vert_2000_inf = np.zeros((len(period),12,jj,ji),dtype = float)
-    OHC_pool_atl_vert_2000_inf = np.zeros((len(period),12,jj,ji),dtype = float)
-    # create a data pool to save the meridional overturning for each year and month
+    nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v,\
+    gphiu, glamu, gphiv, glamv, mbathy, e3t_0 = var_coordinate(datapath)
+    print '*******************************************************************'
+    print '************************ create data pool *************************'
+    print '*******************************************************************'
+    # create a data pool to save the mass transport for each year and month
     # zonal integral (vertical profile)
     psi_pool_glo_zonal = np.zeros((len(period),12,level,jj),dtype = float)
     psi_pool_atl_zonal = np.zeros((len(period),12,level,jj),dtype = float)
@@ -421,27 +315,7 @@ if __name__=="__main__":
         psi_pool_atl_zonal[i-1958,:,:,:] = psi_atlantic_zonal
         psi_pool_glo_vert[i-1958,:,:,:] = psi_globe_vert
         psi_pool_atl_vert[i-1958,:,:,:] = psi_atlantic_vert
-        # calculate the meridional energy transport in the ocean
-        OHC_glo_zonal, OHC_atl_zonal, OHC_glo_vert, OHC_atl_vert,\
-        OHC_glo_vert_0_500, OHC_atl_vert_0_500, OHC_glo_vert_500_1000, OHC_atl_vert_500_1000,\
-        OHC_glo_vert_1000_2000, OHC_atl_vert_1000_2000, OHC_glo_vert_2000_inf, OHC_atl_vert_2000_inf\
-        = ocean_heat_content(theta_key)
-        # save output to the pool
-        OHC_pool_glo_zonal[i-1958,:,:,:] = OHC_glo_zonal
-        OHC_pool_atl_zonal[i-1958,:,:,:] = OHC_atl_zonal
-        OHC_pool_glo_vert[i-1958,:,:,:] = OHC_glo_vert
-        OHC_pool_atl_vert[i-1958,:,:,:] = OHC_atl_vert
-        OHC_pool_glo_vert_0_500[i-1958,:,:,:] = OHC_glo_vert_0_500
-        OHC_pool_atl_vert_0_500[i-1958,:,:,:] = OHC_atl_vert_0_500
-        OHC_pool_glo_vert_500_1000[i-1958,:,:,:] = OHC_glo_vert_500_1000
-        OHC_pool_atl_vert_500_1000[i-1958,:,:,:] = OHC_atl_vert_500_1000
-        OHC_pool_glo_vert_1000_2000[i-1958,:,:,:] = OHC_glo_vert_1000_2000
-        OHC_pool_atl_vert_1000_2000[i-1958,:,:,:] = OHC_atl_vert_1000_2000
-        OHC_pool_glo_vert_2000_inf[i-1958,:,:,:] = OHC_glo_vert_2000_inf
-        OHC_pool_atl_vert_2000_inf[i-1958,:,:,:] = OHC_atl_vert_2000_inf
-        # statistical matrix
-        = field_statistics(theta_key, u_key, v_key)
     # create NetCDF file and save the output
-    create_netcdf_point(E_pool_point,output_path)
+    create_netcdf_point(psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_vert, psi_pool_atl_vert, output_path)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
