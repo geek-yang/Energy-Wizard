@@ -195,8 +195,8 @@ def ocean_heat_content(theta_key):
     tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
     tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
     for i in np.arange(level):
-        OHC_globe[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:]
-        OHC_atlantic[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
+        OHC_globe[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:]
+        OHC_atlantic[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
     # take the zonal integral
     OHC_globe_zonal_int = np.sum(OHC_globe,3)/1e+12 # the unit is changed to tera joule
     OHC_atlantic_zonal_int = np.sum(OHC_atlantic,3)/1e+12 # the unit is changed to tera joule
@@ -284,8 +284,6 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     OHC_glo_zonal_wrap_var.units = 'tera joule'
     OHC_atl_zonal_wrap_var.units = 'tera joule'
 
-    psi_glo_vert_wrap_var.units = 'Sv'
-    psi_atl_vert_wrap_var.units = 'Sv'
     OHC_glo_vert_wrap_var.units = 'tera joule'
     OHC_atl_vert_wrap_var.units = 'tera joule'
     OHC_glo_vert_0_500_wrap_var.units = 'tera joule'

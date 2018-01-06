@@ -186,15 +186,15 @@ def field_statistics(theta_key, u_key, v_key):
     # empty points. Instead, we must calculate the sum of each variable and then
     # devide the sum of mask.
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+    # increase the dimension of mask array
+    tmask_4D = np.repeat(tmask[np.newaxis,:,:,:],len(index_month),0)
+    tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
+    tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
     # vertical mean
     theta_globe_vert_mean = np.mean(theta*tmask_4D,1)
     u_globe_vert_mean = np.mean(u*tmask_4D,1)
     v_globe_vert_mean = np.mean(v*tmask_4D,1)
     # zonal mean
-    # increase the dimension of mask array
-    tmask_4D = np.repeat(tmask[np.newaxis,:,:,:],len(index_month),0)
-    tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
-    tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
     # take the sum of variables
     theta_globe_zonal_sum = np.sum(theta*tmask_4D,3)
     theta_atlantic_zonal_sum = np.sum(theta*tmask_4D*tmaskatl_4D,3)

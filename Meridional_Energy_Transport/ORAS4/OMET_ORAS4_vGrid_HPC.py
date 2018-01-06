@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.18
-Last Update     : 2017.10.20
+Last Update     : 2018.1.6
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4 from ECMWF.
                   The complete computaiton is accomplished on model level (original ORCA1_z42 grid).
@@ -32,7 +32,7 @@ Caveat!!        : The full dataset is from 1958. However, a quality report from
                   is the start of satellite era.
 """
 import numpy as np
-import seaborn as sns
+#import seaborn as sns
 #import scipy as sp
 import time as tttt
 from netCDF4 import Dataset,num2date
@@ -45,11 +45,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, cm
-import cartopy.crs as ccrs
-from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-import iris
-import iris.plot as iplt
-import iris.quickplot as qplt
+#import cartopy.crs as ccrs
+#from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+#import iris
+#import iris.plot as iplt
+#import iris.quickplot as qplt
 
 ##########################################################################
 ###########################   Units vacabulory   #########################
@@ -64,7 +64,7 @@ print platform.architecture()
 print os.path
 
 # switch on the seaborn effect
-sns.set()
+#sns.set()
 
 # calculate the time for the code execution
 start_time = tttt.time()
@@ -94,7 +94,7 @@ datapath = '/project/Reanalysis/ORAS4/Monthly/Model'
 # starting time (year)
 start_year = 1958
 # Ending time, if only for 1 year, then it should be the same as starting year
-end_year = 2016
+end_year = 2014
 # specify output path for the netCDF4 file
 #output_path_fig = 'C:\Yang\PhD\Computation and Modeling\Blue Action\OMET\ORAS4'
 output_path = '/project/Reanalysis/ORAS4/Monthly/Model/output'
@@ -130,6 +130,7 @@ def var_coordinate(datapath):
     logging.info('Start retrieving the datasets of ORCA1 coordinate and mask info')
     # get the variable keys
     mesh_mask_key = Dataset(datapath+ os.sep + 'mesh_mask.nc')
+    subbasin_mesh_key = Dataset(datapath+ os.sep + 'basinmask_050308_UKMO.nc') #sub-basin from DRAKKER project
     #grid_T_key = Dataset(datapath+ os.sep + 'coordinates_grid_T.nc')
     #grid_U_key = Dataset(datapath+ os.sep + 'coordinates_grid_U.nc')
     #grid_V_key = Dataset(datapath+ os.sep + 'coordinates_grid_V.nc')
@@ -145,6 +146,8 @@ def var_coordinate(datapath):
     tmask = mesh_mask_key.variables['tmask'][0,:,:,:]
     #umask = mesh_mask_key.variables['umask'][0,:,:,:]
     vmask = mesh_mask_key.variables['vmask'][0,:,:,:]
+    # land-sea mask for sub-basin
+    tmaskatl = subbasin_mesh_key.variables['tmaskatl'][:] # attention that the size is different!
     # grid spacing scale factors (zonal)
     e1t = mesh_mask_key.variables['e1t'][0,:,:]
     e2t = mesh_mask_key.variables['e2t'][0,:,:]
@@ -156,6 +159,7 @@ def var_coordinate(datapath):
     mbathy = mesh_mask_key.variables['mbathy'][0,:,:]
     # depth of each layer
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
+    e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
@@ -173,63 +177,69 @@ def var_coordinate(datapath):
     #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % \
     #       np.array_equal(tmask,tmask_grid_T)
 
-    return nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0
+    return nav_lat, nav_lon, nav_lev, tmask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps
 
 def stream_function(v_key,e1v):
     '''
     This function is used to calculate the mass transport.
     The unit is Sv (1E+6 m3/s)
     '''
+    print "Compute the meridional overturning stream function for globle and Atlantic!"
+    logging.info('Compute the meridional overturning stream function for globle and Atlantic!')
     #dominant equation for stream function
     # psi = e1v(m) * rho(kg/m3) * v(m/s) * dz(m) = (kg/s)
     # extract variables
     #u = u_key.variables['uo'][:]
     v = v_key.variables['vo'][:]
     # define the stream function psi
-    psi = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    psi_globe = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    psi_atlantic = np.zeros((len(index_month),level,jj,ji),dtype=float)
     # expand the grid size matrix e1v to avoid more loops
     e1v_3D = np.repeat(e1v[np.newaxis,:,:],level,0)
     e1v_4D = np.repeat(e1v_3D[np.newaxis,:,:,:],len(index_month),0)
     # increase the dimension of vmask
     vmask_4D = np.repeat(vmask[np.newaxis,:,:,:],len(index_month),0)
+    tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
+    tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
+    # increase the dimension and adjustment matrix
+    e3t_adjust_4D = np.repeat(e3t_adjust[np.newaxis,:,:,:],len(index_month),0)
     # choose the integration order
     int_order = 1  # 1 - from sea bottom to sea surface 2 from sea surfaca to sea bottom
     if int_order == 1:
         # take the integral from sea botton to the surface
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i]
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
             else:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi[:,i+1,:,:]
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi_globe[:,i+1,:,:] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
+    if int_order == 1:
+        # take the integral from sea botton to the surface
+        for i in (level - np.arange(level) -1 ):
+            if i == level -1:
+                psi_atlantic[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] * tmaskatl_4D[:,i,:,:] -\
+                                        e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
+            else:
+                psi_atlantic[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] * tmaskatl_4D[:,i,:,:] + psi_atlantic[:,i+1,:,:] -\
+                                        e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i]
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
             else:
-                psi[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi[:,i-1,:,:]
-    # take the mean value over the entire year
-    psi_mean = np.mean(psi,0)
-    psi_stream = np.sum(psi_mean,2)/1e+6 # the unit is changed to Sv
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi_globe[:,i+1,:,:] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
+    # take the zonal integral
+    psi_stream_globe = np.sum(psi_globe,3)/1e+6 # the unit is changed to Sv
+    psi_stream_atlantic = np.sum(psi_atlantic,3)/1e+6 # the unit is changed to Sv
 
-    fig0 = plt.figure()
+    print "Compute the meridional overturning stream function for globle and Atlantic successfully!"
+    logging.info('Compute the meridional overturning stream function for globle and Atlantic successfully!')
 
-    X , Y = np.meshgrid(gphiv[:,96],nav_lev)
-    #color = np.linspace(-1,1,10)
-    plt.contour(X,Y,psi_stream,linewidth= 0.2)
-    cs = plt.contourf(X,Y,psi_stream,linewidth= 0.2,cmap='RdYlGn')
-    plt.title('Stokes Stream Function of Global Ocean')
-    plt.xlabel("Laitude")
-    plt.xticks(np.linspace(-90,90,13))
-    plt.ylabel("Ocean Depth")
-    cbar = plt.colorbar(orientation='horizontal')
-    cbar.set_label('Transport of mass 1E+6 m3/s')
-    #invert the y axis
-    plt.gca().invert_yaxis()
-    plt.show()
-    fig0.savefig(output_path + os.sep + 'StreamF' + os.sep + "OMET_ORAS4_StreamFunction.jpeg",dpi=500)
-
-    return psi_stream
+    return psi_stream_globe, psi_stream_atlantic
 
 def meridional_energy_transport(theta_key, s_key, u_key, v_key):
     '''
@@ -252,10 +262,17 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
             T_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i+1,:])/2
     # calculate heat flux at each grid point
     Internal_E_flux = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    partial = 1 # switch for the partial cells 1 = include & 0 = exclude
     for i in index_month:
         for j in np.arange(level):
-                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
+                if partial == 1: # include partial cells
+                    Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                                               T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:] -\
+                                               constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                                               T_vgrid[i,j,:,:] * e1v * e3t_adjust * vmask[j,:,:]
+                else:
+                    Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                                               T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
     # take the vertical integral
     Internal_E_int = np.zeros((len(index_month),jj,ji))
     Internal_E_int = np.sum(Internal_E_flux,1)/1e+12
@@ -365,9 +382,9 @@ def visualization(cube_regrid,year):
     iris.FUTURE.netcdf_promote = True
     print cube_regrid
     fig2 = plt.figure()
-    fig2.suptitle('Oceanic Meridional Energy Transport in %d (ORAS4)' % (year))
+    fig2.suptitle('ORCA1 Data Projected to PlateCarree')
     # Set up axes and title
-    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax = plt.subplot(projection=ccrs.PlateCarree())
     # Set limits
     ax.set_global()
     # Draw coastlines
@@ -385,11 +402,9 @@ def visualization(cube_regrid,year):
     #ax.ylabels_left = False
     gl.yformatter = LATITUDE_FORMATTER
     # plot with Iris quickplot pcolormesh
-    cs = iplt.pcolormesh(cube_regrid,cmap='coolwarm',vmin=-0.7,vmax=0.7)
-    cbar = fig2.colorbar(cs,extend='both',orientation='horizontal',shrink =1.0)
-    cbar.set_label('PW (1E+15W)')
+    qplt.pcolormesh(cube_regrid,cmap='coolwarm')
     iplt.show()
-    fig2.savefig(output_path + os.sep + 'lat-lon' + os.sep + 'OMET_ORAS4_lat-lon_%d.png' % (year),dpi = 500)
+    fig2.savefig(output_path + os.sep + 'lat-lon' + os.sep + 'OMET_ORAS4_lat-lon_%d.jpg' % (year),dpi = 500)
 
     # extract the interpolated values from cube
     #E_interpolation = cube_regrid.data
@@ -422,9 +437,12 @@ def create_netcdf_point (meridional_E_point_pool,output_path):
     # global attributes
     data_wrap.description = 'Monthly mean meridional energy transport on ORCA grid'
     # variable attributes
-    lat_wrap_var.units = 'degree_north'
-    lon_wrap_var.units = 'degree_east'
+    lat_wrap_var.units = 'ORCA1_latitude'
+    lon_wrap_var.units = 'ORCA1_longitude'
     E_total_wrap_var.units = 'tera watt'
+
+    lat_wrap_var.long_name = 'ORCA1 grid latitude'
+    lon_wrap_var.long_name = 'ORCA1 grid longitude'
     E_total_wrap_var.long_name = 'oceanic meridional energy transport'
     # writing data
     year_wrap_var[:] = period
@@ -463,6 +481,9 @@ def create_netcdf_regrid (meridional_E_point_regrid,output_path):
     lat_wrap_var.units = 'degree_north'
     lon_wrap_var.units = 'degree_east'
     E_total_wrap_var.units = 'tera watt'
+
+    lat_wrap_var.long_name = 'latitude'
+    lon_wrap_var.long_name = 'longitude'
     E_total_wrap_var.long_name = 'oceanic meridional energy transport'
     # writing data
     year_wrap_var[:] = period
@@ -474,7 +495,7 @@ def create_netcdf_regrid (meridional_E_point_regrid,output_path):
     print "Create netcdf file successfully"
     logging.info("The generation of netcdf files for the total meridional energy transport on each grid point is complete!!")
 
-def create_netcdf_zonal_int (meridional_E_zonal_int_pool,output_path):
+def create_netcdf_zonal_int (meridional_E_zonal_int_pool,meridional_psi_zonal_glo, meridional_psi_zonal_atl,output_path):
     print '*******************************************************************'
     print '*********************** create netcdf file ************************'
     print '***********************    OMET on ORCA   *************************'
@@ -487,24 +508,40 @@ def create_netcdf_zonal_int (meridional_E_zonal_int_pool,output_path):
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',12)
     lat_wrap_dim = data_wrap.createDimension('latitude_aux',jj)
+    lev_wrap_dim = data_wrap.createDimension('lev',level)
     # create coordinate variables for 3-dimensions
     # 1D
     year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
     month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
     lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('latitude_aux',))
-    # 4D
+    lev_wrap_var = data_wrap.createVariable('lev',np.float32,('lev',))
+    # 3D
     E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude_aux'))
+    # 4D
+    psi_glo_wrap_var = data_wrap.createVariable('Psi_glo',np.float64,('year','month','lev','latitude_aux'))
+    psi_atl_wrap_var = data_wrap.createVariable('Psi_atl',np.float64,('year','month','lev','latitude_aux'))
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of meridional energy transport on ORCA grid'
     # variable attributes
     lat_wrap_var.units = 'degree_north'
     E_total_wrap_var.units = 'tera watt'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    lev_wrap_var.units = 'm'
+    psi_glo_wrap_var.units = 'Sv'
+    psi_atl_wrap_var.units = 'Sv'
+
+    lev_wrap_var.long_name = 'depth'
+    lat_wrap_var.long_name = 'auxillary latitude'
+    E_total_wrap_var.long_name = 'Oceanic meridional energy transport'
+    psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
+    psi_atl_wrap_var.long_name = 'Meridional overturning stream function of Atlantic ocean'
     # writing data
     year_wrap_var[:] = period
     lat_wrap_var[:] = gphiv[:,96]
     month_wrap_var[:] = np.arange(1,13,1)
+    lev_wrap_var[:] = nav_lev
     E_total_wrap_var[:] = meridional_E_zonal_int_pool
+    psi_glo_wrap_var[:] = meridional_psi_zonal_glo
+    psi_atl_wrap_var[:] = meridional_psi_zonal_atl
     # close the file
     data_wrap.close()
     print "Create netcdf file successfully"
@@ -519,39 +556,57 @@ if __name__=="__main__":
     jj = 292
     level = 42
     # extract the mesh_mask and coordinate information
-    nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0 = var_coordinate(datapath)
+    nav_lat, nav_lon, nav_lev, tmask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv,\
+    glamv, mbathy, e3t_0, e3t_ps = var_coordinate(datapath)
+    print '*******************************************************************'
+    print '*******************  Partial cells correction   *******************'
+    print '*******************************************************************'
+    # construct partial cell depth matrix
+    # the size of partial cell is given by e3t_ps
+    # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+    # then minus this adjustment when calculate the OMET at each layer with mask
+    # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
+    e3t_adjust = np.zeros((level,jj,ji),dtype = float)
+    for i in np.arange(1,level,1): # start from 1
+        for j in np.arange(jj):
+            for k in np.arange(ji):
+                if i == mbathy[j,k]:
+                    e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
     # create a data pool to save the OMET for each year and month
     E_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
     E_pool_zonal_int = np.zeros((len(period),12,jj),dtype = float)
-    E_pool_point_regrid = np.zeros((len(period),180,360),dtype = float)
+    # create a data pool to save the meridional overturning for each year and month
+    psi_pool_zonal_glo = np.zeros((len(period),12,level,jj),dtype = float)
+    psi_pool_zonal_atl = np.zeros((len(period),12,level,jj),dtype = float)
+    #E_pool_point_regrid = np.zeros((len(period),180,360),dtype = float)
     # save the latitude and longitude for interpolation
-    interpolate_lat = np.zeros(180,dtype = float)
-    interpolate_lon = np.zeros(360,dtype = float)
+    #interpolate_lat = np.zeros(180,dtype = float)
+    #interpolate_lon = np.zeros(360,dtype = float)
     # loop for calculation
     for i in period:
         # get the key of each variable
         theta_key, s_key, u_key, v_key = var_key(datapath, i)
         # calculate the stokes stream function and plot
-        #psi = stream_function(v_key,e1v)
+        psi_glo, psi_atl = stream_function(v_key,e1v)
+        psi_pool_zonal_glo[i-1958,:,:,:] = psi_glo
+        psi_pool_zonal_atl[i-1958,:,:,:] = psi_atl
         # calculate the meridional energy transport in the ocean
         E_point = meridional_energy_transport(theta_key, s_key, u_key, v_key)
         E_pool_point[i-1958,:,:,:] = E_point
-        # take the mean value over the entire year for basemap
-        E_point_mean = np.mean(E_point,0)
         # regridding for visualization
-        cube_regrid, E_regrid, x_coord, y_coord = regridding(E_point_mean, vmask[0,:,:])
-        E_pool_point_regrid[i-1958,:,:] = E_regrid
+        #cube_regrid, E_regrid, x_coord, y_coord = regridding(E_point_mean, vmask[0,:,:])
+        #E_pool_point_regrid[i-1958,:,:] = E_regrid
         #visualization
-        visualization(cube_regrid,i)
+        #visualization(cube_regrid,i)
         # plot the meridional energy transport in the ocean
         E_zonal_int = zonal_int_plot(E_point,i)
         E_pool_zonal_int[i-1958,:,:] = E_zonal_int
-        if i == start_year:
-            interpolate_lat = y_coord
-            interpolate_lon = x_coord
+        #if i == start_year:
+            #interpolate_lat = y_coord
+            #interpolate_lon = x_coord
     # create NetCDF file and save the output
     create_netcdf_point(E_pool_point,output_path)
-    create_netcdf_regrid(E_pool_point_regrid,output_path)
-    create_netcdf_zonal_int(E_pool_zonal_int,output_path)
+    #create_netcdf_regrid(E_pool_point_regrid,output_path)
+    create_netcdf_zonal_int(E_pool_zonal_int,psi_pool_zonal_glo,psi_pool_zonal_atl,output_path)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
