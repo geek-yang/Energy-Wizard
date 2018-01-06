@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport(GLORYS2V3) on HPC
 Author          : Yang Liu
 Date            : 2017.11.7
-Last Update     : 2017.11.20
+Last Update     : 2018.1.6
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset GLORYS2V3 from
                   Mercator Ocean. The complete computaiton is accomplished
@@ -200,34 +200,36 @@ def stream_function(uv_key,e1v):
         # global meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] +\
-                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] -\
+                                   e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
             else:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] +\
-                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] -\
+                                   e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
         # Atlantic meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] +\
-                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] -\
+                                      e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
             else:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] +\
-                             e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] -\
+                                      e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] -\
+                                   e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
             else:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:]
+                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] -\
+                                   e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
     # take the zonal integral
     psi_stream_globe = np.sum(psi_globe,2)/1e+6 # the unit is changed to Sv
     psi_stream_atlantic = np.sum(psi_atlantic,2)/1e+6 # the unit is changed to Sv
@@ -307,7 +309,7 @@ def meridional_energy_transport(theta_key, uv_key):
     for i in np.arange(level):
         if partial == 1: # include partial cells
             Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
-                                     T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:] +\
+                                     T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:] -\
                                      constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
                                      T_vgrid[i,:,:] * e1v * e3t_adjust[i,:,:] * vmask[i,:,:]
         else: # exclude partial cells
@@ -412,7 +414,7 @@ def create_netcdf_zonal_int (meridional_E_zonal_int_pool, meridional_psi_zonal_g
 
     lev_wrap_var.long_name = 'depth'
     lat_wrap_var.long_name = 'auxillary latitude'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    E_total_wrap_var.long_name = 'Oceanic meridional energy transport'
     psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
     psi_atl_wrap_var.long_name = 'Meridional overturning stream function of Atlantic ocean'
     # writing data
@@ -446,14 +448,17 @@ if __name__=="__main__":
     print '*******************************************************************'
     print '*******************  Partial cells correction   *******************'
     print '*******************************************************************'
-    # construct partial depth matrix
-    # include the partial cell to the layers above, due to the presence of variabels (t,u,v)
+    # construct partial cell depth matrix
+    # the size of partial cell is given by e3t_ps
+    # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+    # then minus this adjustment when calculate the OMET at each layer with mask
+    # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
     e3t_adjust = np.zeros((level,jj,ji),dtype = float)
-    for i in np.arange(1,level,1):
+    for i in np.arange(1,level,1): # start from 1
         for j in np.arange(jj):
             for k in np.arange(ji):
                 if i == mbathy[j,k]:
-                    e3t_adjust[i-1,j,k] = e3t_ps[j,k]
+                    e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
     ####################################################################
     ###  Create space for stroing intermediate variables and outputs ###
     ####################################################################
