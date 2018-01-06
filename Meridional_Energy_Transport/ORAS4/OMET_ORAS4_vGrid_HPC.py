@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (ORAS4)
 Author          : Yang Liu
 Date            : 2017.9.18
-Last Update     : 2017.11.20
+Last Update     : 2018.1.6
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset ORAS4 from ECMWF.
                   The complete computaiton is accomplished on model level (original ORCA1_z42 grid).
@@ -159,6 +159,7 @@ def var_coordinate(datapath):
     mbathy = mesh_mask_key.variables['mbathy'][0,:,:]
     # depth of each layer
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
+    e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
@@ -176,7 +177,7 @@ def var_coordinate(datapath):
     #print 'The tmask file from mesh_mask.nc and the grid T are the same %s' % \
     #       np.array_equal(tmask,tmask_grid_T)
 
-    return nav_lat, nav_lon, nav_lev, tmask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0
+    return nav_lat, nav_lon, nav_lev, tmask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps
 
 def stream_function(v_key,e1v):
     '''
@@ -200,29 +201,37 @@ def stream_function(v_key,e1v):
     vmask_4D = np.repeat(vmask[np.newaxis,:,:,:],len(index_month),0)
     tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
     tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
+    # increase the dimension and adjustment matrix
+    e3t_adjust_4D = np.repeat(e3t_adjust[np.newaxis,:,:,:],len(index_month),0)
     # choose the integration order
     int_order = 1  # 1 - from sea bottom to sea surface 2 from sea surfaca to sea bottom
     if int_order == 1:
         # take the integral from sea botton to the surface
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i]
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
             else:
-                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi_globe[:,i+1,:,:]
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi_globe[:,i+1,:,:] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
     if int_order == 1:
         # take the integral from sea botton to the surface
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_atlantic[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] * tmaskatl_4D[:,i,:,:]
+                psi_atlantic[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] * tmaskatl_4D[:,i,:,:] -\
+                                        e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
             else:
-                psi_atlantic[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] * tmaskatl_4D[:,i,:,:] + psi_atlantic[:,i+1,:,:]
+                psi_atlantic[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] * tmaskatl_4D[:,i,:,:] + psi_atlantic[:,i+1,:,:] -\
+                                        e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i]
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
             else:
-                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi_globe[:,i+1,:,:]
+                psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] + psi_globe[:,i+1,:,:] -\
+                                     e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
     # take the zonal integral
     psi_stream_globe = np.sum(psi_globe,3)/1e+6 # the unit is changed to Sv
     psi_stream_atlantic = np.sum(psi_atlantic,3)/1e+6 # the unit is changed to Sv
@@ -253,14 +262,17 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
             T_vgrid[:,:,i,:] = (theta[:,:,i,:] + theta[:,:,i+1,:])/2
     # calculate heat flux at each grid point
     Internal_E_flux = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    partial = 1 # switch for the partial cells 1 = include & 0 = exclude
     for i in index_month:
         for j in np.arange(level):
-            if j == 0:
-                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
-            else:
-                Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                           T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
+                if partial == 1: # include partial cells
+                    Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                                               T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:] -\
+                                               constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                                               T_vgrid[i,j,:,:] * e1v * e3t_adjust * vmask[j,:,:]
+                else:
+                    Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
+                                               T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
     # take the vertical integral
     Internal_E_int = np.zeros((len(index_month),jj,ji))
     Internal_E_int = np.sum(Internal_E_flux,1)/1e+12
@@ -519,7 +531,7 @@ def create_netcdf_zonal_int (meridional_E_zonal_int_pool,meridional_psi_zonal_gl
 
     lev_wrap_var.long_name = 'depth'
     lat_wrap_var.long_name = 'auxillary latitude'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    E_total_wrap_var.long_name = 'Oceanic meridional energy transport'
     psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
     psi_atl_wrap_var.long_name = 'Meridional overturning stream function of Atlantic ocean'
     # writing data
@@ -544,7 +556,22 @@ if __name__=="__main__":
     jj = 292
     level = 42
     # extract the mesh_mask and coordinate information
-    nav_lat, nav_lon, nav_lev, tmask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv, glamv, mbathy, e3t_0 = var_coordinate(datapath)
+    nav_lat, nav_lon, nav_lev, tmask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiv,\
+    glamv, mbathy, e3t_0, e3t_ps = var_coordinate(datapath)
+    print '*******************************************************************'
+    print '*******************  Partial cells correction   *******************'
+    print '*******************************************************************'
+    # construct partial cell depth matrix
+    # the size of partial cell is given by e3t_ps
+    # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+    # then minus this adjustment when calculate the OMET at each layer with mask
+    # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
+    e3t_adjust = np.zeros((level,jj,ji),dtype = float)
+    for i in np.arange(1,level,1): # start from 1
+        for j in np.arange(jj):
+            for k in np.arange(ji):
+                if i == mbathy[j,k]:
+                    e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
     # create a data pool to save the OMET for each year and month
     E_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
     E_pool_zonal_int = np.zeros((len(period),12,jj),dtype = float)
