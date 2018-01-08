@@ -269,7 +269,7 @@ def meridional_energy_transport(theta_key, s_key, u_key, v_key):
                     Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
                                                T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:] -\
                                                constant['rho'] * constant['cp'] * v[i,j,:,:] *\
-                                               T_vgrid[i,j,:,:] * e1v * e3t_adjust * vmask[j,:,:]
+                                               T_vgrid[i,j,:,:] * e1v * e3t_adjust[j,:,:] * vmask[j,:,:]
                 else:
                     Internal_E_flux[i,j,:,:] = constant['rho'] * constant['cp'] * v[i,j,:,:] *\
                                                T_vgrid[i,j,:,:] * e1v * e3t_0[j] * vmask[j,:,:]
@@ -484,7 +484,7 @@ def create_netcdf_regrid (meridional_E_point_regrid,output_path):
 
     lat_wrap_var.long_name = 'latitude'
     lon_wrap_var.long_name = 'longitude'
-    E_total_wrap_var.long_name = 'oceanic meridional energy transport'
+    E_total_wrap_var.long_name = 'Oceanic meridional energy transport'
     # writing data
     year_wrap_var[:] = period
     lat_wrap_var[:] = interpolate_lat

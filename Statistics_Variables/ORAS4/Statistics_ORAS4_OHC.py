@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (ORAS4)
 Author          : Yang Liu
 Date            : 2018.1.4
-Last Update     : 2018.1.5
+Last Update     : 2018.1.6
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -158,6 +158,7 @@ def var_coordinate(datapath):
     mbathy = mesh_mask_key.variables['mbathy'][0,:,:]
     # depth of each layer
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
+    e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
@@ -171,7 +172,7 @@ def var_coordinate(datapath):
     #lon_grid_V = grid_V_key.variables['lon'][:]
     #vmask_grid_V = grid_V_key.variables['vmask'][:]
 
-    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0
+    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps
 
 def ocean_heat_content(theta_key):
     '''
@@ -194,9 +195,13 @@ def ocean_heat_content(theta_key):
     tmask_4D = np.repeat(tmask[np.newaxis,:,:,:],len(index_month),0)
     tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
     tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
+    # increase the dimension of partial cell adjustment matrix
+    e3t_adjust_4D = np.repeat(e3t_adjust[np.newaxis,:,:,:],len(index_month),0)
     for i in np.arange(level):
-        OHC_globe[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:]
-        OHC_atlantic[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
+        OHC_globe[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:] -\
+                             constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmask_4D[:,i,:,:]
+        OHC_atlantic[:,i,:,:] = constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:] -\
+                                constant['rho'] * constant['cp'] * theta[:,i,:,:] * e1t_4D[:,i,:,:] * e2t_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
     # take the zonal integral
     OHC_globe_zonal_int = np.sum(OHC_globe,3)/1e+12 # the unit is changed to tera joule
     OHC_atlantic_zonal_int = np.sum(OHC_atlantic,3)/1e+12 # the unit is changed to tera joule
@@ -359,7 +364,21 @@ if __name__=="__main__":
     level = 42
     # extract the mesh_mask and coordinate information
     nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v,\
-    gphiu, glamu, gphiv, glamv, mbathy, e3t_0 = var_coordinate(datapath)
+    gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps = var_coordinate(datapath)
+    print '*******************************************************************'
+    print '*******************  Partial cells correction   *******************'
+    print '*******************************************************************'
+    # construct partial cell depth matrix
+    # the size of partial cell is given by e3t_ps
+    # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+    # then minus this adjustment when calculate the OMET at each layer with mask
+    # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
+    e3t_adjust = np.zeros((level,jj,ji),dtype = float)
+    for i in np.arange(1,level,1): # start from 1
+        for j in np.arange(jj):
+            for k in np.arange(ji):
+                if i == mbathy[j,k]:
+                    e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
     print '*******************************************************************'
     print '************************ create data pool *************************'
     print '*******************************************************************'

@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (ORAS4)
 Author          : Yang Liu
 Date            : 2018.1.4
-Last Update     : 2018.1.5
+Last Update     : 2018.1.7
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -150,14 +150,17 @@ def var_coordinate(datapath):
     # grid spacing scale factors (zonal)
     e1t = mesh_mask_key.variables['e1t'][0,:,:]
     e2t = mesh_mask_key.variables['e2t'][0,:,:]
-    #e1u = mesh_mask_key.variables['e1u'][0,:,:]
-    #e2u = mesh_mask_key.variables['e2u'][0,:,:]
+    e1u = mesh_mask_key.variables['e1u'][0,:,:]
+    e2u = mesh_mask_key.variables['e2u'][0,:,:]
     e1v = mesh_mask_key.variables['e1v'][0,:,:]
     e2v = mesh_mask_key.variables['e2v'][0,:,:]
     # take the bathymetry
     mbathy = mesh_mask_key.variables['mbathy'][0,:,:]
     # depth of each layer
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
+    e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:] # depth of partial t cell
+    # depth of partial cell t point
+    hdept_0 = mesh_mask_key.variables['hdept_0'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
@@ -171,7 +174,7 @@ def var_coordinate(datapath):
     #lon_grid_V = grid_V_key.variables['lon'][:]
     #vmask_grid_V = grid_V_key.variables['vmask'][:]
 
-    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0
+    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps
 
 def field_statistics(theta_key, u_key, v_key):
     # extract variables
@@ -185,33 +188,67 @@ def field_statistics(theta_key, u_key, v_key):
     # use the np.mean to calculate it from the original field, as there are so many
     # empty points. Instead, we must calculate the sum of each variable and then
     # devide the sum of mask.
+    # For the mean, we also have to take the cell scale (length, width, height) into
+    # consider
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
     # increase the dimension of mask array
     tmask_4D = np.repeat(tmask[np.newaxis,:,:,:],len(index_month),0)
+    umask_4D = np.repeat(umask[np.newaxis,:,:,:],len(index_month),0)
+    vmask_4D = np.repeat(vmask[np.newaxis,:,:,:],len(index_month),0)
     tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
     tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
+    hdept_0_3D = np.repeat(hdept_0[np.newaxis,:,:],len(index_month),0)
+    # increase the dimension of partial cell adjustment matrix
+    e3t_adjust_4D = np.repeat(e3t_adjust[np.newaxis,:,:,:],len(index_month),0)
+    # expand the grid size matrix e1v to avoid more loops
+    e1t_3D = np.repeat(e1t[np.newaxis,:,:],level,0)
+    e1t_4D = np.repeat(e1t_3D[np.newaxis,:,:,:],len(index_month),0)
+    e1u_3D = np.repeat(e1u[np.newaxis,:,:],level,0)
+    e1u_4D = np.repeat(e1u_3D[np.newaxis,:,:,:],len(index_month),0)
+    e1v_3D = np.repeat(e1v[np.newaxis,:,:],level,0)
+    e1v_4D = np.repeat(e1v_3D[np.newaxis,:,:,:],len(index_month),0)
+
     # vertical mean
-    theta_globe_vert_mean = np.mean(theta*tmask_4D,1)
-    u_globe_vert_mean = np.mean(u*tmask_4D,1)
-    v_globe_vert_mean = np.mean(v*tmask_4D,1)
+    theta_globe_vert_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    u_globe_vert_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    v_globe_vert_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+
+    for i in np.arange(level):
+        theta_globe_vert_weight[:,i,:,:] = theta[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:] -\
+                                           theta[:,i,:,:] * e3t_adjust_4D * tmask_4D[:,i,:,:]
+        u_globe_vert_weight[:,i,:,:] = u[:,i,:,:] * e3t_0[i] * umask_4D[:,i,:,:] -\
+                                       u[:,i,:,:] * e3t_adjust_4D * umask_4D[:,i,:,:]
+        v_globe_vert_weight[:,i,:,:] = v[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:] -\
+                                       v[:,i,:,:] * e3t_adjust_4D * vmask_4D[:,i,:,:]
+
+    theta_globe_vert_mean = np.sum(theta_globe_vert_weight,1) / hdept_0_3D
+    u_globe_vert_mean = np.sum(u_globe_vert_weight,1) / hdept_0_3D
+    v_globe_vert_mean = np.sum(v_globe_vert_weight,1) / hdept_0_3D
+
     # zonal mean
     # take the sum of variables
-    theta_globe_zonal_sum = np.sum(theta*tmask_4D,3)
-    theta_atlantic_zonal_sum = np.sum(theta*tmask_4D*tmaskatl_4D,3)
-    u_globe_zonal_sum = np.sum(u*tmask_4D,3)
-    u_atlantic_zonal_sum = np.sum(u*tmask_4D*tmaskatl_4D,3)
-    v_globe_zonal_sum = np.sum(v*tmask_4D,3)
-    v_atlantic_zonal_sum = np.sum(v*tmask_4D*tmaskatl_4D,3)
-    # take the sum of land-sea mask
-    mask_globe_zonal_sum = np.sum(tmask_4D,3)
-    mask_atlantic_zonal_sum = np.sum(tmaskatl_4D,3)
+    theta_globe_zonal_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    u_globe_zonal_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    v_globe_zonal_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    theta_atlantic_zonal_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    u_atlantic_zonal_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+    v_atlantic_zonal_weight = np.zeros((len(index_month),level,jj,ji),dtype=float)
+
+    for i in np.arange(level):
+        theta_globe_zonal_weight[:,i,:,:] = theta[:,i,:,:] * e1t_4D[:,i,:,:] * tmask_4D[:,i,:,:]
+        theta_atlantic_zonal_weight[:,i,:,:] = theta[:,i,:,:] * e1t_4D[:,i,:,:] * tmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
+        u_globe_zonal_weight[:,i,:,:] = u[:,i,:,:] * e1u_4D[:,i,:,:] * umask_4D[:,i,:,:]
+        u_atlantic_zonal_weight[:,i,:,:] = u[:,i,:,:] * e1u_4D[:,i,:,:] * umask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
+        v_globe_zonal_weight[:,i,:,:] = v[:,i,:,:] * e1v_4D[:,i,:,:] * vmask_4D[:,i,:,:]
+        v_atlantic_zonal_weight[:,i,:,:] = v[:,i,:,:] * e1v_4D[:,i,:,:] * vmask_4D[:,i,:,:] * tmaskatl_4D[:,i,:,:]
+
     # take the zonal mean
-    theta_globe_zonal_mean = theta_globe_zonal_sum / mask_globe_zonal_sum
-    theta_atlantic_zonal_mean = theta_atlantic_zonal_sum / mask_atlantic_zonal_sum
-    u_globe_zonal_mean = u_globe_zonal_sum / mask_globe_zonal_sum
-    u_atlantic_zonal_mean = u_atlantic_zonal_sum / mask_atlantic_zonal_sum
-    v_globe_zonal_mean = v_globe_zonal_sum / mask_globe_zonal_sum
-    v_atlantic_zonal_mean = v_atlantic_zonal_sum / mask_atlantic_zonal_sum
+    theta_globe_zonal_mean = np.sum(theta_globe_zonal_weight,3) / np.sum(e1t_4D * tmask_4D,3)
+    theta_atlantic_zonal_mean = np.sum(theta_atlantic_zonal_weight,3) / np.sum(e1t_4D * tmask_4D * tmaskatl_4D,3)
+    u_globe_zonal_mean = np.sum(u_globe_zonal_weight,3) / np.sum(e1u_4D * umask_4D,3)
+    u_atlantic_zonal_mean = np.sum(u_atlantic_zonal_weight,3) / np.sum(e1u_4D * umask_4D * tmaskatl_4D,3)
+    v_globe_zonal_mean = np.sum(v_globe_zonal_weight,3) / np.sum(e1v_4D * vmask_4D,3)
+    v_atlantic_zonal_mean = np.sum(v_atlantic_zonal_weight,3) / np.sum(e1v_4D * vmask_4D * tmaskatl_4D,3)
 
     return theta_globe_vert_mean, u_globe_vert_mean, v_globe_vert_mean,\
            theta_globe_zonal_mean, theta_atlantic_zonal_mean, u_globe_zonal_mean,\
@@ -334,8 +371,22 @@ if __name__=="__main__":
     jj = 292
     level = 42
     # extract the mesh_mask and coordinate information
-    nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1v, e2v,\
-    gphiu, glamu, gphiv, glamv, mbathy, e3t_0 = var_coordinate(datapath)
+    nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v,\
+    gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps, hdept_0 = var_coordinate(datapath)
+    print '*******************************************************************'
+    print '*******************  Partial cells correction   *******************'
+    print '*******************************************************************'
+    # construct partial cell depth matrix
+    # the size of partial cell is given by e3t_ps
+    # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+    # then minus this adjustment when calculate the OMET at each layer with mask
+    # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
+    e3t_adjust = np.zeros((level,jj,ji),dtype = float)
+    for i in np.arange(1,level,1): # start from 1
+        for j in np.arange(jj):
+            for k in np.arange(ji):
+                if i == mbathy[j,k]:
+                    e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
     print '*******************************************************************'
     print '************************ create data pool *************************'
     print '*******************************************************************'
