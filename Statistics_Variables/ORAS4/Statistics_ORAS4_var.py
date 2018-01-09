@@ -215,11 +215,11 @@ def field_statistics(theta_key, u_key, v_key):
 
     for i in np.arange(level):
         theta_globe_vert_weight[:,i,:,:] = theta[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:] -\
-                                           theta[:,i,:,:] * e3t_adjust_4D * tmask_4D[:,i,:,:]
+                                           theta[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmask_4D[:,i,:,:]
         u_globe_vert_weight[:,i,:,:] = u[:,i,:,:] * e3t_0[i] * umask_4D[:,i,:,:] -\
-                                       u[:,i,:,:] * e3t_adjust_4D * umask_4D[:,i,:,:]
+                                       u[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * umask_4D[:,i,:,:]
         v_globe_vert_weight[:,i,:,:] = v[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:] -\
-                                       v[:,i,:,:] * e3t_adjust_4D * vmask_4D[:,i,:,:]
+                                       v[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * vmask_4D[:,i,:,:]
 
     theta_globe_vert_mean = np.sum(theta_globe_vert_weight,1) / hdept_0_3D
     u_globe_vert_mean = np.sum(u_globe_vert_weight,1) / hdept_0_3D
