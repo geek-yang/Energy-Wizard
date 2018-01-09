@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (ORAS4)
 Author          : Yang Liu
 Date            : 2018.1.4
-Last Update     : 2018.1.7
+Last Update     : 2018.1.9
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
