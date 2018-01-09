@@ -160,7 +160,7 @@ def var_coordinate(datapath):
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
     e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:] # depth of partial t cell
     # depth of partial cell t point
-    hdept_0 = mesh_mask_key.variables['hdept_0'][0,:,:]
+    hdept_0 = mesh_mask_key.variables['hdept'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
