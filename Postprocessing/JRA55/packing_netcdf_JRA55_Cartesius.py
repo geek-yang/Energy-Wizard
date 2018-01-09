@@ -17,8 +17,8 @@ variables       : Meridional Total Energy Transport           E         [Tera-Wa
                   Meridional Latent Energy Transport          E_Lvq     [Tera-Watt]
                   Meridional Geopotential Energy Transport    E_gz      [Tera-Watt]
                   Meridional Kinetic Energy Transport         E_uv2     [Tera-Watt]
-Caveat!!        : The data is from 90 deg south to 90 deg north (Globe).
-                  Latitude: South to Nouth (90 to -90)
+Caveat!!        : The data is from 90 deg north to 90 deg south (Globe).
+                  Latitude: North to South (90 to -90)
                   Lontitude: West to East (0 to 360)
 """
 import numpy as np
