@@ -4,8 +4,8 @@ Copyright Netherlands eScience Center
 
 Function        : Packing netCDF files for the monthly output from Cartesius (JRA55)
 Author          : Yang Liu
-Date            : 2017.12.20
-Last Update     : 2017.12.20
+Date            : 2018.01.09
+Last Update     : 2018.01.09
 Description     : The code aims to postprocess the output from the Cartesius
                   regarding the computation of atmospheric meridional energy
                   transport based on JRA55 output (atmosphere only run). The
