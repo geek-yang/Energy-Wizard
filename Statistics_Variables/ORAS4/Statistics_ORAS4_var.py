@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (ORAS4)
 Author          : Yang Liu
 Date            : 2018.1.4
-Last Update     : 2018.1.7
+Last Update     : 2018.1.9
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -160,7 +160,7 @@ def var_coordinate(datapath):
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
     e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:] # depth of partial t cell
     # depth of partial cell t point
-    hdept_0 = mesh_mask_key.variables['hdept_0'][0,:,:]
+    hdept_0 = mesh_mask_key.variables['hdept'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
@@ -174,7 +174,7 @@ def var_coordinate(datapath):
     #lon_grid_V = grid_V_key.variables['lon'][:]
     #vmask_grid_V = grid_V_key.variables['vmask'][:]
 
-    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps
+    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps, hdept_0
 
 def field_statistics(theta_key, u_key, v_key):
     # extract variables
@@ -215,11 +215,11 @@ def field_statistics(theta_key, u_key, v_key):
 
     for i in np.arange(level):
         theta_globe_vert_weight[:,i,:,:] = theta[:,i,:,:] * e3t_0[i] * tmask_4D[:,i,:,:] -\
-                                           theta[:,i,:,:] * e3t_adjust_4D * tmask_4D[:,i,:,:]
+                                           theta[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * tmask_4D[:,i,:,:]
         u_globe_vert_weight[:,i,:,:] = u[:,i,:,:] * e3t_0[i] * umask_4D[:,i,:,:] -\
-                                       u[:,i,:,:] * e3t_adjust_4D * umask_4D[:,i,:,:]
+                                       u[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * umask_4D[:,i,:,:]
         v_globe_vert_weight[:,i,:,:] = v[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:] -\
-                                       v[:,i,:,:] * e3t_adjust_4D * vmask_4D[:,i,:,:]
+                                       v[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * vmask_4D[:,i,:,:]
 
     theta_globe_vert_mean = np.sum(theta_globe_vert_weight,1) / hdept_0_3D
     u_globe_vert_mean = np.sum(u_globe_vert_weight,1) / hdept_0_3D

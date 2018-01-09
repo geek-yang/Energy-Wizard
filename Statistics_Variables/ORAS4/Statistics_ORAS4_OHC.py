@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (ORAS4)
 Author          : Yang Liu
 Date            : 2018.1.4
-Last Update     : 2018.1.6
+Last Update     : 2018.1.9
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -213,14 +213,14 @@ def ocean_heat_content(theta_key):
     OHC_globe_vert_0_500 = np.sum(OHC_globe[:,0:22,:,:],1)/1e+12 # the unit is changed to tera joule
     OHC_atlantic_vert_0_500 = np.sum(OHC_atlantic[:,0:22,:,:],1)/1e+12 # the unit is changed to tera joule
     # 500m to 1000m
-    OHC_globe_vert_500_1000 = np.sum(OHC_globe[:,23:26,:,:],1)/1e+12         # layer 26 is in between 800 - 1200
-    OHC_atlantic_vert_500_1000 = np.sum(OHC_atlantic[:,23:26,:,:],1)/1e+12
+    OHC_globe_vert_500_1000 = np.sum(OHC_globe[:,22:26,:,:],1)/1e+12         # layer 26 is in between 800 - 1200
+    OHC_atlantic_vert_500_1000 = np.sum(OHC_atlantic[:,22:26,:,:],1)/1e+12
     # 1000m to 2000m
-    OHC_globe_vert_1000_2000 = np.sum(OHC_globe[:,27:30,:,:],1)/1e+12
-    OHC_atlantic_vert_1000_2000 = np.sum(OHC_atlantic[:,27:30,:,:],1)/1e+12
+    OHC_globe_vert_1000_2000 = np.sum(OHC_globe[:,26:30,:,:],1)/1e+12
+    OHC_atlantic_vert_1000_2000 = np.sum(OHC_atlantic[:,26:30,:,:],1)/1e+12
     # 2000 to bottom
-    OHC_globe_vert_2000_inf = np.sum(OHC_globe[:,31:,:,:],1)/1e+12
-    OHC_atlantic_vert_2000_inf = np.sum(OHC_atlantic[:,31:,:,:],1)/1e+12
+    OHC_globe_vert_2000_inf = np.sum(OHC_globe[:,30:,:,:],1)/1e+12
+    OHC_atlantic_vert_2000_inf = np.sum(OHC_atlantic[:,30:,:,:],1)/1e+12
     print '*****************************************************************************'
     print "*****    Computation of ocean heat content in the ocean is finished     *****"
     print "************         The result is in tera-joule (1E+12)         ************"
