@@ -160,7 +160,7 @@ def var_coordinate(datapath):
     e3t_0 = mesh_mask_key.variables['e3t_0'][0,:]
     e3t_ps = mesh_mask_key.variables['e3t_ps'][0,:,:] # depth of partial t cell
     # depth of partial cell t point
-    hdept_0 = mesh_mask_key.variables['hdept'][0,:,:]
+    hdept = mesh_mask_key.variables['hdept'][0,:,:]
     # comparison between variables
     #lat_grid_T = grid_T_key.variables['lat'][:]
     #lon_grid_T = grid_T_key.variables['lon'][:]
@@ -174,7 +174,7 @@ def var_coordinate(datapath):
     #lon_grid_V = grid_V_key.variables['lon'][:]
     #vmask_grid_V = grid_V_key.variables['vmask'][:]
 
-    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps, hdept_0
+    return nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps, hdept
 
 def mass_transport(v_key,e1v):
     '''
@@ -200,7 +200,7 @@ def mass_transport(v_key,e1v):
     tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
     # increase the dimension of partial cell adjustment matrix
     e3t_adjust_4D = np.repeat(e3t_adjust[np.newaxis,:,:,:],len(index_month),0)
-    # take the integral from sea bottom to the surface
+    # calculate the mass transport at each grid point
     for i in np.arange(level):
         psi_globe[:,i,:,:] = e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_0[i] -\
                              e1v_4D[:,i,:,:] * v[:,i,:,:] * vmask_4D[:,i,:,:] * e3t_adjust_4D[:,i,:,:]
@@ -220,7 +220,7 @@ def mass_transport(v_key,e1v):
 
 def ocean_heat_content(theta_key):
     '''
-    Compute the meridional energy transport in the ocean
+    This function is used to compute the ocean heat content.
     '''
     # extract variables
     print "Start extracting variables for the quantification of meridional energy transport."
@@ -294,7 +294,7 @@ def field_statistics(theta_key, u_key, v_key):
     vmask_4D = np.repeat(vmask[np.newaxis,:,:,:],len(index_month),0)
     tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
     tmaskatl_4D = np.repeat(tmaskatl_3D[np.newaxis,:,:,:],len(index_month),0)
-    hdept_0_3D = np.repeat(hdept_0[np.newaxis,:,:],len(index_month),0)
+    hdept_3D = np.repeat(hdept[np.newaxis,:,:],len(index_month),0)
     # increase the dimension of partial cell adjustment matrix
     e3t_adjust_4D = np.repeat(e3t_adjust[np.newaxis,:,:,:],len(index_month),0)
     # expand the grid size matrix e1v to avoid more loops
@@ -318,9 +318,9 @@ def field_statistics(theta_key, u_key, v_key):
         v_globe_vert_weight[:,i,:,:] = v[:,i,:,:] * e3t_0[i] * vmask_4D[:,i,:,:] -\
                                        v[:,i,:,:] * e3t_adjust_4D[:,i,:,:] * vmask_4D[:,i,:,:]
 
-    theta_globe_vert_mean = np.sum(theta_globe_vert_weight,1) / hdept_0_3D
-    u_globe_vert_mean = np.sum(u_globe_vert_weight,1) / hdept_0_3D
-    v_globe_vert_mean = np.sum(v_globe_vert_weight,1) / hdept_0_3D
+    theta_globe_vert_mean = np.sum(theta_globe_vert_weight,1) / hdept_3D
+    u_globe_vert_mean = np.sum(u_globe_vert_weight,1) / hdept_3D
+    v_globe_vert_mean = np.sum(v_globe_vert_weight,1) / hdept_3D
 
     # zonal mean
     # take the sum of variables
@@ -539,7 +539,7 @@ if __name__=="__main__":
     level = 42
     # extract the mesh_mask and coordinate information
     nav_lat, nav_lon, nav_lev, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v,\
-    gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps, hdept_0 = var_coordinate(datapath)
+    gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps, hdept = var_coordinate(datapath)
     print '*******************************************************************'
     print '*******************  Partial cells correction   *******************'
     print '*******************************************************************'
@@ -594,15 +594,24 @@ if __name__=="__main__":
     v_pool_glo_vert = np.zeros((len(period),12,jj,ji),dtype = float)
     # loop for calculation
     for i in period:
+        ####################################################################
+        #########################  Extract variables #######################
+        ####################################################################
         # get the key of each variable
         theta_key, s_key, u_key, v_key = var_key(datapath, i)
-        # calculate the stokes stream function and plot
+        ####################################################################
+        #########      Calculate meridional mass transport        ##########
+        ####################################################################
+        # calculate the mass transport
         psi_globe_zonal, psi_atlantic_zonal, psi_globe_vert, psi_atlantic_vert = mass_transport(v_key,e1v)
         # save output to the pool
         psi_pool_glo_zonal[i-1958,:,:,:] = psi_globe_zonal
         psi_pool_atl_zonal[i-1958,:,:,:] = psi_atlantic_zonal
         psi_pool_glo_vert[i-1958,:,:,:] = psi_globe_vert
         psi_pool_atl_vert[i-1958,:,:,:] = psi_atlantic_vert
+        ####################################################################
+        ##############      Calculate ocean heat content      ##############
+        ####################################################################
         # calculate the meridional energy transport in the ocean
         OHC_glo_zonal, OHC_atl_zonal, OHC_glo_vert, OHC_atl_vert,\
         OHC_glo_vert_0_500, OHC_atl_vert_0_500, OHC_glo_vert_500_1000, OHC_atl_vert_500_1000,\
@@ -621,6 +630,9 @@ if __name__=="__main__":
         OHC_pool_atl_vert_1000_2000[i-1958,:,:,:] = OHC_atl_vert_1000_2000
         OHC_pool_glo_vert_2000_inf[i-1958,:,:,:] = OHC_glo_vert_2000_inf
         OHC_pool_atl_vert_2000_inf[i-1958,:,:,:] = OHC_atl_vert_2000_inf
+        ####################################################################
+        ##############    Calculate the statistical matrix    ##############
+        ####################################################################
         # statistical matrix
         # take zonal and vertical mean
         theta_glo_vert, u_glo_vert, v_glo_vert, theta_glo_zonal, theta_atl_zonal,\
@@ -643,5 +655,9 @@ if __name__=="__main__":
                         OHC_pool_glo_vert_2000_inf, OHC_pool_atl_vert_2000_inf, theta_pool_glo_vert,\
                         u_pool_glo_vert, v_pool_glo_vert, theta_pool_glo_zonal, theta_pool_atl_zonal,\
                         u_pool_glo_zonal, u_pool_atl_zonal, v_pool_glo_zonal, v_pool_atl_zonal, output_path)
+
+    print 'Computation of statistical matrix on ORCA grid for GLORYS2V3 is complete!!!'
+    print 'The output is in sleep, safe and sound!!!'
+    logging.info("The full pipeline of the calculation of statistical matrix on ORCA grid for GLORYS2V3 is accomplished!")
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
