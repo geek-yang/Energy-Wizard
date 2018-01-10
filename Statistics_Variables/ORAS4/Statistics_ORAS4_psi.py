@@ -248,9 +248,6 @@ def create_netcdf_point (psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_ve
     psi_atl_vert_wrap_var = data_wrap.createVariable('psi_atl_vert',np.float64,('year','month','j','i'))
 
     # global attributes
-    # increase the dimension of vmask
-    vmask_4D = np.repeat(vmask[np.newaxis,:,:,:],len(index_month),0)
-    tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
     data_wrap.description = 'Monthly mean mass transport on ORCA grid'
     # variable attributes
     lev_wrap_var.units = 'm'
