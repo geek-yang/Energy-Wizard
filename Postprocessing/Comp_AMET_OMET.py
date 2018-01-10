@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET of all reanalysis datasets
 Author          : Yang Liu
 Date            : 2017.11.12
-Last Update     : 2017.11.12
+Last Update     : 2018.01.10
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -18,6 +18,7 @@ Caveat!!        : Spatial and temporal coverage
                   Atmosphere
                   ERA-Interim 1979 - 2016
                   MERRA2      1980 - 2016
+                  JRA55       1979 - 2015
                   Ocean
                   GLORYS2V3   1992 - 2014
                   ORAS4       1968 - 2014
@@ -63,16 +64,20 @@ start_time = tttt.time()
 
 ################################   Input zone  ######################################
 # specify data path
-datapath_ERAI = 'F:\DataBase\HPC_out\ERAI\postprocessing'
-datapath_MERRA2 = 'F:\DataBase\HPC_out\MERRA2\postprocessing'
-datapath_ORAS4 = 'F:\DataBase\HPC_out\ORAS4\postprocessing'
-datapath_GLORYS2V3 = 'F:\DataBase\HPC_out\GLORYS2V3\postprocessing'
+datapath_ERAI = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
+datapath_MERRA2 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/MERRA2/postprocessing'
+datapath_JRA55 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/JRA55/postprocessing'
+
+datapath_ORAS4 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ORAS4/postprocessing'
+datapath_GLORYS2V3 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GLORYS2V3/postprocessing'
 # specify output path for the netCDF4 file
-output_path = 'C:\Yang\PhD\Computation and Modeling\Blue Action\Bjerknes\AMET_OMET'
+output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Bjerknes/AMET_OMET'
 # index of latitude for insteret
 # 60N
 lat_ERAI = 40 # at 60 N
 lat_MERRA2 = 80 # at 60 N
+lat_JRA55 = 53 # at 60 N
+
 lat_GLORYS2V3 = 788 # at 60 N
 lat_ORAS4 = 233 # at 60 N
 # after a cut to 20-90 N
@@ -96,6 +101,8 @@ print '*******************************************************************'
 
 dataset_ERAI = Dataset(datapath_ERAI + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
 dataset_MERRA2 = Dataset(datapath_MERRA2 + os.sep + 'AMET_MERRA2_model_daily_1980_2016_E_zonal_int.nc')
+dataset_JRA55 = Dataset(datapath_JRA55 + os.sep + 'AMET_JRA55_model_daily_1979_2015_E_zonal_int.nc')
+
 dataset_GLORYS2V3 = Dataset(datapath_GLORYS2V3 + os.sep + 'GLORYS2V3_model_monthly_orca025_E_zonal_int.nc')
 dataset_ORAS4 = Dataset(datapath_ORAS4 + os.sep + 'oras4_model_monthly_orca1_E_zonal_int.nc')
 
@@ -109,16 +116,22 @@ for k in dataset_ERAI.variables:
 # from 20N - 90N
 AMET_ERAI = dataset_ERAI.variables['E'][:]/1000 # from Tera Watt to Peta Watt
 AMET_MERRA2 = dataset_MERRA2.variables['E'][:]/1000 # from Tera Watt to Peta Watt
+AMET_JRA55 = dataset_JRA55.variables['E'][:,:,0:124]/1000 # from Tera Watt to Peta Watt
+
 OMET_ORAS4 = dataset_ORAS4.variables['E'][21:,:,180:]/1000 # start from 1979
 OMET_GLORYS2V3 = dataset_GLORYS2V3.variables['E'][:,:,579:]/1000 # start from 1993
 
 year_ERAI = dataset_ERAI.variables['year'][:]             # from 1979 to 2014
 year_MERRA2 = dataset_MERRA2.variables['year'][:]         # from 1980 to 2014
+year_JRA55 = dataset_JRA55.variables['year'][:]           # from 1979 to 2015
+
 year_ORAS4 = dataset_ORAS4.variables['year'][21:]         # from 1979 to 2014
 year_GLORYS2V3 = dataset_GLORYS2V3.variables['year'][:]   # from 1993 to 2014
-#month = dataset_ERAI.variables['month'][:]
+
 latitude_ERAI = dataset_ERAI.variables['latitude'][:]
 latitude_MERRA2 = dataset_MERRA2.variables['latitude'][:]
+latitude_JRA55 = dataset_JRA55.variables['latitude'][0:124]
+
 latitude_ORAS4 = dataset_ORAS4.variables['latitude_aux'][180:]
 latitude_GLORYS2V3 = dataset_GLORYS2V3.variables['latitude_aux'][579:]
 
@@ -128,11 +141,15 @@ print '*******************************************************************'
 month_ind = np.arange(12)
 seansonal_cycle_AMET_ERAI = np.mean(AMET_ERAI,axis=0)
 seansonal_cycle_AMET_MERRA2 = np.mean(AMET_MERRA2,axis=0)
+seansonal_cycle_AMET_JRA55 = np.mean(AMET_JRA55,axis=0)
+
 seansonal_cycle_OMET_ORAS4 = np.mean(OMET_ORAS4,axis=0)
 seansonal_cycle_OMET_GLORYS2V3 = np.mean(OMET_GLORYS2V3,axis=0)
 
 AMET_ERAI_white = np.zeros(AMET_ERAI.shape,dtype=float)
 AMET_MERRA2_white = np.zeros(AMET_MERRA2.shape,dtype=float)
+AMET_JRA55_white = np.zeros(AMET_JRA55.shape,dtype=float)
+
 OMET_ORAS4_white = np.zeros(OMET_ORAS4.shape,dtype=float)
 OMET_GLORYS2V3_white = np.zeros(OMET_GLORYS2V3.shape,dtype=float)
 
@@ -143,6 +160,10 @@ for i in np.arange(len(year_ERAI)):
 for i in np.arange(len(year_MERRA2)):
     for j in month_ind:
         AMET_MERRA2_white[i,j,:] = AMET_MERRA2[i,j,:] - seansonal_cycle_AMET_MERRA2[j,:]
+
+for i in np.arange(len(year_JRA55)):
+    for j in month_ind:
+        AMET_JRA55_white[i,j,:] = AMET_JRA55[i,j,:] - seansonal_cycle_AMET_JRA55[j,:]
 
 for i in np.arange(len(year_ORAS4)):
     for j in month_ind:
@@ -158,17 +179,23 @@ print '*******************************************************************'
 # annual mean of AMET and OMET at different latitudes
 AMET_ERAI_mean = np.mean(np.mean(AMET_ERAI,0),0)
 AMET_MERRA2_mean = np.mean(np.mean(AMET_MERRA2,0),0)
+AMET_JRA55_mean = np.mean(np.mean(AMET_JRA55,0),0)
+
 OMET_ORAS4_mean = np.mean(np.mean(OMET_ORAS4,0),0)
 OMET_GLORYS2V3_mean = np.mean(np.mean(OMET_GLORYS2V3,0),0)
 
 # dataset with seasonal cycle - time series
 AMET_ERAI_series = AMET_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
 AMET_MERRA2_series = AMET_MERRA2.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_JRA55_series = AMET_JRA55.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+
 OMET_ORAS4_series = OMET_ORAS4.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
 OMET_GLORYS2V3_series = OMET_GLORYS2V3.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
 # dataset without seasonal cycle - time series
 AMET_ERAI_white_series = AMET_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
 AMET_MERRA2_white_series = AMET_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_JRA55_white_series = AMET_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+
 OMET_ORAS4_white_series = OMET_ORAS4_white.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
 OMET_GLORYS2V3_white_series = OMET_GLORYS2V3_white.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
 
@@ -184,6 +211,8 @@ window = 12 # in month
 # calculate the running mean of AMET and OMET at differnt latitudes
 AMET_ERAI_white_series_running_mean = np.zeros((len(AMET_ERAI_white_series)-window+1,len(latitude_ERAI)),dtype=float)
 AMET_MERRA2_white_series_running_mean = np.zeros((len(AMET_MERRA2_white_series)-window+1,len(latitude_MERRA2)),dtype=float)
+AMET_JRA55_white_series_running_mean = np.zeros((len(AMET_JRA55_white_series)-window+1,len(latitude_JRA55)),dtype=float)
+
 OMET_ORAS4_white_series_running_mean = np.zeros((len(OMET_ORAS4_white_series)-window+1,len(latitude_ORAS4)),dtype=float)
 OMET_GLORYS2V3_white_series_running_mean = np.zeros((len(OMET_GLORYS2V3_white_series)-window+1,len(latitude_GLORYS2V3)),dtype=float)
 
@@ -195,6 +224,10 @@ for i in np.arange(len(AMET_MERRA2_white_series)-window+1):
     for j in np.arange(len(latitude_MERRA2)):
         AMET_MERRA2_white_series_running_mean[i,j] = np.mean(AMET_MERRA2_white_series[i:i+window,j])
 
+for i in np.arange(len(AMET_JRA55_white_series)-window+1):
+    for j in np.arange(len(latitude_JRA55)):
+        AMET_JRA55_white_series_running_mean[i,j] = np.mean(AMET_JRA55_white_series[i:i+window,j])
+
 for i in np.arange(len(OMET_ORAS4_white_series)-window+1):
     for j in np.arange(len(latitude_ORAS4)):
         OMET_ORAS4_white_series_running_mean[i,j] = np.mean(OMET_ORAS4_white_series[i:i+window,j])
@@ -202,14 +235,46 @@ for i in np.arange(len(OMET_ORAS4_white_series)-window+1):
 for i in np.arange(len(OMET_GLORYS2V3_white_series)-window+1):
     for j in np.arange(len(latitude_GLORYS2V3)):
         OMET_GLORYS2V3_white_series_running_mean[i,j] = np.mean(OMET_GLORYS2V3_white_series[i:i+window,j])
+
+print '*******************************************************************'
+print '***************   standard deviation at each lat   ****************'
+print '*******************************************************************'
+# standard deviation at each latitude
+# for error bar band
+# reshape of each dataset at full latitude for the calculation of standard deviation
+AMET_ERAI_std = np.std(AMET_ERAI_series,axis=0)
+AMET_ERAI_error_plus = AMET_ERAI_mean + AMET_ERAI_std
+AMET_ERAI_error_minus = AMET_ERAI_mean - AMET_ERAI_std
+
+AMET_MERRA2_std = np.std(AMET_MERRA2_series,axis=0)
+AMET_MERRA2_error_plus = AMET_MERRA2_mean + AMET_MERRA2_std
+AMET_MERRA2_error_minus = AMET_MERRA2_mean - AMET_MERRA2_std
+
+AMET_JRA55_std = np.std(AMET_JRA55_series,axis=0)
+AMET_JRA55_error_plus = AMET_JRA55_mean + AMET_JRA55_std
+AMET_JRA55_error_minus = AMET_JRA55_mean - AMET_JRA55_std
+
+OMET_ORAS4_std = np.std(OMET_ORAS4_series,axis=0)
+OMET_ORAS4_error_plus = OMET_ORAS4_mean + OMET_ORAS4_std
+OMET_ORAS4_error_minus = OMET_ORAS4_mean - OMET_ORAS4_std
+
+OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_series,axis=0)
+OMET_GLORYS2V3_error_plus = OMET_GLORYS2V3_mean + OMET_GLORYS2V3_std
+OMET_GLORYS2V3_error_minus = OMET_GLORYS2V3_mean - OMET_GLORYS2V3_std
 print '*******************************************************************'
 print '*************************** x-y plots *****************************'
 print '*******************************************************************'
 fig0 = plt.figure()
-plt.plot(latitude_ERAI,AMET_ERAI_mean,'r-',label='ERA-Interim')
-plt.plot(latitude_MERRA2,AMET_MERRA2_mean,'m-',label='MERRA2')
-plt.plot(latitude_ORAS4,OMET_ORAS4_mean,'b-',label='ORAS4')
-plt.plot(latitude_GLORYS2V3,OMET_GLORYS2V3_mean,'g-',label='GLORYS2V3')
+plt.plot(latitude_ERAI,AMET_ERAI_mean,'b-',label='ERA-Interim')
+plt.fill_between(latitude_ERAI,AMET_ERAI_error_plus,AMET_ERAI_error_minus,alpha=0.3,edgecolor='lightskyblue', facecolor='lightskyblue')
+plt.plot(latitude_MERRA2,AMET_MERRA2_mean,'r-',label='MERRA2')
+plt.fill_between(latitude_MERRA2,AMET_MERRA2_error_plus,AMET_MERRA2_error_minus,alpha=0.3,edgecolor='tomato', facecolor='tomato')
+plt.plot(latitude_JRA55,AMET_JRA55_mean,'g-',label='JRA55')
+plt.fill_between(latitude_JRA55,AMET_JRA55_error_plus,AMET_JRA55_error_minus,alpha=0.3,edgecolor='lightgreen', facecolor='lightgreen')
+plt.plot(latitude_ORAS4,OMET_ORAS4_mean,'c-',label='ORAS4')
+plt.fill_between(latitude_ORAS4,OMET_ORAS4_error_plus,OMET_ORAS4_error_minus,alpha=0.3,edgecolor='aquamarine', facecolor='aquamarine')
+plt.plot(latitude_GLORYS2V3,OMET_GLORYS2V3_mean,'m-',label='GLORYS2V3')
+plt.fill_between(latitude_GLORYS2V3,OMET_GLORYS2V3_error_plus,OMET_GLORYS2V3_error_minus,alpha=0.3,edgecolor='plum', facecolor='plum')
 #plt.plot(latitude_AMET,AMET_mean + OMET_mean_interpolate,'g--',label='Total')
 plt.title('Meridional Energy Transport')
 plt.legend()
@@ -230,13 +295,15 @@ index_1993_2014 = np.arange(169,433,1) # starting from index of year 1993
 index_1979_2014 = np.arange(1,433,1)
 index_1980_2016 = np.arange(13,457,1)
 index_1979_2016 = np.arange(1,457,1)
+index_1979_2015 = np.arange(1,445,1)
 
 # time series plot of meridional energy transport at 60N
 fig1 = plt.figure()
-plt.plot(index_1979_2016,AMET_ERAI_series[:,lat_ERAI],'r-',label='ERA-Interim')
-plt.plot(index_1980_2016,AMET_MERRA2_series[:,lat_MERRA2],'m-',label='MERRA2')
-plt.plot(index_1979_2014,OMET_ORAS4_series[:,lat_ORAS4_cut],'b-',label='ORAS4')
-plt.plot(index_1993_2014,OMET_GLORYS2V3_series[:,lat_GLORYS2V3_cut],'g-',label='GLORYS2V3')
+plt.plot(index_1979_2016,AMET_ERAI_series[:,lat_ERAI],'b-',label='ERA-Interim')
+plt.plot(index_1980_2016,AMET_MERRA2_series[:,lat_MERRA2],'r-',label='MERRA2')
+plt.plot(index_1979_2015,AMET_JRA55_series[:,lat_JRA55],'g-',label='JRA55')
+plt.plot(index_1979_2014,OMET_ORAS4_series[:,lat_ORAS4_cut],'c-',label='ORAS4')
+plt.plot(index_1993_2014,OMET_GLORYS2V3_series[:,lat_GLORYS2V3_cut],'m-',label='GLORYS2V3')
 plt.title('Meridional Energy Transport at 60 N')
 plt.legend()
 fig1.set_size_inches(12, 5)
@@ -249,10 +316,11 @@ fig1.savefig(output_path + os.sep + 'AMET_OMET_60N_total_time_series.jpg', dpi =
 
 # time series plot of meridional energy transport anomalies at 60N
 fig2 = plt.figure()
-plt.plot(index_1979_2016,AMET_ERAI_white_series[:,lat_ERAI],'r-',label='ERA-Interim')
-plt.plot(index_1980_2016,AMET_MERRA2_white_series[:,lat_MERRA2],'m-',label='MERRA2')
-plt.plot(index_1979_2014,OMET_ORAS4_white_series[:,lat_ORAS4_cut],'b-',label='ORAS4')
-plt.plot(index_1993_2014,OMET_GLORYS2V3_white_series[:,lat_GLORYS2V3_cut],'g-',label='GLORYS2V3')
+plt.plot(index_1979_2016,AMET_ERAI_white_series[:,lat_ERAI],'b-',label='ERA-Interim')
+plt.plot(index_1980_2016,AMET_MERRA2_white_series[:,lat_MERRA2],'r-',label='MERRA2')
+plt.plot(index_1979_2015,AMET_JRA55_white_series[:,lat_JRA55],'g-',label='JRA55')
+plt.plot(index_1979_2014,OMET_ORAS4_white_series[:,lat_ORAS4_cut],'c-',label='ORAS4')
+plt.plot(index_1993_2014,OMET_GLORYS2V3_white_series[:,lat_GLORYS2V3_cut],'m-',label='GLORYS2V3')
 plt.title('Meridional Energy Transport Anomalies at 60 N')
 plt.legend()
 fig2.set_size_inches(12, 5)
@@ -265,10 +333,11 @@ fig2.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_time_series.jpg', dpi
 
 # time series plot of meridional energy transport anomalies at 60N with x years running mean
 fig3 = plt.figure()
-plt.plot(index_1979_2016[window-1:],AMET_ERAI_white_series_running_mean[:,lat_ERAI],'r-',label='ERA-Interim')
-plt.plot(index_1980_2016[window-1:],AMET_MERRA2_white_series_running_mean[:,lat_MERRA2],'m-',label='MERRA2')
-plt.plot(index_1979_2014[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_ORAS4_cut],'b-',label='ORAS4')
-plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_GLORYS2V3_cut],'g-',label='GLORYS2V3')
+plt.plot(index_1979_2016[window-1:],AMET_ERAI_white_series_running_mean[:,lat_ERAI],'b-',label='ERA-Interim')
+plt.plot(index_1980_2016[window-1:],AMET_MERRA2_white_series_running_mean[:,lat_MERRA2],'r-',label='MERRA2')
+plt.plot(index_1979_2015[window-1:],AMET_JRA55_white_series_running_mean[:,lat_JRA55],'g-',label='JRA55')
+plt.plot(index_1979_2014[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_ORAS4_cut],'c-',label='ORAS4')
+plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_GLORYS2V3_cut],'m-',label='GLORYS2V3')
 plt.title('Meridional Energy Transport Anomalies with running mean of %d months at 60 N' % (window))
 plt.legend()
 fig3.set_size_inches(12, 5)

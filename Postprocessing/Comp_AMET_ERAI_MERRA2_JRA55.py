@@ -115,7 +115,7 @@ AMET_E_uv2_JRA55 = dataset_JRA55.variables['E_uv2'][:,:,lat_JRA55]/1000
 
 year_ERAI = dataset_ERAI.variables['year'][:]        # from 1979 to 2016
 year_MERRA2 = dataset_MERRA2.variables['year'][:]    # from 1980 to 2016
-year_JRA55 = dataset_JRA55.variables['year'][:]    # from 1980 to 2016
+year_JRA55 = dataset_JRA55.variables['year'][:]      # from 1979 to 2015
 
 latitude_ERAI = dataset_ERAI.variables['latitude'][:]
 latitude_MERRA2 = dataset_MERRA2.variables['latitude'][:]
@@ -401,14 +401,39 @@ for i in np.arange(len(AMET_E_uv2_JRA55_white_series)-window+1):
     AMET_E_uv2_JRA55_white_running_mean[i] = np.mean(AMET_E_uv2_JRA55_white_series[i:i+window])
 
 print '*******************************************************************'
+print '***************   standard deviation at each lat   ****************'
+print '*******************************************************************'
+# standard deviation at each latitude
+# for error bar band
+# reshape of each dataset at full latitude for the calculation of standard deviation
+AMET_E_ERAI_series_full = AMET_E_ERAI_full.reshape(len(year_ERAI)*12,len(latitude_ERAI))
+AMET_E_ERAI_std_full = np.std(AMET_E_ERAI_series_full,axis=0)
+AMET_E_ERAI_error_plus = np.mean(np.mean(AMET_E_ERAI_full,0),0) + AMET_E_ERAI_std_full
+AMET_E_ERAI_error_minus = np.mean(np.mean(AMET_E_ERAI_full,0),0) - AMET_E_ERAI_std_full
+
+AMET_E_MERRA2_series_full = AMET_E_MERRA2_full.reshape((len(year_MERRA2)*12,len(latitude_MERRA2)))
+AMET_E_MERRA2_std_full = np.std(AMET_E_MERRA2_series_full,axis=0)
+AMET_E_MERRA2_error_plus = np.mean(np.mean(AMET_E_MERRA2_full,0),0) + AMET_E_MERRA2_std_full
+AMET_E_MERRA2_error_minus = np.mean(np.mean(AMET_E_MERRA2_full,0),0) - AMET_E_MERRA2_std_full
+
+AMET_E_JRA55_series_full = AMET_E_JRA55_full.reshape((len(year_JRA55)*12,len(latitude_JRA55)))
+AMET_E_JRA55_std_full = np.std(AMET_E_JRA55_series_full,axis=0)
+AMET_E_JRA55_error_plus = np.mean(np.mean(AMET_E_JRA55_full,0),0) + AMET_E_JRA55_std_full
+AMET_E_JRA55_error_minus = np.mean(np.mean(AMET_E_JRA55_full,0),0) - AMET_E_JRA55_std_full
+
+print '*******************************************************************'
 print '**************************** X-Y Plot *****************************'
 print '*******************************************************************'
+
 # annual mean of meridional energy transport at each latitude in north hemisphere
 fig1 = plt.figure()
 plt.axhline(y=0, color='k',ls='-')
 plt.plot(latitude_ERAI,np.mean(np.mean(AMET_E_ERAI_full,0),0),'b-',label='ERA-Interim')
+plt.fill_between(latitude_ERAI,AMET_E_ERAI_error_plus,AMET_E_ERAI_error_minus,alpha=0.2,edgecolor='lightskyblue', facecolor='lightskyblue')
 plt.plot(latitude_MERRA2,np.mean(np.mean(AMET_E_MERRA2_full,0),0),'r-',label='MERRA2')
+plt.fill_between(latitude_MERRA2,AMET_E_MERRA2_error_plus,AMET_E_MERRA2_error_minus,alpha=0.2,edgecolor='tomato', facecolor='tomato')
 plt.plot(latitude_JRA55,np.mean(np.mean(AMET_E_JRA55_full,0),0),'g-',label='JRA55')
+plt.fill_between(latitude_JRA55,AMET_E_JRA55_error_plus,AMET_E_JRA55_error_minus,alpha=0.2,edgecolor='lightgreen', facecolor='lightgreen')
 plt.title('Annual Mean of Atmospheric Meridional Energy Transport' )
 plt.legend()
 plt.xlabel("Latitudes")
@@ -705,11 +730,11 @@ print 'The standard deviation of AMET from ERA-Interim is (in peta Watt):'
 print AMET_E_ERAI_std
 # MERRA2
 AMET_E_MERRA2_std = np.std(AMET_E_MERRA2_series)
-print 'The standard deviation of AMET anomaly from MERRA2 is (in peta Watt):'
+print 'The standard deviation of AMET from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_std
 # JRA55
 AMET_E_JRA55_std = np.std(AMET_E_JRA55_series)
-print 'The standard deviation of AMET anomaly from JRA55 is (in peta Watt):'
+print 'The standard deviation of AMET from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_std
 
 # calculate the standard deviation of AMET anomaly
@@ -736,11 +761,11 @@ print 'The mean of AMET from ERA-Interim is (in peta Watt):'
 print AMET_E_ERAI_mean
 # MERRA2
 AMET_E_MERRA2_mean = np.mean(AMET_E_MERRA2_series)
-print 'The mean of AMET anomaly from MERRA2 is (in peta Watt):'
+print 'The mean of AMET from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_mean
 # MERRA2
 AMET_E_JRA55_mean = np.mean(AMET_E_JRA55_series)
-print 'The mean of AMET anomaly from JRA55 is (in peta Watt):'
+print 'The mean of AMET from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_mean
 
 # calculate the standard deviation of AMET anomaly
