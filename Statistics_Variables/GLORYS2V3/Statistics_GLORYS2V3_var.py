@@ -181,9 +181,9 @@ def var_coordinate(datapath):
 def field_statistics(theta_key, uv_key):
     # extract variables
     print "Start extracting variables for the quantification of meridional energy transport."
-    theta = theta_key.variables['votemper'][:] # the unit of theta is Celsius!
-    u = uv_key.variables['vozocrtx'][:]
-    v = uv_key.variables['vomecrty'][:]
+    theta = theta_key.variables['votemper'][0,:,:,:] # the unit of theta is Celsius!
+    u = uv_key.variables['vozocrtx'][0,:,:,:]
+    v = uv_key.variables['vomecrty'][0,:,:,:]
     print 'Extracting variables successfully!'
     # set the filled value to be 0
     np.ma.set_fill_value(theta,0)
