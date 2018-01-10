@@ -72,11 +72,11 @@ print os.path
 start_time = tttt.time()
 
 # Redirect all the console output to a file
-sys.stdout = open('/project/Reanalysis/GLORYS2V3/monthly/console_statistics.out','w')
+sys.stdout = open('/project/Reanalysis/GLORYS2V3/monthly/console_psi.out','w')
 
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 #logging.basicConfig(filename = 'F:\DataBase\ORAS4\history.log', filemode = 'w',level = logging.DEBUG,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.basicConfig(filename = '/project/Reanalysis/GLORYS2V3/monthly/history_statistics.log',
+logging.basicConfig(filename = '/project/Reanalysis/GLORYS2V3/monthly/history_psi.log',
                     filemode = 'w', level = logging.DEBUG,
                     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -229,7 +229,7 @@ def create_netcdf_point (psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_ve
     logging.info("Start creating netcdf file for the statistics of fields at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'GLORYS2V3_model_monthly_orca025_statistics_point.nc' ,'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path + os.sep + 'GLORYS2V3_model_monthly_orca025_psi_point.nc' ,'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',12)
