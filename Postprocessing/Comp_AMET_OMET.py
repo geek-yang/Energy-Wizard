@@ -235,15 +235,46 @@ for i in np.arange(len(OMET_ORAS4_white_series)-window+1):
 for i in np.arange(len(OMET_GLORYS2V3_white_series)-window+1):
     for j in np.arange(len(latitude_GLORYS2V3)):
         OMET_GLORYS2V3_white_series_running_mean[i,j] = np.mean(OMET_GLORYS2V3_white_series[i:i+window,j])
+
+print '*******************************************************************'
+print '***************   standard deviation at each lat   ****************'
+print '*******************************************************************'
+# standard deviation at each latitude
+# for error bar band
+# reshape of each dataset at full latitude for the calculation of standard deviation
+AMET_ERAI_std = np.std(AMET_ERAI_series,axis=0)
+AMET_ERAI_error_plus = AMET_ERAI_mean + AMET_ERAI_std
+AMET_ERAI_error_minus = AMET_ERAI_mean - AMET_ERAI_std
+
+AMET_MERRA2_std = np.std(AMET_MERRA2_series,axis=0)
+AMET_MERRA2_error_plus = AMET_MERRA2_mean + AMET_MERRA2_std
+AMET_MERRA2_error_minus = AMET_MERRA2_mean - AMET_MERRA2_std
+
+AMET_JRA55_std = np.std(AMET_JRA55_series,axis=0)
+AMET_JRA55_error_plus = AMET_JRA55_mean + AMET_JRA55_std
+AMET_JRA55_error_minus = AMET_JRA55_mean - AMET_JRA55_std
+
+OMET_ORAS4_std = np.std(OMET_ORAS4_series,axis=0)
+OMET_ORAS4_error_plus = OMET_ORAS4_mean + OMET_ORAS4_std
+OMET_ORAS4_error_minus = OMET_ORAS4_mean - OMET_ORAS4_std
+
+OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_series,axis=0)
+OMET_GLORYS2V3_error_plus = OMET_GLORYS2V3_mean + OMET_GLORYS2V3_std
+OMET_GLORYS2V3_error_minus = OMET_GLORYS2V3_mean - OMET_GLORYS2V3_std
 print '*******************************************************************'
 print '*************************** x-y plots *****************************'
 print '*******************************************************************'
 fig0 = plt.figure()
 plt.plot(latitude_ERAI,AMET_ERAI_mean,'b-',label='ERA-Interim')
+plt.fill_between(latitude_ERAI,AMET_ERAI_error_plus,AMET_ERAI_error_minus,alpha=0.3,edgecolor='lightskyblue', facecolor='lightskyblue')
 plt.plot(latitude_MERRA2,AMET_MERRA2_mean,'r-',label='MERRA2')
+plt.fill_between(latitude_MERRA2,AMET_MERRA2_error_plus,AMET_MERRA2_error_minus,alpha=0.3,edgecolor='tomato', facecolor='tomato')
 plt.plot(latitude_JRA55,AMET_JRA55_mean,'g-',label='JRA55')
+plt.fill_between(latitude_JRA55,AMET_JRA55_error_plus,AMET_JRA55_error_minus,alpha=0.3,edgecolor='lightgreen', facecolor='lightgreen')
 plt.plot(latitude_ORAS4,OMET_ORAS4_mean,'c-',label='ORAS4')
+plt.fill_between(latitude_ORAS4,OMET_ORAS4_error_plus,OMET_ORAS4_error_minus,alpha=0.3,edgecolor='aquamarine', facecolor='aquamarine')
 plt.plot(latitude_GLORYS2V3,OMET_GLORYS2V3_mean,'m-',label='GLORYS2V3')
+plt.fill_between(latitude_GLORYS2V3,OMET_GLORYS2V3_error_plus,OMET_GLORYS2V3_error_minus,alpha=0.3,edgecolor='plum', facecolor='plum')
 #plt.plot(latitude_AMET,AMET_mean + OMET_mean_interpolate,'g--',label='Total')
 plt.title('Meridional Energy Transport')
 plt.legend()
