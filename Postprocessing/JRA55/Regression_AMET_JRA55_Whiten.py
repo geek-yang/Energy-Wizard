@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (JRA55) with whitening
 Author          : Yang Liu
 Date            : 2018.01.09
-Last Update     : 2018.01.09
+Last Update     : 2018.01.10
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -79,19 +79,19 @@ AMET = dataset_AMET.variables['E'][:,:,lat_AMET]/1000 # from Tera Watt to Peta W
 year = dataset_AMET.variables['year'][:]
 # extract variables from 20N to 90 N
 # sea level pressure
-SLP = dataset_y.variables['msl'][:420,0:lat_y+1,:] # now to 2013
+SLP = dataset_y.variables['msl'][:444,0:lat_y+1,:] # now to 2013
 # sea surface temperature
-SST = dataset_y.variables['sst'][:420,0:lat_y+1,:]
+SST = dataset_y.variables['sst'][:444,0:lat_y+1,:]
 mask_SST = np.ma.getmaskarray(SST[0,:,:])
 # sea ice cover
-ci = dataset_y.variables['ci'][:420,0:lat_y+1,:]
+ci = dataset_y.variables['ci'][:444,0:lat_y+1,:]
 mask_ci = np.ma.getmaskarray(ci[0,:,:])
 # longitude
 lon = dataset_y.variables['longitude'][:]
 # latitude
 lat = dataset_y.variables['latitude'][0:lat_y+1]
 # time (number of months)
-time = dataset_y.variables['time'][:420]
+time = dataset_y.variables['time'][:444]
 
 print 'The type of SLP is', type(SLP)
 print 'The type of SST is', type(SST)
@@ -101,7 +101,7 @@ print '*******************************************************************'
 print '*********************** prepare variables *************************'
 print '*******************************************************************'
 # take the time series of E
-AMET_series = AMET.reshape(420)
+AMET_series = AMET.reshape(444)
 
 print '*******************************************************************'
 print '*************************** whitening *****************************'
@@ -144,7 +144,7 @@ for i in month_ind:
     AMET_white[:,i] = AMET[:,i] - AMET_seansonal_cycle[i]
 
 # take the time series of whitened AMET
-AMET_white_series = AMET_white.reshape(420)
+AMET_white_series = AMET_white.reshape(444)
 
 # Summer and winter only
 # summer refers to June(5), July(6), August(7)
@@ -184,13 +184,13 @@ print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
 # index and namelist of years for time series and running mean time series
-index = np.arange(1,421,1)
-index_year = np.arange(1979,2014,1)
+index = np.arange(1,445,1)
+index_year = np.arange(1979,2016,1)
 
 #index_running_mean = np.arange(1,457-window+1,1)
 #index_year_running_mean = np.arange(1979+window/12-1,2017,1)
 
-index_summer = np.arange(1,106,1) # 35 years * 12 months / 4 seasons
+index_summer = np.arange(1,112,1) # 37 years * 12 months / 4 seasons
 
 # plot the AMET after removing seasonal cycle
 fig1 = plt.figure()
@@ -200,7 +200,7 @@ plt.title('Atmospheric Meridional Energy Transport Anomaly at 60N (1979-2015)')
 #plt.legend()
 fig1.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 420, 36), index_year)
+plt.xticks(np.linspace(0, 444, 38), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -214,7 +214,7 @@ plt.title('Running Mean of AMET Anomalies at 60N with a window of %d months (197
 #plt.legend()
 fig0.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 420, 36), index_year)
+plt.xticks(np.linspace(0, 444, 38), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
@@ -229,7 +229,7 @@ plt.title('Running Mean of AMET at 60N with a window of %d months (1979-2015)' %
 #plt.legend()
 fig2.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 420, 36), index_year)
+plt.xticks(np.linspace(0, 444, 38), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
