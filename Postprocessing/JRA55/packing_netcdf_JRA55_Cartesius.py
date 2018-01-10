@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Packing netCDF files for the monthly output from Cartesius (JRA55)
 Author          : Yang Liu
 Date            : 2018.01.09
-Last Update     : 2018.01.09
+Last Update     : 2018.01.10
 Description     : The code aims to postprocess the output from the Cartesius
                   regarding the computation of atmospheric meridional energy
                   transport based on JRA55 output (atmosphere only run). The
@@ -46,7 +46,7 @@ datapath_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/JRA55/
 # starting time (year)
 start_year = 1979
 # Ending time, if only for 1 year, then it should be the same as starting year
-end_year = 2013
+end_year = 2015
 # specify output path for the netCDF4 file
 output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/JRA55/postprocessing'
 # benchmark datasets for basic dimensions
