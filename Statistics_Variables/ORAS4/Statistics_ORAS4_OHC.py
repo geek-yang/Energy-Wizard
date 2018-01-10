@@ -4,8 +4,8 @@ Copyright Netherlands eScience Center
 
 Function        : A statistical look into the temporal and spatial distribution of fields (ORAS4)
 Author          : Yang Liu
-Date            : 2018.1.4
-Last Update     : 2018.1.9
+Date            : 2018.01.04
+Last Update     : 2018.01.10
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -65,7 +65,17 @@ print os.path
 
 # calculate the time for the code execution
 start_time = tttt.time()# gz in [m2 / s2] = [ kg m2 / kg s2 ] = [J / kg]
-
+    OHC_globe_vert_0_500 = np.sum(OHC_globe[:,0:22,:,:],1)/1e+12 # the unit is changed to tera joule
+    OHC_atlantic_vert_0_500 = np.sum(OHC_atlantic[:,0:22,:,:],1)/1e+12 # the unit is changed to tera joule
+    # 500m to 1000m
+    OHC_globe_vert_500_1000 = np.sum(OHC_globe[:,22:26,:,:],1)/1e+12         # layer 26 is in between 800 - 1200
+    OHC_atlantic_vert_500_1000 = np.sum(OHC_atlantic[:,22:26,:,:],1)/1e+12
+    # 1000m to 2000m
+    OHC_globe_vert_1000_2000 = np.sum(OHC_globe[:,26:30,:,:],1)/1e+12
+    OHC_atlantic_vert_1000_2000 = np.sum(OHC_atlantic[:,26:30,:,:],1)/1e+12
+    # 2000 to bottom
+    OHC_globe_vert_2000_inf = np.sum(OHC_globe[:,30:,:,:],1)/1e+12
+    OHC_atlantic_vert_2000_inf = np.sum(OHC_atlantic[:,30:,:,:],1)/1e+12
 # Redirect all the console output to a file
 #sys.stdout = open('F:\DataBase\ORAS4\console.out','w')
 sys.stdout = open('/project/Reanalysis/ORAS4/Monthly/Model/console_OHC.out','w')
@@ -256,10 +266,6 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     # 2D
     gphit_wrap_var = data_wrap.createVariable('gphit',np.float32,('j','i'))
     glamt_wrap_var = data_wrap.createVariable('glamt',np.float32,('j','i'))
-    gphiu_wrap_var = data_wrap.createVariable('gphiu',np.float32,('j','i'))
-    glamu_wrap_var = data_wrap.createVariable('glamu',np.float32,('j','i'))
-    gphiv_wrap_var = data_wrap.createVariable('gphiv',np.float32,('j','i'))
-    glamv_wrap_var = data_wrap.createVariable('glamv',np.float32,('j','i'))
     # 4D
     OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('year','month','lev','j'))
     OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('year','month','lev','j'))
@@ -281,10 +287,6 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     lev_wrap_var.units = 'm'
     gphit_wrap_var.units = 'ORCA1_latitude_Tgrid'
     glamt_wrap_var.units = 'ORCA1_longitude_Tgrid'
-    gphiu_wrap_var.units = 'ORCA1_latitude_ugrid'
-    glamu_wrap_var.units = 'ORCA1_longitude_ugrid'
-    gphiv_wrap_var.units = 'ORCA1_latitude_vgrid'
-    glamv_wrap_var.units = 'ORCA1_longitude_vgrid'
 
     OHC_glo_zonal_wrap_var.units = 'tera joule'
     OHC_atl_zonal_wrap_var.units = 'tera joule'
@@ -304,11 +306,6 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     lev_wrap_var.long_name = 'depth'
     gphit_wrap_var.long_name = 'ORCA1 Tgrid latitude'
     glamt_wrap_var.long_name = 'ORCA1 Tgrid longitude'
-    gphiu_wrap_var.long_name = 'ORCA1 ugrid latitude'
-    glamu_wrap_var.long_name = 'ORCA1 ugrid longitude'
-    gphiv_wrap_var.long_name = 'ORCA1 vgrid latitude'
-    glamv_wrap_var.long_name = 'ORCA1 vgrid longitude'
-
 
     OHC_glo_zonal_wrap_var.long_name = 'Global Ocean Heat Content (zonal integral)'
     OHC_atl_zonal_wrap_var.long_name = 'Atlantic Ocean Heat Content (zonal integral)'
@@ -330,11 +327,6 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     lev_wrap_var[:] = nav_lev
     gphit_wrap_var[:] = nav_lat
     glamt_wrap_var[:] = nav_lon
-    gphiu_wrap_var[:] = gphiu
-    glamu_wrap_var[:] = glamu
-    gphiv_wrap_var[:] = gphiv
-    glamv_wrap_var[:] = glamv
-
 
     OHC_glo_zonal_wrap_var[:] = OHC_pool_glo_zonal
     OHC_atl_zonal_wrap_var[:] = OHC_pool_atl_zonal
