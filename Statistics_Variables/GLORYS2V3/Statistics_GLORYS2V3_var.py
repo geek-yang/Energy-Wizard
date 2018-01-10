@@ -231,7 +231,7 @@ def field_statistics(theta_key, uv_key):
     v_atlantic_zonal_weight = np.zeros((level,jj,ji),dtype=float)
 
     for i in np.arange(level):
-        theta_globe_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[:,i,:,:] * tmask[i,:,:]
+        theta_globe_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[i,:,:] * tmask[i,:,:]
         theta_atlantic_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[i,:,:] * tmask[i,:,:] * tmaskatl_3D[i,:,:]
         u_globe_zonal_weight[i,:,:] = u[i,:,:].filled() * e1u_3D[i,:,:] * umask[i,:,:]
         u_atlantic_zonal_weight[i,:,:] = u[i,:,:].filled() * e1u_3D[i,:,:] * umask[i,:,:] * tmaskatl_3D[i,:,:]
