@@ -3,8 +3,8 @@
 Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (GLORYS2V3)
 Author          : Yang Liu
-Date            : 2018.01.06
-Last Update     : 2018.01.10
+Date            : 2018.1.6
+Last Update     : 2018.1.9
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -72,7 +72,7 @@ print os.path
 start_time = tttt.time()
 
 # Redirect all the console output to a file
-sys.stdout = open('/project/Reanalysis/GLORYS2V3/monthly/console_OHC.out','w')
+sys.stdout = open('/project/Reanalysis/GLORYS2V3/monthly/console_statistics.out','w')
 
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 #logging.basicConfig(filename = 'F:\DataBase\ORAS4\history.log', filemode = 'w',level = logging.DEBUG,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -178,6 +178,50 @@ def var_coordinate(datapath):
 
     return nav_lat, nav_lon, deptht, tmask, umask, vmask, tmaskatl, e1t, e2t, e1u, e2u, e1v, e2v, gphiu, glamu, gphiv, glamv, mbathy, e3t_0, e3t_ps, hdept
 
+
+def mass_transport(uv_key,e1v):
+    '''
+    This function is used to calculate the mass transport.
+    The unit is Sv (1E+6 m3/s)
+    '''
+    print "Compute the mass transport for globle and Atlantic!"
+    logging.info('Compute the mass transport for globle and Atlantic!')
+    #dominant equation for stream function
+    # psi = e1v(m) * rho(kg/m3) * v(m/s) * dz(m) = (kg/s)
+    # extract variables
+    #u = uv_key.variables['vozocrtx'][0,:,:,:]
+    v = uv_key.variables['vomecrty'][0,:,:,:]
+    # set the filled value to be 0
+    #np.ma.set_fill_value(u,0)
+    np.ma.set_fill_value(v,0)
+    # define the stream function psi
+    psi_globe = np.zeros((level,jj,ji),dtype=float)
+    psi_atlantic = np.zeros((level,jj,ji),dtype=float)
+    # expand the grid size matrix e1v to avoid more loops
+    e1v_3D = np.repeat(e1v[np.newaxis,:,:],level,0)
+    for i in np.arange(level):
+        psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] -\
+                           e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+        # avoid the filling value during summation (the default filling value is quite large)
+        #psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
+        # Mass transport at Atlantic
+    for i in np.arange(level):
+        psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] -\
+                              e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+        # avoid the filling value during summation
+        #psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
+    # take the zonal integral
+    psi_globe_zonal_int = np.sum(psi_globe,2)/1e+6 # the unit is changed to Sv
+    psi_atlantic_zonal_int = np.sum(psi_atlantic,2)/1e+6 # the unit is changed to Sv
+    # take the vertical integral
+    psi_globe_vert_int = np.sum(psi_globe,0)/1e+6 # the unit is changed to Sv
+    psi_atlantic_vert_int = np.sum(psi_atlantic,0)/1e+6 # the unit is changed to Sv
+
+    print "Compute the mass transport for globle and Atlantic successfully!"
+    logging.info('Compute the mass transport for globle and Atlantic successfully!')
+
+    return psi_globe_zonal_int, psi_atlantic_zonal_int, psi_globe_vert_int, psi_atlantic_vert_int
+
 def ocean_heat_content(theta_key):
     '''
     This function is used to compute the ocean heat content.
@@ -193,6 +237,10 @@ def ocean_heat_content(theta_key):
     # calculate heat flux at each grid point
     OHC_globe = np.zeros((level,jj,ji),dtype=float)
     OHC_atlantic = np.zeros((level,jj,ji),dtype=float)
+    # expand the grid size matrix e1v to avoid more loops
+    #e1t_3D = np.repeat(e1t[np.newaxis,:,:],level,0)
+    #e2t_3D = np.repeat(e2t[np.newaxis,:,:],level,0)
+    #tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
     for i in np.arange(level):
         OHC_globe[i,:,:] = constant['rho'] * constant['cp'] * theta[i,:,:].filled() * e1t * e2t * e3t_0[i] * tmask[i,:,:] -\
                            constant['rho'] * constant['cp'] * theta[i,:,:].filled() * e1t * e2t * e3t_adjust[i,:,:] * tmask[i,:,:]
@@ -209,7 +257,7 @@ def ocean_heat_content(theta_key):
     OHC_globe_vert_0_500 = np.sum(OHC_globe[0:39,:,:],0)/1e+12 # the unit is changed to tera joule
     OHC_atlantic_vert_0_500 = np.sum(OHC_atlantic[0:39,:,:],0)/1e+12 # the unit is changed to tera joule
     # 500m to 1000m
-    OHC_globe_vert_500_1000 = np.sum(OHC_globe[39:46,:,:],0)/1e+12
+    OHC_globe_vert_500_1000 = np.sum(OHC_globe[39:46,:,:],0)/1e+12         # layer 26 is in between 800 - 1200
     OHC_atlantic_vert_500_1000 = np.sum(OHC_atlantic[39:46,:,:],0)/1e+12
     # 1000m to 2000m
     OHC_globe_vert_1000_2000 = np.sum(OHC_globe[46:54,:,:],0)/1e+12
@@ -225,10 +273,85 @@ def ocean_heat_content(theta_key):
            OHC_globe_vert_0_500, OHC_atlantic_vert_0_500, OHC_globe_vert_500_1000, OHC_atlantic_vert_500_1000,\
            OHC_globe_vert_1000_2000, OHC_atlantic_vert_1000_2000, OHC_globe_vert_2000_inf, OHC_atlantic_vert_2000_inf
 
-def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_vert, OHC_pool_atl_vert,\
+def field_statistics(theta_key, uv_key):
+    # extract variables
+    print "Start extracting variables for the quantification of meridional energy transport."
+    theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
+    u = uv_key.variables['uo'][:]
+    v = uv_key.variables['vo'][:]
+    print 'Extracting variables successfully!'
+    # set the filled value to be 0
+    np.ma.set_fill_value(theta,0)
+    np.ma.set_fill_value(u,0)
+    np.ma.set_fill_value(v,0)
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+    # Due to the nature of the land-sea mask, when we take the mean value we can not
+    # use the np.mean to calculate it from the original field, as there are so many
+    # empty points. Instead, we must calculate the sum of each variable and then
+    # devide the sum of mask.
+    # For the mean, we also have to take the cell scale (length, width, height) into
+    # consider
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+    # increase the dimension of mask array
+    tmaskatl_3D = np.repeat(tmaskatl[np.newaxis,:,:],level,0)
+    # expand the grid size matrix e1v to avoid more loops
+    e1t_3D = np.repeat(e1t[np.newaxis,:,:],level,0)
+    e1u_3D = np.repeat(e1u[np.newaxis,:,:],level,0)
+    e1v_3D = np.repeat(e1v[np.newaxis,:,:],level,0)
+
+    # vertical mean
+    theta_globe_vert_weight = np.zeros((level,jj,ji),dtype=float)
+    u_globe_vert_weight = np.zeros((level,jj,ji),dtype=float)
+    v_globe_vert_weight = np.zeros((level,jj,ji),dtype=float)
+
+    for i in np.arange(level):
+        theta_globe_vert_weight[i,:,:] = theta[i,:,:].filled() * e3t_0[i] * tmask[i,:,:] -\
+                                         theta[i,:,:].filled() * e3t_adjust[i,:,:] * tmask[i,:,:]
+        u_globe_vert_weight[i,:,:] = u[i,:,:].filled() * e3t_0[i] * umask[i,:,:] -\
+                                     u[i,:,:].filled() * e3t_adjust[i,:,:] * umask[i,:,:]
+        v_globe_vert_weight[i,:,:] = v[i,:,:].filled() * e3t_0[i] * vmask[i,:,:] -\
+                                     v[i,:,:].filled() * e3t_adjust[i,:,:] * vmask[i,:,:]
+
+    theta_globe_vert_mean = np.sum(theta_globe_vert_weight,0) / hdept
+    u_globe_vert_mean = np.sum(u_globe_vert_weight,0) / hdept
+    v_globe_vert_mean = np.sum(v_globe_vert_weight,0) / hdept
+
+    # zonal mean
+    # take the sum of variables
+    theta_globe_zonal_weight = np.zeros((level,jj,ji),dtype=float)
+    u_globe_zonal_weight = np.zeros((level,jj,ji),dtype=float)
+    v_globe_zonal_weight = np.zeros((level,jj,ji),dtype=float)
+    theta_atlantic_zonal_weight = np.zeros((level,jj,ji),dtype=float)
+    u_atlantic_zonal_weight = np.zeros((level,jj,ji),dtype=float)
+    v_atlantic_zonal_weight = np.zeros((level,jj,ji),dtype=float)
+
+    for i in np.arange(level):
+        theta_globe_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[:,i,:,:] * tmask[i,:,:]
+        theta_atlantic_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[i,:,:] * tmask[i,:,:] * tmaskatl_3D[i,:,:]
+        u_globe_zonal_weight[i,:,:] = u[i,:,:].filled() * e1u_3D[i,:,:] * umask[i,:,:]
+        u_atlantic_zonal_weight[i,:,:] = u[i,:,:].filled() * e1u_3D[i,:,:] * umask[i,:,:] * tmaskatl_3D[i,:,:]
+        v_globe_zonal_weight[i,:,:] = v[i,:,:].filled() * e1v_3D[i,:,:] * vmask[i,:,:]
+        v_atlantic_zonal_weight[i,:,:] = v[i,:,:].filled() * e1v_3D[i,:,:] * vmask[i,:,:] * tmaskatl_3D[i,:,:]
+
+    # take the zonal mean
+    theta_globe_zonal_mean = np.sum(theta_globe_zonal_weight,2) / np.sum(e1t_3D * tmask,2)
+    theta_atlantic_zonal_mean = np.sum(theta_atlantic_zonal_weight,2) / np.sum(e1t_3D * tmask * tmaskatl_3D,2)
+    u_globe_zonal_mean = np.sum(u_globe_zonal_weight,2) / np.sum(e1u_3D * umask,2)
+    u_atlantic_zonal_mean = np.sum(u_atlantic_zonal_weight,2) / np.sum(e1u_3D * umask * tmaskatl_3D,2)
+    v_globe_zonal_mean = np.sum(v_globe_zonal_weight,2) / np.sum(e1v_3D * vmask,2)
+    v_atlantic_zonal_mean = np.sum(v_atlantic_zonal_weight,2) / np.sum(e1v_3D * vmask * tmaskatl_3D,2)
+
+    return theta_globe_vert_mean, u_globe_vert_mean, v_globe_vert_mean,\
+           theta_globe_zonal_mean, theta_atlantic_zonal_mean, u_globe_zonal_mean,\
+           u_atlantic_zonal_mean, v_globe_zonal_mean, v_atlantic_zonal_mean
+
+def create_netcdf_point (psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_vert, psi_pool_atl_vert,\
+                        OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_vert, OHC_pool_atl_vert,\
                         OHC_pool_glo_vert_0_500, OHC_pool_atl_vert_0_500, OHC_pool_glo_vert_500_1000,\
                         OHC_pool_atl_vert_500_1000, OHC_pool_glo_vert_1000_2000, OHC_pool_atl_vert_1000_2000,\
-                        OHC_pool_glo_vert_2000_inf, OHC_pool_atl_vert_2000_inf,output_path):
+                        OHC_pool_glo_vert_2000_inf, OHC_pool_atl_vert_2000_inf, theta_pool_glo_vert,\
+                        u_pool_glo_vert, v_pool_glo_vert, theta_pool_glo_zonal, theta_pool_atl_zonal,\
+                        u_pool_glo_zonal, u_pool_atl_zonal, v_pool_glo_zonal, v_pool_atl_zonal ,output_path):
     print '*******************************************************************'
     print '*********************** create netcdf file ************************'
     print '*********************   statistics on ORCA   **********************'
@@ -252,10 +375,24 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     # 2D
     gphit_wrap_var = data_wrap.createVariable('gphit',np.float32,('j','i'))
     glamt_wrap_var = data_wrap.createVariable('glamt',np.float32,('j','i'))
+    gphiu_wrap_var = data_wrap.createVariable('gphiu',np.float32,('j','i'))
+    glamu_wrap_var = data_wrap.createVariable('glamu',np.float32,('j','i'))
+    gphiv_wrap_var = data_wrap.createVariable('gphiv',np.float32,('j','i'))
+    glamv_wrap_var = data_wrap.createVariable('glamv',np.float32,('j','i'))
     # 4D
+    psi_glo_zonal_wrap_var = data_wrap.createVariable('psi_glo_zonal',np.float64,('year','month','lev','j'))
+    psi_atl_zonal_wrap_var = data_wrap.createVariable('psi_atl_zonal',np.float64,('year','month','lev','j'))
     OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('year','month','lev','j'))
     OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('year','month','lev','j'))
+    theta_glo_zonal_wrap_var = data_wrap.createVariable('theta_glo_zonal',np.float64,('year','month','lev','j'))
+    theta_atl_zonal_wrap_var = data_wrap.createVariable('theta_atl_zonal',np.float64,('year','month','lev','j'))
+    u_glo_zonal_wrap_var = data_wrap.createVariable('u_glo_zonal',np.float64,('year','month','lev','j'))
+    u_atl_zonal_wrap_var = data_wrap.createVariable('u_atl_zonal',np.float64,('year','month','lev','j'))
+    v_glo_zonal_wrap_var = data_wrap.createVariable('v_glo_zonal',np.float64,('year','month','lev','j'))
+    v_atl_zonal_wrap_var = data_wrap.createVariable('v_atl_zonal',np.float64,('year','month','lev','j'))
 
+    psi_glo_vert_wrap_var = data_wrap.createVariable('psi_glo_vert',np.float64,('year','month','j','i'))
+    psi_atl_vert_wrap_var = data_wrap.createVariable('psi_atl_vert',np.float64,('year','month','j','i'))
     OHC_glo_vert_wrap_var = data_wrap.createVariable('OHC_glo_vert',np.float64,('year','month','j','i'))
     OHC_atl_vert_wrap_var = data_wrap.createVariable('OHC_atl_vert',np.float64,('year','month','j','i'))
     OHC_glo_vert_0_500_wrap_var = data_wrap.createVariable('OHC_glo_vert_0_500',np.float64,('year','month','j','i'))
@@ -266,16 +403,34 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     OHC_atl_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_atl_vert_1000_2000',np.float64,('year','month','j','i'))
     OHC_glo_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_glo_vert_2000_inf',np.float64,('year','month','j','i'))
     OHC_atl_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_atl_vert_2000_inf',np.float64,('year','month','j','i'))
+    theta_glo_vert_wrap_var = data_wrap.createVariable('theta_glo_vert',np.float64,('year','month','j','i'))
+    u_glo_vert_wrap_var = data_wrap.createVariable('u_glo_vert',np.float64,('year','month','j','i'))
+    v_glo_vert_wrap_var = data_wrap.createVariable('v_glo_vert',np.float64,('year','month','j','i'))
+
     # global attributes
-    data_wrap.description = 'Monthly mean OHC on ORCA grid'
+    data_wrap.description = 'Monthly mean statistics of fields on ORCA grid'
     # variable attributes
     lev_wrap_var.units = 'm'
     gphit_wrap_var.units = 'ORCA025_latitude_Tgrid'
     glamt_wrap_var.units = 'ORCA025_longitude_Tgrid'
+    gphiu_wrap_var.units = 'ORCA025_latitude_ugrid'
+    glamu_wrap_var.units = 'ORCA025_longitude_ugrid'
+    gphiv_wrap_var.units = 'ORCA025_latitude_vgrid'
+    glamv_wrap_var.units = 'ORCA025_longitude_vgrid'
 
+    psi_glo_zonal_wrap_var.units = 'Sv'
+    psi_atl_zonal_wrap_var.units = 'Sv'
     OHC_glo_zonal_wrap_var.units = 'tera joule'
     OHC_atl_zonal_wrap_var.units = 'tera joule'
+    theta_glo_zonal_wrap_var.units = 'Celsius'
+    theta_atl_zonal_wrap_var.units = 'Celsius'
+    u_glo_zonal_wrap_var.units = 'm/s'
+    u_atl_zonal_wrap_var.units = 'm/s'
+    v_glo_zonal_wrap_var.units = 'm/s'
+    v_atl_zonal_wrap_var.units = 'm/s'
 
+    psi_glo_vert_wrap_var.units = 'Sv'
+    psi_atl_vert_wrap_var.units = 'Sv'
     OHC_glo_vert_wrap_var.units = 'tera joule'
     OHC_atl_vert_wrap_var.units = 'tera joule'
     OHC_glo_vert_0_500_wrap_var.units = 'tera joule'
@@ -286,15 +441,32 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     OHC_atl_vert_1000_2000_wrap_var.units = 'tera joule'
     OHC_glo_vert_2000_inf_wrap_var.units = 'tera joule'
     OHC_atl_vert_2000_inf_wrap_var.units = 'tera joule'
+    theta_glo_vert_wrap_var.units = 'Celsius'
+    u_glo_vert_wrap_var.units = 'm/s'
+    v_glo_vert_wrap_var.units = 'm/s'
 
     lat_wrap_var.long_name = 'auxillary latitude'
     lev_wrap_var.long_name = 'depth'
     gphit_wrap_var.long_name = 'ORCA1 Tgrid latitude'
     glamt_wrap_var.long_name = 'ORCA1 Tgrid longitude'
+    gphiu_wrap_var.long_name = 'ORCA1 ugrid latitude'
+    glamu_wrap_var.long_name = 'ORCA1 ugrid longitude'
+    gphiv_wrap_var.long_name = 'ORCA1 vgrid latitude'
+    glamv_wrap_var.long_name = 'ORCA1 vgrid longitude'
 
+    psi_glo_zonal_wrap_var.long_name = 'Global Meridional Mass Transport (zonal integral)'
+    psi_atl_zonal_wrap_var.long_name = 'Atlantic Meridional Mass Transport (zonal integral)'
     OHC_glo_zonal_wrap_var.long_name = 'Global Ocean Heat Content (zonal integral)'
     OHC_atl_zonal_wrap_var.long_name = 'Atlantic Ocean Heat Content (zonal integral)'
+    theta_glo_zonal_wrap_var.long_name = 'Global Potential Temperature (zonal mean)'
+    theta_atl_zonal_wrap_var.long_name = 'Atlantic Potential Temperature (zonal mean)'
+    u_glo_zonal_wrap_var.long_name = 'Global Zonal Velocity (zonal mean)'
+    u_atl_zonal_wrap_var.long_name = 'Atlantic Zonal Velocity (zonal mean)'
+    v_glo_zonal_wrap_var.long_name = 'Global Meridional Velocity (zonal mean)'
+    v_atl_zonal_wrap_var.long_name = 'Atlantic Meridional Velocity (zonal mean)'
 
+    psi_glo_vert_wrap_var.long_name = 'Global Meridional Mass Transport (vertical integral)'
+    psi_atl_vert_wrap_var.long_name = 'Atlantic Meridional Mass Transport (vertical integral)'
     OHC_glo_vert_wrap_var.long_name = 'Global Ocean Heat Content (vertical integral)'
     OHC_atl_vert_wrap_var.long_name = 'Atlantic Ocean Heat Content (vertical integral)'
     OHC_glo_vert_0_500_wrap_var.long_name = 'Global Ocean Heat Content from surface to 500 m (vertical integral)'
@@ -305,6 +477,10 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     OHC_atl_vert_1000_2000_wrap_var.long_name = 'Atlantic Ocean Heat Content from 1000 m to 2000 m (vertical integral)'
     OHC_glo_vert_2000_inf_wrap_var.long_name = 'Global Ocean Heat Content from 2000 m to bottom (vertical integral)'
     OHC_atl_vert_2000_inf_wrap_var.long_name = 'Atlantic Ocean Heat Content from 2000 m to bottom (vertical integral)'
+    theta_glo_vert_wrap_var.long_name = 'Global Potential Temperature (vertical mean)'
+    u_glo_vert_wrap_var.long_name = 'Global Zonal Velocity (vertical mean)'
+    v_glo_vert_wrap_var.long_name = 'Global Meridional Velocity (vertical mean)'
+
     # writing data
     year_wrap_var[:] = period
     month_wrap_var[:] = np.arange(1,13,1)
@@ -312,10 +488,24 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     lev_wrap_var[:] = deptht
     gphit_wrap_var[:] = nav_lat
     glamt_wrap_var[:] = nav_lon
+    gphiu_wrap_var[:] = gphiu
+    glamu_wrap_var[:] = glamu
+    gphiv_wrap_var[:] = gphiv
+    glamv_wrap_var[:] = glamv
 
+    psi_glo_zonal_wrap_var[:] = psi_pool_glo_zonal
+    psi_atl_zonal_wrap_var[:] = psi_pool_atl_zonal
     OHC_glo_zonal_wrap_var[:] = OHC_pool_glo_zonal
     OHC_atl_zonal_wrap_var[:] = OHC_pool_atl_zonal
+    theta_glo_zonal_wrap_var[:] = theta_pool_glo_zonal
+    theta_atl_zonal_wrap_var[:] = theta_pool_atl_zonal
+    u_glo_zonal_wrap_var[:] = u_pool_glo_zonal
+    u_atl_zonal_wrap_var[:] = u_pool_atl_zonal
+    v_glo_zonal_wrap_var[:] = v_pool_glo_zonal
+    v_atl_zonal_wrap_var[:] = v_pool_atl_zonal
 
+    psi_glo_vert_wrap_var[:] = psi_pool_glo_vert
+    psi_atl_vert_wrap_var[:] = psi_pool_atl_vert
     OHC_glo_vert_wrap_var[:] = OHC_pool_glo_vert
     OHC_atl_vert_wrap_var[:] = OHC_pool_atl_vert
     OHC_glo_vert_0_500_wrap_var[:] = OHC_pool_glo_vert_0_500
@@ -326,10 +516,13 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     OHC_atl_vert_1000_2000_wrap_var[:] = OHC_pool_atl_vert_1000_2000
     OHC_glo_vert_2000_inf_wrap_var[:] = OHC_pool_glo_vert_2000_inf
     OHC_atl_vert_2000_inf_wrap_var[:] = OHC_pool_atl_vert_2000_inf
+    theta_glo_vert_wrap_var[:] = theta_pool_glo_vert
+    u_glo_vert_wrap_var[:] = u_pool_glo_vert
+    v_glo_vert_wrap_var[:] = v_pool_glo_vert
     # close the file
     data_wrap.close()
     print "Create netcdf file successfully"
-    logging.info("The generation of netcdf files for the OHC in GLORYS2V3 on each grid point is complete!!")
+    logging.info("The generation of netcdf files for the statisticas of fields in GLORYS2V3 on each grid point is complete!!")
 
 if __name__=="__main__":
     print '*******************************************************************'
@@ -379,6 +572,25 @@ if __name__=="__main__":
     OHC_pool_atl_vert_1000_2000 = np.zeros((len(period),12,jj,ji),dtype = float)
     OHC_pool_glo_vert_2000_inf = np.zeros((len(period),12,jj,ji),dtype = float)
     OHC_pool_atl_vert_2000_inf = np.zeros((len(period),12,jj,ji),dtype = float)
+    # create a data pool to save the mass transport for each year and month
+    # zonal integral (vertical profile)
+    psi_pool_glo_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    psi_pool_atl_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    # vertical integral (horizontal profile)
+    psi_pool_glo_vert = np.zeros((len(period),12,jj,ji),dtype = float)
+    psi_pool_atl_vert = np.zeros((len(period),12,jj,ji),dtype = float)
+    # create a data pool to save the mean of fields for each year and month
+    # zonal mean (vertical profile)
+    theta_pool_glo_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    theta_pool_atl_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    u_pool_glo_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    u_pool_atl_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    v_pool_glo_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    v_pool_atl_zonal = np.zeros((len(period),12,level,jj),dtype = float)
+    # vertical mean (horizontal profile)
+    theta_pool_glo_vert = np.zeros((len(period),12,jj,ji),dtype = float)
+    u_pool_glo_vert = np.zeros((len(period),12,jj,ji),dtype = float)
+    v_pool_glo_vert = np.zeros((len(period),12,jj,ji),dtype = float)
     # loop for calculation
     for i in period:
         for j in index_month:
@@ -387,6 +599,16 @@ if __name__=="__main__":
             ####################################################################
             # get the key of each variable
             theta_key, uv_key = var_key(datapath, i, j)
+            ####################################################################
+            #########      Calculate meridional mass transport        ##########
+            ####################################################################
+            # calculate the mass transport
+            psi_globe_zonal, psi_atlantic_zonal, psi_globe_vert, psi_atlantic_vert = mass_transport(uv_key,e1v)
+            # save output to the pool
+            psi_pool_glo_zonal[i-1993,j,:,:] = psi_globe_zonal
+            psi_pool_atl_zonal[i-1993,j,:,:] = psi_atlantic_zonal
+            psi_pool_glo_vert[i-1993,j,:,:] = psi_globe_vert
+            psi_pool_atl_vert[i-1993,j,:,:] = psi_atlantic_vert
             ####################################################################
             ##############      Calculate ocean heat content      ##############
             ####################################################################
@@ -409,11 +631,31 @@ if __name__=="__main__":
             OHC_pool_atl_vert_1000_2000[i-1993,j,:,:] = OHC_atl_vert_1000_2000
             OHC_pool_glo_vert_2000_inf[i-1993,j,:,:] = OHC_glo_vert_2000_inf
             OHC_pool_atl_vert_2000_inf[i-1993,j,:,:] = OHC_atl_vert_2000_inf
+            ####################################################################
+            ##############    Calculate the statistical matrix    ##############
+            ####################################################################
+            # statistical matrix
+            # take zonal and vertical mean
+            theta_glo_vert, u_glo_vert, v_glo_vert, theta_glo_zonal, theta_atl_zonal,\
+            u_glo_zonal, u_atl_zonal, v_glo_zonal, v_atl_zonal= field_statistics(theta_key, uv_key)
+            # save output to the pool
+            theta_pool_glo_vert[i-1993,j,:,:] = theta_glo_vert
+            u_pool_glo_vert[i-1993,j,:,:] = u_glo_vert
+            v_pool_glo_vert[i-1993,j,:,:] = v_glo_vert
+            theta_pool_glo_zonal[i-1993,j,:,:] = theta_glo_zonal
+            theta_pool_atl_zonal[i-1993,j,:,:] = theta_atl_zonal
+            u_pool_glo_zonal[i-1993,j,:,:] = u_glo_zonal
+            u_pool_atl_zonal[i-1993,j,:,:] = u_atl_zonal
+            v_pool_glo_zonal[i-1993,j,:,:] = v_glo_zonal
+            v_pool_atl_zonal[i-1993,j,:,:] = v_atl_zonal
     # create NetCDF file and save the output
-    create_netcdf_point(OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_vert, OHC_pool_atl_vert,\
+    create_netcdf_point(psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_vert, psi_pool_atl_vert,\
+                        OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_vert, OHC_pool_atl_vert,\
                         OHC_pool_glo_vert_0_500, OHC_pool_atl_vert_0_500, OHC_pool_glo_vert_500_1000,\
                         OHC_pool_atl_vert_500_1000, OHC_pool_glo_vert_1000_2000, OHC_pool_atl_vert_1000_2000,\
-                        OHC_pool_glo_vert_2000_inf, OHC_pool_atl_vert_2000_inf, output_path)
+                        OHC_pool_glo_vert_2000_inf, OHC_pool_atl_vert_2000_inf, theta_pool_glo_vert,\
+                        u_pool_glo_vert, v_pool_glo_vert, theta_pool_glo_zonal, theta_pool_atl_zonal,\
+                        u_pool_glo_zonal, u_pool_atl_zonal, v_pool_glo_zonal, v_pool_atl_zonal, output_path)
 
     print 'Computation of statistical matrix on ORCA grid for GLORYS2V3 is complete!!!'
     print 'The output is in sleep, safe and sound!!!'
