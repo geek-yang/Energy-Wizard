@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (GLORYS2V3)
 Author          : Yang Liu
 Date            : 2018.1.6
-Last Update     : 2018.1.9
+Last Update     : 2018.1.10
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -276,9 +276,9 @@ def ocean_heat_content(theta_key):
 def field_statistics(theta_key, uv_key):
     # extract variables
     print "Start extracting variables for the quantification of meridional energy transport."
-    theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
-    u = u_key.variables['uo'][:]
-    v = v_key.variables['vo'][:]
+    theta = theta_key.variables['votemper'][:] # the unit of theta is Celsius!
+    u = uv_key.variables['vozocrtx'][:]
+    v = uv_key.variables['vomecrty'][:]
     print 'Extracting variables successfully!'
     # set the filled value to be 0
     np.ma.set_fill_value(theta,0)

@@ -72,11 +72,11 @@ print os.path
 start_time = tttt.time()
 
 # Redirect all the console output to a file
-sys.stdout = open('/project/Reanalysis/GLORYS2V3/monthly/console_statistics.out','w')
+sys.stdout = open('/project/Reanalysis/GLORYS2V3/monthly/console_var.out','w')
 
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 #logging.basicConfig(filename = 'F:\DataBase\ORAS4\history.log', filemode = 'w',level = logging.DEBUG,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.basicConfig(filename = '/project/Reanalysis/GLORYS2V3/monthly/history_statistics.log',
+logging.basicConfig(filename = '/project/Reanalysis/GLORYS2V3/monthly/history_var.log',
                     filemode = 'w', level = logging.DEBUG,
                     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -181,9 +181,9 @@ def var_coordinate(datapath):
 def field_statistics(theta_key, uv_key):
     # extract variables
     print "Start extracting variables for the quantification of meridional energy transport."
-    theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
-    u = uv_key.variables['uo'][:]
-    v = uv_key.variables['vo'][:]
+    theta = theta_key.variables['votemper'][0,:,:,:] # the unit of theta is Celsius!
+    u = uv_key.variables['vozocrtx'][0,:,:,:]
+    v = uv_key.variables['vomecrty'][0,:,:,:]
     print 'Extracting variables successfully!'
     # set the filled value to be 0
     np.ma.set_fill_value(theta,0)
@@ -231,7 +231,7 @@ def field_statistics(theta_key, uv_key):
     v_atlantic_zonal_weight = np.zeros((level,jj,ji),dtype=float)
 
     for i in np.arange(level):
-        theta_globe_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[:,i,:,:] * tmask[i,:,:]
+        theta_globe_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[i,:,:] * tmask[i,:,:]
         theta_atlantic_zonal_weight[i,:,:] = theta[i,:,:].filled() * e1t_3D[i,:,:] * tmask[i,:,:] * tmaskatl_3D[i,:,:]
         u_globe_zonal_weight[i,:,:] = u[i,:,:].filled() * e1u_3D[i,:,:] * umask[i,:,:]
         u_atlantic_zonal_weight[i,:,:] = u[i,:,:].filled() * e1u_3D[i,:,:] * umask[i,:,:] * tmaskatl_3D[i,:,:]
@@ -259,7 +259,7 @@ def create_netcdf_point (theta_pool_glo_vert, u_pool_glo_vert, v_pool_glo_vert, 
     logging.info("Start creating netcdf file for the statistics of fields at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'GLORYS2V3_model_monthly_orca025_statistics_point.nc' ,'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path + os.sep + 'GLORYS2V3_model_monthly_orca025_var_point.nc' ,'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',12)
