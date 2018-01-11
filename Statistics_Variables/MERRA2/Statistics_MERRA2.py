@@ -130,7 +130,7 @@ start_year = 1980
 end_year = 2016
 # specify output path for the netCDF4 file
 #output_path = 'F:\DataBase\ERA_Interim\Subdaily'
-output_path = '/projects/0/blueactn/reanalysis/MERRA2/output/statistics'
+output_path = '/home/lwc16308/reanalysis/MERRA2/output/statistics'
 # benchmark datasets for basic dimensions
 benchmark_path = '/projects/0/blueactn/reanalysis/MERRA2/subdaily/merra1980/MERRA2_100.inst3_3d_asm_Nv.19801221.SUB.nc4'
 benchmark = Dataset(benchmark_path)
@@ -141,9 +141,9 @@ benchmark = Dataset(benchmark_path)
 start_time = tttt.time()
 
 # Redirect all the console output to a file
-sys.stdout = open('/projects/0/blueactn/reanalysis/MERRA2/stdout/console_statistics.out','w')
+sys.stdout = open('/home/lwc16308/reanalysis/MERRA2/stdout/console_statistics.out','w')
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
-logging.basicConfig(filename = '/projects/0/blueactn/reanalysis/MERRA2/log/history_statistics.log',
+logging.basicConfig(filename = '/home/lwc16308/reanalysis/MERRA2/log/history_statistics.log',
                     filemode = 'w', level = logging.DEBUG,
                     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ####################################################################################
