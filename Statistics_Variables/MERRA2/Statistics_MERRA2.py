@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (MERRA2)
 Author          : Yang Liu
 Date            : 2018.01.10
-Last Update     : 2018.01.11
+Last Update     : 2018.01.12
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -120,14 +120,17 @@ p_level_interpolate = np.array([100, 200, 300, 500, 700, 1000, 2000, 3000, 5000,
                                 85000, 87500, 90000, 92500, 95000, 97500, 100000],dtype = float)
 
 ################################   Input zone  ######################################
+#get input from shell
+# this aims for running serial program with one node on Cartesius
+line_in = sys.stdin.readline()
 # specify data path
 #datapath = 'F:\DataBase\ERA_Interim\Subdaily'
 datapath = '/projects/0/blueactn/reanalysis/MERRA2/subdaily'
 # time of the data, which concerns with the name of input
 # starting time (year)
-start_year = 1980
+start_year = int(line_in)
 # Ending time, if only for 1 year, then it should be the same as starting year
-end_year = 2016
+end_year = int(line_in)
 # specify output path for the netCDF4 file
 #output_path = 'F:\DataBase\ERA_Interim\Subdaily'
 output_path = '/home/lwc16308/reanalysis/MERRA2/output/statistics'
@@ -317,11 +320,11 @@ def create_netcdf_point(T_vert_mean_pool, u_vert_mean_pool, v_vert_mean_pool, q_
     lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
     lev_wrap_dim = data_wrap.createDimension('level',Dim_level_interpolate)
     # create coordinate variables for 3-dimensions
-    year_warp_var = data_wrap.createVariable('year',np.int32,('year',))
-    month_warp_var = data_wrap.createVariable('month',np.int32,('month',))
-    lat_warp_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
-    lon_warp_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
-    lev_warp_var = data_wrap.createVariable('level',np.int32,('level',))
+    year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
+    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
+    lev_wrap_var = data_wrap.createVariable('level',np.int32,('level',))
     # create the 4d variable
     # vertical mean
     T_vert_wrap_var = data_wrap.createVariable('T_vert_mean',np.float64,('year','month','latitude','longitude'))
@@ -338,9 +341,9 @@ def create_netcdf_point(T_vert_mean_pool, u_vert_mean_pool, v_vert_mean_pool, q_
     # global attributes
     data_wrap.description = 'Monthly mean statistics of fields from MERRA2 subdaily dataset'
     # variable attributes
-    lat_warp_var.units = 'degree_north'
-    lon_warp_var.units = 'degree_east'
-    lev_warp_var.units = 'degree_east'
+    lat_wrap_var.units = 'degree_north'
+    lon_wrap_var.units = 'degree_east'
+    lev_wrap_var.units = 'hPa'
 
     T_vert_wrap_var.units = 'Kelvin'
     u_vert_wrap_var.units = 'm/s'
@@ -354,23 +357,23 @@ def create_netcdf_point(T_vert_mean_pool, u_vert_mean_pool, v_vert_mean_pool, q_
     q_zonal_wrap_var.units = 'kg/kg'
     gz_zonal_wrap_var.units = 'm2/s2'
 
-    T_vert_wrap_var.long_name = 'temperature'
-    u_vert_wrap_var.long_name = 'zonal velocity'
-    v_vert_wrap_var.long_name = 'meridional velocity'
-    q_vert_wrap_var.long_name = 'specific humidity'
-    gz_vert_wrap_var.long_name = 'geopotential'
+    T_vert_wrap_var.long_name = 'vertical mean of temperature'
+    u_vert_wrap_var.long_name = 'vertical mean of zonal velocity'
+    v_vert_wrap_var.long_name = 'vertical mean of meridional velocity'
+    q_vert_wrap_var.long_name = 'vertical mean of specific humidity'
+    gz_vert_wrap_var.long_name = 'vertical mean of geopotential'
 
-    T_zonal_wrap_var.long_name = 'temperature'
-    u_zonal_wrap_var.long_name = 'zonal velocity'
-    v_zonal_wrap_var.long_name = 'meridional velocity'
-    q_zonal_wrap_var.long_name = 'specific humidity'
-    gz_zonal_wrap_var.long_name = 'geopotential'
+    T_zonal_wrap_var.long_name = 'zonal mean of temperature'
+    u_zonal_wrap_var.long_name = 'zonal mean of zonal velocity'
+    v_zonal_wrap_var.long_name = 'zonal mean of meridional velocity'
+    q_zonal_wrap_var.long_name = 'zonal mean of specific humidity'
+    gz_zonal_wrap_var.long_name = 'zonal mean of geopotential'
     # writing data
-    lat_warp_var[:] = latitude
-    lon_warp_var[:] = longitude
-    month_warp_var[:] = index_month
-    year_warp_var[:] = period
-    lev_warp_var[:] = p_level_interpolate / 100 # change the unit to helipasca
+    lat_wrap_var[:] = latitude
+    lon_wrap_var[:] = longitude
+    month_wrap_var[:] = index_month
+    year_wrap_var[:] = period
+    lev_wrap_var[:] = p_level_interpolate / 100 # change the unit to helipasca
 
     T_vert_wrap_var[:] = T_vert_mean_pool
     u_vert_wrap_var[:] = u_vert_mean_pool
