@@ -5,11 +5,11 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from Cartesius (EC-earth)
 Author          : Yang Liu
 Date            : 2017.12.20
-Last Update     : 2017.12.20
+Last Update     : 2018.01.12
 Description     : The code aims to postprocess the output from the Cartesius
                   regarding the computation of atmospheric meridional energy
                   transport based on EC-Earth output (atmosphere only run). The
-                  complete procedure includes data extraction and making plots.
+                  complete procedure includes data extraction.
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, matplotlib, sys
 variables       : Meridional Total Energy Transport           E         [Tera-Watt]
@@ -46,7 +46,7 @@ datapath_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/EC-ear
 # starting time (year)
 start_year = 1979
 # Ending time, if only for 1 year, then it should be the same as starting year
-end_year = 2016
+end_year = 2015
 # specify output path for the netCDF4 file
 output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/EC-earth/postprocessing'
 # benchmark datasets for basic dimensions
@@ -92,7 +92,7 @@ def pack_netcdf_zonal_int(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2016_E_zonal_int.nc', 'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2015_E_zonal_int.nc', 'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -171,7 +171,7 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2016_E_point.nc', 'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2015_E_point.nc', 'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
