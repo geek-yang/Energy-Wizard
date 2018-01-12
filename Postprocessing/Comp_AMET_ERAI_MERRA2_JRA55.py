@@ -763,7 +763,7 @@ print AMET_E_ERAI_mean
 AMET_E_MERRA2_mean = np.mean(AMET_E_MERRA2_series)
 print 'The mean of AMET from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_mean
-# MERRA2
+# JRA55
 AMET_E_JRA55_mean = np.mean(AMET_E_JRA55_series)
 print 'The mean of AMET from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_mean
@@ -777,7 +777,7 @@ print AMET_E_ERAI_white_mean
 AMET_E_MERRA2_white_mean = np.mean(AMET_E_MERRA2_white_series)
 print 'The mean of AMET anomaly from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_white_mean
-# MERRA2
+# JRA55
 AMET_E_JRA55_white_mean = np.mean(AMET_E_JRA55_white_series)
 print 'The mean of AMET anomaly from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_white_mean
