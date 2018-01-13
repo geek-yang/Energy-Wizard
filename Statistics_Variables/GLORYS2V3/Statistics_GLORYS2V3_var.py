@@ -336,7 +336,7 @@ def create_netcdf_point (theta_pool_glo_vert, u_pool_glo_vert, v_pool_glo_vert, 
     # writing data
     year_wrap_var[:] = period
     month_wrap_var[:] = np.arange(1,13,1)
-    lat_wrap_var[:] = gphiv[:,96]
+    lat_wrap_var[:] = gphiv[:,1060]
     lev_wrap_var[:] = deptht
     gphit_wrap_var[:] = nav_lat
     glamt_wrap_var[:] = nav_lon
