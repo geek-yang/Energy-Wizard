@@ -54,7 +54,7 @@ from mpl_toolkits.basemap import Basemap, cm
 #import iris.plot as iplt
 #import iris.quickplot as qplt
 
-##########################################################################
+#################################################lat_GLORYS2V3#########################
 ###########################   Units vacabulory   #########################
 # cpT:  [J / kg C] * [C]     = [J / kg]
 # rho cpT dxdydz = [m/s] * [J / kg] * [kg/m3] * m * m * m = [J]
@@ -311,7 +311,7 @@ def field_statistics(theta_key, uv_key):
                                      u[i,:,:].filled() * e3t_adjust[i,:,:] * umask[i,:,:]
         v_globe_vert_weight[i,:,:] = v[i,:,:].filled() * e3t_0[i] * vmask[i,:,:] -\
                                      v[i,:,:].filled() * e3t_adjust[i,:,:] * vmask[i,:,:]
-
+lat_GLORYS2V3
     theta_globe_vert_mean = np.sum(theta_globe_vert_weight,0) / hdept
     u_globe_vert_mean = np.sum(u_globe_vert_weight,0) / hdept
     v_globe_vert_mean = np.sum(v_globe_vert_weight,0) / hdept
@@ -484,7 +484,7 @@ def create_netcdf_point (psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_ve
     # writing data
     year_wrap_var[:] = period
     month_wrap_var[:] = np.arange(1,13,1)
-    lat_wrap_var[:] = gphiv[:,96]
+    lat_wrap_var[:] = gphiv[:,1060]
     lev_wrap_var[:] = deptht
     gphit_wrap_var[:] = nav_lat
     glamt_wrap_var[:] = nav_lon
