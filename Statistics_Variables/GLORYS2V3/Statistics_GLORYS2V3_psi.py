@@ -277,7 +277,7 @@ def create_netcdf_point (psi_pool_glo_zonal, psi_pool_atl_zonal, psi_pool_glo_ve
     # writing data
     year_wrap_var[:] = period
     month_wrap_var[:] = np.arange(1,13,1)
-    lat_wrap_var[:] = gphiv[:,96]
+    lat_wrap_var[:] = gphiv[:,1060]
     lev_wrap_var[:] = deptht
     gphiv_wrap_var[:] = gphiv
     glamv_wrap_var[:] = glamv
