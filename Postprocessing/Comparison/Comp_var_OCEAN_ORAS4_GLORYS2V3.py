@@ -4,15 +4,14 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic variable fields (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.01.11
-Last Update     : 2018.01.11
+Last Update     : 2018.01.14
 Description     : The code aims to compare the spatial and temporal distribution of
                   different fields from difference oceanic reanalysis datasets. In this,
                   case, this includes ORAS4 from ECMWF, GLORYS2V3 from
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
-variables       : Absolute Temperature              T         [K]
-                  Zonal Divergent Wind              u         [m/s]
-                  Meridional Divergent Wind         v         [m/s]
+variables       : Potential Temperature               T         [K]
+                  Meridional Current Velocity         v         [m/s]
 
 
 """
