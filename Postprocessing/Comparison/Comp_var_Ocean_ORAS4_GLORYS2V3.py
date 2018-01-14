@@ -7,7 +7,7 @@ Date            : 2018.01.11
 Last Update     : 2018.01.14
 Description     : The code aims to compare the spatial and temporal distribution of
                   different fields from difference oceanic reanalysis datasets. In this,
-                  case, this includes ORAS4 from ECMWF, GLORYS2V3 from
+                  case, this includes ORAS4 from ECMWF, GLORYS2V3 from Mercator Ocean
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
 variables       : Potential Temperature               T         [K]
