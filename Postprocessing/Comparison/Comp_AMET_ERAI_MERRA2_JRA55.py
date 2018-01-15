@@ -467,7 +467,7 @@ plt.plot(latitude_MERRA2,np.mean(np.mean(AMET_E_MERRA2_full,0),0),'r-',label='ME
 plt.fill_between(latitude_MERRA2,AMET_E_MERRA2_error_plus,AMET_E_MERRA2_error_minus,alpha=0.2,edgecolor='tomato', facecolor='tomato')
 plt.plot(latitude_JRA55,np.mean(np.mean(AMET_E_JRA55_full,0),0),'g-',label='JRA55')
 plt.fill_between(latitude_JRA55,AMET_E_JRA55_error_plus,AMET_E_JRA55_error_minus,alpha=0.2,edgecolor='lightgreen', facecolor='lightgreen')
-plt.title('Annual Mean of Atmospheric Meridional Energy Transport' )
+plt.title('Mean AMET of entire time series from 20N to 90N' )
 plt.legend()
 plt.xlabel("Latitudes")
 labels =['20','30','40','50','60','70','80','90']
