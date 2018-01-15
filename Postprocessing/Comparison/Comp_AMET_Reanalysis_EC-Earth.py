@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
 Copyright Netherlands eScience Center
-Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim,JRA55)
+Function        : Compare AMET from reanalysis (MERRA2,ERA-Interim,JRA55) with EC-Earth AMIP run
 Author          : Yang Liu
 Date            : 2018.01.12
-Last Update     : 2018.01.12
+Last Update     : 2018.01.15
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets with EC-Earth.
                   In this case, the reanalysis products include MERRA II from NASA, ERA-Interim
@@ -212,9 +212,48 @@ AMET_E_ECE_series_full = AMET_E_ECE_full.reshape((len(year_ECE)*12,len(latitude_
 AMET_E_ECE_std_full = np.std(AMET_E_ECE_series_full,axis=0)
 AMET_E_ECE_error_plus = np.mean(np.mean(AMET_E_ECE_full,0),0) + AMET_E_ECE_std_full
 AMET_E_ECE_error_minus = np.mean(np.mean(AMET_E_ECE_full,0),0) - AMET_E_ECE_std_full
+
+print '*******************************************************************'
+print '***************   span of annual mean at each lat   ***************'
+print '*******************************************************************'
+# calculate annual mean
+AMET_E_ERAI_full_annual_mean = np.mean(AMET_E_ERAI_full,1)
+AMET_E_MERRA2_full_annual_mean = np.mean(AMET_E_MERRA2_full,1)
+AMET_E_JRA55_full_annual_mean = np.mean(AMET_E_JRA55_full,1)
+AMET_E_ECE_full_annual_mean = np.mean(AMET_E_ECE_full,1)
+# calculate the difference between annual mean and mean of entire time series
+AMET_E_ERAI_full_annual_mean_max = np.amax(AMET_E_ERAI_full_annual_mean,0)
+AMET_E_MERRA2_full_annual_mean_max = np.amax(AMET_E_MERRA2_full_annual_mean,0)
+AMET_E_JRA55_full_annual_mean_max = np.amax(AMET_E_JRA55_full_annual_mean,0)
+AMET_E_ECE_full_annual_mean_max = np.amax(AMET_E_ECE_full_annual_mean,0)
+
+AMET_E_ERAI_full_annual_mean_min = np.amin(AMET_E_ERAI_full_annual_mean,0)
+AMET_E_MERRA2_full_annual_mean_min = np.amin(AMET_E_MERRA2_full_annual_mean,0)
+AMET_E_JRA55_full_annual_mean_min = np.amin(AMET_E_JRA55_full_annual_mean,0)
+AMET_E_ECE_full_annual_mean_min = np.amin(AMET_E_ECE_full_annual_mean,0)
 print '*******************************************************************'
 print '**************************** X-Y Plot *****************************'
 print '*******************************************************************'
+# annual mean of meridional energy transport at each latitude in north hemisphere
+fig0 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(latitude_ERAI,np.mean(np.mean(AMET_E_ERAI_full,0),0),'b-',label='ERA-Interim')
+plt.fill_between(latitude_ERAI,AMET_E_ERAI_full_annual_mean_max,AMET_E_ERAI_full_annual_mean_min,alpha=0.2,edgecolor='lightskyblue', facecolor='lightskyblue')
+plt.plot(latitude_MERRA2,np.mean(np.mean(AMET_E_MERRA2_full,0),0),'r-',label='MERRA2')
+plt.fill_between(latitude_MERRA2,AMET_E_MERRA2_full_annual_mean_max,AMET_E_MERRA2_full_annual_mean_min,alpha=0.2,edgecolor='tomato', facecolor='tomato')
+plt.plot(latitude_JRA55,np.mean(np.mean(AMET_E_JRA55_full,0),0),'g-',label='JRA55')
+plt.fill_between(latitude_JRA55,AMET_E_JRA55_full_annual_mean_max,AMET_E_JRA55_full_annual_mean_min,alpha=0.2,edgecolor='lightgreen', facecolor='lightgreen')
+plt.plot(latitude_ECE,np.mean(np.mean(AMET_E_ECE_full,0),0),'-',color='dimgrey',label='EC-Earth')
+plt.fill_between(latitude_ECE,AMET_E_ECE_full_annual_mean_max,AMET_E_ECE_full_annual_mean_min,alpha=0.2,edgecolor='lightgray', facecolor='lightgray')
+plt.title('Mean AMET of entire time series from 20N to 90N' )
+plt.legend()
+plt.xlabel("Latitudes")
+labels =['20','30','40','50','60','70','80','90']
+plt.xticks(np.linspace(20, 90, 8),labels)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.legend()
+plt.show()
+fig0.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_E_span.jpg', dpi = 500)
 
 # annual mean of meridional energy transport at each latitude in north hemisphere
 fig1 = plt.figure()
@@ -227,7 +266,7 @@ plt.plot(latitude_JRA55,np.mean(np.mean(AMET_E_JRA55_full,0),0),'g-',label='JRA5
 plt.fill_between(latitude_JRA55,AMET_E_JRA55_error_plus,AMET_E_JRA55_error_minus,alpha=0.2,edgecolor='lightgreen', facecolor='lightgreen')
 plt.plot(latitude_ECE,np.mean(np.mean(AMET_E_ECE_full,0),0),'-',color='dimgrey',label='EC-Earth')
 plt.fill_between(latitude_ECE,AMET_E_ECE_error_plus,AMET_E_ECE_error_minus,alpha=0.2,edgecolor='lightgray', facecolor='lightgray')
-plt.title('Annual Mean of Atmospheric Meridional Energy Transport' )
+plt.title('Mean AMET of entire time series from 20N to 90N' )
 plt.legend()
 plt.xlabel("Latitudes")
 labels =['20','30','40','50','60','70','80','90']
@@ -235,7 +274,7 @@ plt.xticks(np.linspace(20, 90, 8),labels)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig1.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_E.jpg', dpi = 500)
+fig1.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_E_stdBar.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '*************************** time series ***************************'

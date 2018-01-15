@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from HPC cloud (ERA-Interim)
 Author          : Yang Liu
 Date            : 2017.7.23
-Last Update     : 2017.7.24
+Last Update     : 2018.01.15
 Description     : The code aims to postprocess the output from the HPC cloud
                   regarding the computation of atmospheric meridional energy
                   transport based on atmospheric reanalysis dataset ERA-Interim
@@ -59,9 +59,9 @@ start_time = tttt.time()
 sns.set()
 ################################   Input zone  ######################################
 # specify data path
-datapath = 'F:\DataBase\HPC_out\ERAI\postprocessing'
+datapath = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
 # specify output path for the netCDF4 file
-output_path = 'F:\DataBase\HPC_out\ERAI\postprocessing'
+output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
 Lat_num = 60
 ####################################################################################
 print '*******************************************************************'
@@ -145,7 +145,7 @@ fig1 = plt.figure()
 plt.plot(index,T_series_E[40,:]/1000,'b-',label='ECMWF')
 plt.title('Atmospheric Meridional Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
-fig1.set_size_inches(14, 4)
+fig1.set_size_inches(12, 5)
 plt.xlabel("Time")
 plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
@@ -157,7 +157,7 @@ fig2 = plt.figure()
 plt.plot(index,T_series_E_internal[40,:]/1000,'b-',label='ECMWF')
 plt.title('Atmospheric Meridional Internal Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
-fig2.set_size_inches(14, 4)
+fig2.set_size_inches(12, 5)
 plt.xlabel("Time")
 plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
@@ -169,7 +169,7 @@ fig3 = plt.figure()
 plt.plot(index,T_series_E_latent[40,:]/1000,'b-',label='ECMWF')
 plt.title('Atmospheric Meridional Latent Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
-fig3.set_size_inches(14, 4)
+fig3.set_size_inches(12, 5)
 plt.xlabel("Time")
 plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
@@ -181,7 +181,7 @@ fig4 = plt.figure()
 plt.plot(index,T_series_E_geopotential[40,:]/1000,'b-',label='ECMWF')
 plt.title('Atmospheric Meridional Geopotential Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
-fig4.set_size_inches(14, 4)
+fig4.set_size_inches(12, 5)
 plt.xlabel("Time")
 plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
@@ -193,7 +193,7 @@ fig5 = plt.figure()
 plt.plot(index,T_series_E_kinetic[40,:]/1000,'b-',label='ECMWF')
 plt.title('Atmospheric Meridional Kinetic Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 #plt.legend()
-fig5.set_size_inches(14, 4)
+fig5.set_size_inches(12, 5)
 plt.xlabel("Time")
 plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
@@ -210,7 +210,7 @@ plt.plot(index,T_series_E_kinetic[40,:]/1000,'c:',label='u2')
 plt.plot(index,T_series_E[40,:]/1000,'b-',label='total')
 plt.title('Atmospheric Meridional Energy Transport time series at %d N (1979-2016)' % (Lat_num))
 plt.legend()
-fig6.set_size_inches(14, 4)
+fig6.set_size_inches(12, 5)
 plt.xlabel("Time")
 plt.xticks(np.linspace(0, 456, 39), index_year)
 plt.xticks(rotation=60)
@@ -229,7 +229,7 @@ fig7 = plt.figure()
 # cmap 'jet' 'RdYlBu' 'coolwarm'
 plt.contourf(x,y,T_series_E/1000,cmap='coolwarm')
 plt.title('Atmospheric Meridional Energy Transport time series(1979-2016)' )
-fig7.set_size_inches(14, 4)
+fig7.set_size_inches(12, 5)
 #add color bar
 cbar = plt.colorbar()
 cbar.set_label('PW (1E+15)')
@@ -455,7 +455,7 @@ color = np.linspace(-0.1,0.1,11)
 # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
 cs = m.contourf(XX,YY,a*12*10,color,cmap='coolwarm')
 # add color bar
-cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
+cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
 cbar.ax.tick_params(labelsize=8)
 cbar.set_label('PW/decade',fontsize = 8)
 plt.title('Trend of AMET anomaly (1979-2016)',fontsize = 9, y=1.05)
