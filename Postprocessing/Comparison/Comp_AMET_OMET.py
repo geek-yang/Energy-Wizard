@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET of all reanalysis datasets
 Author          : Yang Liu
 Date            : 2017.11.12
-Last Update     : 2018.01.10
+Last Update     : 2018.01.15
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -12,8 +12,8 @@ Description     : The code aims to plot and compare the meridional energy transp
                   GLORYS2V3, SODA3 and ORAS5.
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, logging
-variables       : Atmospheric Meridional Energy Transport   ERA-Interim
-                  Oceanic Meridional Energy Transport       ORAS4
+variables       : Atmospheric Meridional Energy Transport   ERA-Interim     MERRA2       JRA55
+                  Oceanic Meridional Energy Transport       ORAS4           GLORYS2V3
 Caveat!!        : Spatial and temporal coverage
                   Atmosphere
                   ERA-Interim 1979 - 2016
@@ -262,8 +262,52 @@ OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_series,axis=0)
 OMET_GLORYS2V3_error_plus = OMET_GLORYS2V3_mean + OMET_GLORYS2V3_std
 OMET_GLORYS2V3_error_minus = OMET_GLORYS2V3_mean - OMET_GLORYS2V3_std
 print '*******************************************************************'
+print '***************   span of annual mean at each lat   ***************'
+print '*******************************************************************'
+# calculate annual mean
+AMET_ERAI_full_annual_mean = np.mean(AMET_ERAI,1)
+AMET_MERRA2_full_annual_mean = np.mean(AMET_MERRA2,1)
+AMET_JRA55_full_annual_mean = np.mean(AMET_JRA55,1)
+OMET_ORAS4_full_annual_mean = np.mean(OMET_ORAS4,1)
+OMET_GLORYS2V3_full_annual_mean = np.mean(OMET_GLORYS2V3,1)
+# calculate the difference between annual mean and mean of entire time series
+AMET_ERAI_full_annual_mean_max = np.amax(AMET_ERAI_full_annual_mean,0)
+AMET_MERRA2_full_annual_mean_max = np.amax(AMET_MERRA2_full_annual_mean,0)
+AMET_JRA55_full_annual_mean_max = np.amax(AMET_JRA55_full_annual_mean,0)
+OMET_ORAS4_full_annual_mean_max = np.amax(OMET_ORAS4_full_annual_mean,0)
+OMET_GLORYS2V3_full_annual_mean_max = np.amax(OMET_GLORYS2V3_full_annual_mean,0)
+
+AMET_ERAI_full_annual_mean_min = np.amin(AMET_ERAI_full_annual_mean,0)
+AMET_MERRA2_full_annual_mean_min = np.amin(AMET_MERRA2_full_annual_mean,0)
+AMET_JRA55_full_annual_mean_min = np.amin(AMET_JRA55_full_annual_mean,0)
+OMET_ORAS4_full_annual_mean_min = np.amin(OMET_ORAS4_full_annual_mean,0)
+OMET_GLORYS2V3_full_annual_mean_min = np.amin(OMET_GLORYS2V3_full_annual_mean,0)
+print '*******************************************************************'
 print '*************************** x-y plots *****************************'
 print '*******************************************************************'
+fig00 = plt.figure()
+plt.plot(latitude_ERAI,AMET_ERAI_mean,'b-',label='ERA-Interim')
+plt.fill_between(latitude_ERAI,AMET_ERAI_full_annual_mean_max,AMET_ERAI_full_annual_mean_min,alpha=0.3,edgecolor='lightskyblue', facecolor='lightskyblue')
+plt.plot(latitude_MERRA2,AMET_MERRA2_mean,'r-',label='MERRA2')
+plt.fill_between(latitude_MERRA2,AMET_MERRA2_full_annual_mean_max,AMET_MERRA2_full_annual_mean_min,alpha=0.3,edgecolor='tomato', facecolor='tomato')
+plt.plot(latitude_JRA55,AMET_JRA55_mean,'g-',label='JRA55')
+plt.fill_between(latitude_JRA55,AMET_JRA55_full_annual_mean_max,AMET_JRA55_full_annual_mean_min,alpha=0.3,edgecolor='lightgreen', facecolor='lightgreen')
+plt.plot(latitude_ORAS4,OMET_ORAS4_mean,'c-',label='ORAS4')
+plt.fill_between(latitude_ORAS4,OMET_ORAS4_full_annual_mean_max,OMET_ORAS4_full_annual_mean_min,alpha=0.3,edgecolor='aquamarine', facecolor='aquamarine')
+plt.plot(latitude_GLORYS2V3,OMET_GLORYS2V3_mean,'m-',label='GLORYS2V3')
+plt.fill_between(latitude_GLORYS2V3,OMET_GLORYS2V3_full_annual_mean_max,OMET_GLORYS2V3_full_annual_mean_min,alpha=0.3,edgecolor='plum', facecolor='plum')
+#plt.plot(latitude_AMET,AMET_mean + OMET_mean_interpolate,'g--',label='Total')
+plt.title('Mean AMET & OMET of entire time series from 20N to 90N')
+plt.legend()
+#fig1.set_size_inches(5, 5)
+plt.xlabel("Latitude")
+labels =['20','30','40','50','60','70','80','90']
+plt.xticks(np.linspace(20, 90, 8),labels)
+#plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig00.savefig(output_path + os.sep + 'AMET_OMET_annual_mean_span.jpg', dpi = 500)
+
 fig0 = plt.figure()
 plt.plot(latitude_ERAI,AMET_ERAI_mean,'b-',label='ERA-Interim')
 plt.fill_between(latitude_ERAI,AMET_ERAI_error_plus,AMET_ERAI_error_minus,alpha=0.3,edgecolor='lightskyblue', facecolor='lightskyblue')
@@ -276,7 +320,7 @@ plt.fill_between(latitude_ORAS4,OMET_ORAS4_error_plus,OMET_ORAS4_error_minus,alp
 plt.plot(latitude_GLORYS2V3,OMET_GLORYS2V3_mean,'m-',label='GLORYS2V3')
 plt.fill_between(latitude_GLORYS2V3,OMET_GLORYS2V3_error_plus,OMET_GLORYS2V3_error_minus,alpha=0.3,edgecolor='plum', facecolor='plum')
 #plt.plot(latitude_AMET,AMET_mean + OMET_mean_interpolate,'g--',label='Total')
-plt.title('Meridional Energy Transport')
+plt.title('Mean AMET & OMET of entire time series from 20N to 90N')
 plt.legend()
 #fig1.set_size_inches(5, 5)
 plt.xlabel("Latitude")
@@ -285,7 +329,7 @@ plt.xticks(np.linspace(20, 90, 8),labels)
 #plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
-fig0.savefig(output_path + os.sep + 'AMET_OMET_annual_mean.jpg', dpi = 500)
+fig0.savefig(output_path + os.sep + 'AMET_OMET_annual_mean_stdBar.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '*********************** time series plots *************************'
