@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic variable fields (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.01.11
-Last Update     : 2018.01.14
+Last Update     : 2018.01.15
 Description     : The code aims to compare the spatial and temporal distribution of
                   different fields from difference oceanic reanalysis datasets. In this,
                   case, this includes ORAS4 from ECMWF, GLORYS2V3 from Mercator Ocean
@@ -132,7 +132,7 @@ plt.scatter(theta_longitude_GLORYS2V3[788,:],theta_glo_vert_GLORYS2V3[8,0,788,:]
 plt.title('Monthly Mean T Field of 2001-01 at 60N (horizontal profile)' )
 fig1.set_size_inches(8, 5)
 #plt.legend()
-plt.xlabel("Latitudes")
+plt.xlabel("Longitude")
 #plt.xticks()
 plt.ylabel("Potential Temperature (Celsius)")
 plt.legend()
@@ -148,7 +148,7 @@ plt.scatter(v_longitude_GLORYS2V3[788,:],v_glo_vert_GLORYS2V3[8,0,788,:],c='m',m
 plt.title('Monthly Mean v Field of 2001-01 at 60N (horizontal profile)' )
 fig2.set_size_inches(8, 5)
 #plt.legend()
-plt.xlabel("Latitudes")
+plt.xlabel("Longitude")
 #plt.xticks()
 plt.ylabel("Meridional Current Velocity (m/s)")
 plt.legend()
