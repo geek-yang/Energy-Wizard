@@ -245,7 +245,7 @@ plt.plot(latitude_JRA55,np.mean(np.mean(AMET_E_JRA55_full,0),0),'g-',label='JRA5
 plt.fill_between(latitude_JRA55,AMET_E_JRA55_full_annual_mean_max,AMET_E_JRA55_full_annual_mean_min,alpha=0.2,edgecolor='lightgreen', facecolor='lightgreen')
 plt.plot(latitude_ECE,np.mean(np.mean(AMET_E_ECE_full,0),0),'-',color='dimgrey',label='EC-Earth')
 plt.fill_between(latitude_ECE,AMET_E_ECE_full_annual_mean_max,AMET_E_ECE_full_annual_mean_min,alpha=0.2,edgecolor='lightgray', facecolor='lightgray')
-plt.title('Annual Mean of Atmospheric Meridional Energy Transport' )
+plt.title('Mean AMET of entire time series from 20N to 90N' )
 plt.legend()
 plt.xlabel("Latitudes")
 labels =['20','30','40','50','60','70','80','90']
@@ -266,7 +266,7 @@ plt.plot(latitude_JRA55,np.mean(np.mean(AMET_E_JRA55_full,0),0),'g-',label='JRA5
 plt.fill_between(latitude_JRA55,AMET_E_JRA55_error_plus,AMET_E_JRA55_error_minus,alpha=0.2,edgecolor='lightgreen', facecolor='lightgreen')
 plt.plot(latitude_ECE,np.mean(np.mean(AMET_E_ECE_full,0),0),'-',color='dimgrey',label='EC-Earth')
 plt.fill_between(latitude_ECE,AMET_E_ECE_error_plus,AMET_E_ECE_error_minus,alpha=0.2,edgecolor='lightgray', facecolor='lightgray')
-plt.title('Annual Mean of Atmospheric Meridional Energy Transport' )
+plt.title('Mean AMET of entire time series from 20N to 90N' )
 plt.legend()
 plt.xlabel("Latitudes")
 labels =['20','30','40','50','60','70','80','90']
