@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare OMET of all reanalysis datasets from observation in the Atlantic
 Author          : Yang Liu
 Date            : 2017.12.06
-Last Update     : 2017.12.07
+Last Update     : 2018.01.16
 Description     : The code aims to plot and compare the meridional energy transport
                   in the ocean obtained from reanalysis data with direct observation
                   in the Atlantic Ocean. The oceanic meridional energy transport is
@@ -21,6 +21,8 @@ Caveat!!        : Spatial and temporal coverage
                   Reanalysis
                   GLORYS2V3      1992 - 2014         90S - 90N
                   ORAS4          1958 - 2014         90S - 90N
+                  Hindcast
+                  NEMO ORCA083   1958 - 2012
 
                   The full dataset of ORAS4 is from 1958. However, a quality report from
                   Magdalena from ECMWF indicates the quality of data for the first
@@ -31,6 +33,10 @@ Caveat!!        : Spatial and temporal coverage
                   For the time series from RAPID ARRAY, the record starts from 00:00:00 02-04-2004.
                   The time step in the dataset is 12 hours (00:00:00 and 12:00:00).
                   From mocha_mht_data_2015.nc, the record ends at 00:00:00 12-10-2015
+
+                  The hindcast is performed with NEMO-LIM ocean model on ORCA012 grid by
+                  Ben Moat et. al. from NOC. The time coverage is from 1958 - 2012, 55 years
+                  monthly time series at 26.5N.
 """
 import numpy as np
 import seaborn as sns
@@ -71,9 +77,11 @@ datapath_ORAS4 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ORAS4/
 datapath_GLORYS2V3 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GLORYS2V3/postprocessing'
 # observation
 datapath_RAPID = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Oceanography/RAPID_ARRAY'
+# hindcast
+datapath_hindcast = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Oceanography/ORCA083hindcast_BenMoat'
 # mask path
-datapath_mask_ORAS4 ='/run/media/yang/Associate/DataBase/ORAS/ORAS4/Monthly/model'
-datapath_mask_GLORYS2V3 ='/run/media/yang/Associate/DataBase/GLORYS/S2V3/Monthly'
+datapath_mask_ORAS4 ='/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ORAS4'
+datapath_mask_GLORYS2V3 ='/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GLORYS2V3'
 # specify output path for figures
 output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Oceanography/Comp_RAPID'
 ####################################################################################
@@ -165,6 +173,8 @@ dataset_ORAS4_zonal = Dataset(datapath_ORAS4 + os.sep + 'oras4_model_monthly_orc
 dataset_GLORYS2V3_zonal = Dataset(datapath_GLORYS2V3 + os.sep + 'GLORYS2V3_model_monthly_orca025_E_zonal_int.nc')
 # observation
 dataset_RAPID = Dataset(datapath_RAPID + os.sep + 'mocha_mht_data_2015.nc')
+# hindcast
+dataset_hindcast = Dataset(datapath_hindcast + os.sep + 'OMET_psi_hindcast_ORCA083_1958-2012_Atlantic_2605.nc')
 # mask
 dataset_mask_ORAS4 = Dataset(datapath_mask_ORAS4 + os.sep + 'mesh_mask.nc')
 dataset_mask_GLORYS2V3 = Dataset(datapath_mask_GLORYS2V3 + os.sep + 'G2V3_mesh_mask_myocean.nc')
@@ -200,6 +210,11 @@ mask_GLORYS2V3 = dataset_mask_GLORYS2V3.variables['vmask'][0,0,:,:]
 OMET_RAPID = dataset_RAPID.variables['Q_sum'][:]/1E+15
 # stream function
 Psi_RAPID = dataset_RAPID.variables['moc'][:]
+# hindcast
+# meridional energy transport
+OMET_hindcast = dataset_hindcast.variables['E'][:]
+# stream function
+psi_hindcast = dataset_hindcast.variables['psi'][:]
 print '*******************************************************************'
 print '********************* Pick up OMET and AMOC ***********************'
 print '******************* with specific ii jj pairs *********************'
@@ -225,6 +240,8 @@ OMET_GLORYS2V3_RAPID_int = np.sum(OMET_GLORYS2V3_RAPID,2)
 # reshape to get the time series
 OMET_ORAS4_RAPID_series = OMET_ORAS4_RAPID_int.reshape(len(year_ORAS4)*12)
 OMET_GLORYS2V3_RAPID_series = OMET_GLORYS2V3_RAPID_int.reshape(len(year_GLORYS2V3)*12)
+# reshape the hindcast dataset
+OMET_hindcast_series = OMET_hindcast.reshape(55*12)
 print '*******************************************************************'
 print '***********************   running means   *************************'
 print '*******************************************************************'
@@ -284,11 +301,12 @@ print '*******************************************************************'
 # index for axis
 index = np.arange(1,12*12+1,1) # 2004 - 2015
 index_RAPID = np.linspace(4,12*12-3,8398) # ignore the missing April 1st 2004 and the rest of the days in Oct 2015
+index_hindcast = np.arange(1,12*9+1,1) # 2004 - 2012
 # meridional energy transport
 fig2 = plt.figure()
+plt.plot(index_RAPID[:],OMET_RAPID[:-23],'g-',label='RAPID ARRAY')
 plt.plot(index[:-12],OMET_ORAS4_RAPID_series[:],'b-',label='ORAS4')
 plt.plot(index[:-12],OMET_GLORYS2V3_RAPID_series[:],'r-',label='GLORYS2V3')
-plt.plot(index_RAPID[:],OMET_RAPID[:-23],'g-',label='RAPID ARRAY')
 plt.title('Meridional Energy Transport in the ocean at 26.5 N (02/04/2004 - 12/10/2015)')
 plt.legend()
 fig2.set_size_inches(12, 5)
@@ -314,4 +332,19 @@ plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
 fig3.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_running_mean_%dm_90d_time_series.jpg' % (window), dpi = 500)
 
-# stream functions
+# meridional energy transport with hindcast on ORCA083
+
+fig4 = plt.figure()
+plt.plot(index_RAPID[:],OMET_RAPID[:-23],'g-',label='RAPID ARRAY')
+plt.plot(index[:-12],OMET_ORAS4_RAPID_series[:],'b-',label='ORAS4')
+plt.plot(index[:-12],OMET_GLORYS2V3_RAPID_series[:],'r-',label='GLORYS2V3')
+plt.plot(index_hindcast[:],OMET_hindcast_series[46*12:],'k-',label='NEMO ORCA083 hindcast')
+plt.title('Meridional Energy Transport in the ocean at 26.5 N (02/04/2004 - 12/10/2015)')
+plt.legend()
+fig4.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(1, 12*12, 12), np.arange(2004,2016,1))
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig4.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_hindcast_time_series.jpg', dpi = 500)
