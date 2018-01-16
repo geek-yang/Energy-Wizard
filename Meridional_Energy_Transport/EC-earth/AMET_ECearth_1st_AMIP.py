@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport from EC-earth (Cartesius)
 Author          : Yang Liu
 Date            : 2017.12.07
-Last Update     : 2017.12.18
+Last Update     : 2018.01.15
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on the output from EC-Earth simulation.
                   The complete procedure includes the calculation of the mass budget
@@ -287,11 +287,11 @@ def create_netcdf_point (meridional_E_point_pool,meridional_E_internal_point_poo
     lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
     lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
     # create coordinate variables for 3-dimensions
-    lat_warp_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
-    lon_warp_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
+    lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
     # create the actual 3-d variable
-    uc_warp_var = data_wrap.createVariable('uc',np.float32,('latitude','longitude'))
-    vc_warp_var = data_wrap.createVariable('vc',np.float32,('latitude','longitude'))
+    uc_wrap_var = data_wrap.createVariable('uc',np.float32,('latitude','longitude'))
+    vc_wrap_var = data_wrap.createVariable('vc',np.float32,('latitude','longitude'))
 
     E_total_wrap_var = data_wrap.createVariable('E',np.float64,('latitude','longitude'))
     E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('latitude','longitude'))
@@ -301,28 +301,28 @@ def create_netcdf_point (meridional_E_point_pool,meridional_E_internal_point_poo
     # global attributes
     data_wrap.description = 'Monthly mean meridional energy transport and each component at each grid point'
     # variable attributes
-    lat_warp_var.units = 'degree_north'
-    lon_warp_var.units = 'degree_east'
-    uc_warp_var.units = 'm/s'
-    vc_warp_var.units = 'm/s'
+    lat_wrap_var.units = 'degree_north'
+    lon_wrap_var.units = 'degree_east'
+    uc_wrap_var.units = 'm/s'
+    vc_wrap_var.units = 'm/s'
     E_total_wrap_var.units = 'tera watt'
     E_internal_wrap_var.units = 'tera watt'
     E_latent_wrap_var.units = 'tera watt'
     E_geopotential_wrap_var.units = 'tera watt'
     E_kinetic_wrap_var.units = 'tera watt'
 
-    uc_warp_var.long_name = 'zonal barotropic correction wind'
-    vc_warp_var.long_name = 'meridional barotropic correction wind'
+    uc_wrap_var.long_name = 'zonal barotropic correction wind'
+    vc_wrap_var.long_name = 'meridional barotropic correction wind'
     E_total_wrap_var.long_name = 'atmospheric meridional energy transport'
     E_internal_wrap_var.long_name = 'atmospheric meridional internal energy transport'
     E_latent_wrap_var.long_name = 'atmospheric meridional latent heat transport'
     E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
     E_kinetic_wrap_var.long_name = 'atmospheric meridional kinetic energy transport'
     # writing data
-    lat_warp_var[:] = latitude
-    lon_warp_var[:] = longitude
-    uc_warp_var[:] = uc_point_pool
-    vc_warp_var[:] = vc_point_pool
+    lat_wrap_var[:] = latitude
+    lon_wrap_var[:] = longitude
+    uc_wrap_var[:] = uc_point_pool
+    vc_wrap_var[:] = vc_point_pool
     E_total_wrap_var[:] = meridional_E_point_pool
     E_internal_wrap_var[:] = meridional_E_internal_point_pool
     E_latent_wrap_var[:] = meridional_E_latent_point_pool
@@ -346,7 +346,7 @@ def create_netcdf_zonal_int (meridional_E_pool, meridional_E_internal_pool, meri
     # create dimensions for netcdf data
     lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
     # create coordinate variables for 3-dimensions
-    lat_warp_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
     # create the actual 3-d variable
     E_total_wrap_var = data_wrap.createVariable('E',np.float64,('latitude',))
     E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('latitude',))
@@ -356,7 +356,7 @@ def create_netcdf_zonal_int (meridional_E_pool, meridional_E_internal_pool, meri
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of meridional energy transport and each component'
     # variable attributes
-    lat_warp_var.units = 'degree_north'
+    lat_wrap_var.units = 'degree_north'
     E_total_wrap_var.units = 'tera watt'
     E_internal_wrap_var.units = 'tera watt'
     E_latent_wrap_var.units = 'tera watt'
@@ -368,7 +368,7 @@ def create_netcdf_zonal_int (meridional_E_pool, meridional_E_internal_pool, meri
     E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
     E_kinetic_wrap_var.long_name = 'atmospheric meridional kinetic energy transport'
     # writing data
-    lat_warp_var[:] = latitude
+    lat_wrap_var[:] = latitude
     E_total_wrap_var[:] = meridional_E_pool
     E_internal_wrap_var[:] = meridional_E_internal_pool
     E_latent_wrap_var[:] = meridional_E_latent_pool
