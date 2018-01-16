@@ -304,7 +304,7 @@ index_RAPID = np.linspace(4,12*12-3,8398) # ignore the missing April 1st 2004 an
 index_hindcast = np.arange(1,12*9+1,1) # 2004 - 2012
 # meridional energy transport
 fig2 = plt.figure()
-plt.plot(index_RAPID[:],OMET_RAPID[:-23],'g-',label='RAPID ARRAY')
+plt.plot(index_RAPID[:],OMET_RAPID[:-23],'g--',label='RAPID ARRAY')
 plt.plot(index[:-12],OMET_ORAS4_RAPID_series[:],'b-',label='ORAS4')
 plt.plot(index[:-12],OMET_GLORYS2V3_RAPID_series[:],'r-',label='GLORYS2V3')
 plt.title('Meridional Energy Transport in the ocean at 26.5 N (02/04/2004 - 12/10/2015)')
@@ -335,7 +335,7 @@ fig3.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_running_mean_%dm_90d_
 # meridional energy transport with hindcast on ORCA083
 
 fig4 = plt.figure()
-plt.plot(index_RAPID[:],OMET_RAPID[:-23],'g-',label='RAPID ARRAY')
+plt.plot(index_RAPID[:],OMET_RAPID[:-23],'g--',label='RAPID ARRAY')
 plt.plot(index[:-12],OMET_ORAS4_RAPID_series[:],'b-',label='ORAS4')
 plt.plot(index[:-12],OMET_GLORYS2V3_RAPID_series[:],'r-',label='GLORYS2V3')
 plt.plot(index_hindcast[:],OMET_hindcast_series[46*12:],'k-',label='NEMO ORCA083 hindcast')
