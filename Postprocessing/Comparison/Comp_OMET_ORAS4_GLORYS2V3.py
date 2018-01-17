@@ -189,8 +189,8 @@ fig0.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_OMET_anomaly_60N_
 # plot the OMET with running mean
 fig2 = plt.figure()
 plt.plot(index_1979,OMET_ORAS4_series,'c--',linewidth=1.0,label='ORAS4 time series')
-plt.plot(index_1979[window-1:],OMET_ORAS4_running_mean,'c-',linewidth=2.0,label='ORAS4 running mean')
 plt.plot(index_1993,OMET_GLORYS2V3_series,'m--',linewidth=1.0,label='GLORYS2V3 time series')
+plt.plot(index_1979[window-1:],OMET_ORAS4_running_mean,'c-',linewidth=2.0,label='ORAS4 running mean')
 plt.plot(index_1993[window-1:],OMET_GLORYS2V3_running_mean,'m-',linewidth=2.0,label='GLORYS2V3 running mean')
 plt.title('Running Mean of OMET at 60N with a window of %d months (1979-2014)' % (window))
 #plt.legend()
@@ -205,10 +205,10 @@ fig2.savefig(output_path + os.sep +'Comp_OMET_60N_running_mean_window_%d_comp.jp
 
 # plot the OMET after removing the seasonal cycling with running mean
 fig3 = plt.figure()
-plt.plot(index_1979,OMET_ORAS4_white_series,'b--',linewidth=1.0,label='ORAS4 time series')
-plt.plot(index_1979[window-1:],OMET_ORAS4_white_running_mean,'b-',linewidth=2.0,label='ORAS4 running mean')
-plt.plot(index_1993,OMET_GLORYS2V3_white_series,'r--',linewidth=1.0,label='GLORYS2V3 time series')
-plt.plot(index_1993[window-1:],OMET_GLORYS2V3_white_running_mean,'r-',linewidth=2.0,label='GLORYS2V3 running mean')
+plt.plot(index_1979,OMET_ORAS4_white_series,'c--',linewidth=1.0,label='ORAS4 time series')
+plt.plot(index_1993,OMET_GLORYS2V3_white_series,'m--',linewidth=1.0,label='GLORYS2V3 time series')
+plt.plot(index_1979[window-1:],OMET_ORAS4_white_running_mean,'c-',linewidth=2.0,label='ORAS4 running mean')
+plt.plot(index_1993[window-1:],OMET_GLORYS2V3_white_running_mean,'m-',linewidth=2.0,label='GLORYS2V3 running mean')
 plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1979-2014)' % (window))
 #plt.legend()
 fig3.set_size_inches(12, 5)
@@ -341,7 +341,7 @@ print OMET_ORAS4_mean
 
 # calculate the standard deviation of OMET anomaly
 # GLORYS2V3
-OMET_GLORYS2V3_white_mean = np.std(OMET_GLORYS2V3_white_series)
+OMET_GLORYS2V3_white_mean = np.mean(OMET_GLORYS2V3_white_series)
 print 'The mean of OMET anomaly from GLORYS2V3 is (in peta Watt):'
 print OMET_GLORYS2V3_white_mean
 # ORAS4
