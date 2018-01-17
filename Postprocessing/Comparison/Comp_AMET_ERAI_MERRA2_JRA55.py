@@ -3,8 +3,8 @@
 Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
-Date            : 2017.11.6
-Last Update     : 2018.01.15
+Date            : 2017.11.06
+Last Update     : 2018.01.17
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF and
@@ -430,7 +430,7 @@ AMET_E_JRA55_full_annual_mean = np.mean(AMET_E_JRA55_full,1)
 # calculate the difference between annual mean and mean of entire time series
 AMET_E_ERAI_full_annual_mean_max = np.amax(AMET_E_ERAI_full_annual_mean,0)
 AMET_E_MERRA2_full_annual_mean_max = np.amax(AMET_E_MERRA2_full_annual_mean,0)
-AMET_E_JRA55_full_annual_mean_max = np.amax(AMET_E_JRA55__full_annual_mean,0)
+AMET_E_JRA55_full_annual_mean_max = np.amax(AMET_E_JRA55_full_annual_mean,0)
 
 AMET_E_ERAI_full_annual_mean_min = np.amin(AMET_E_ERAI_full_annual_mean,0)
 AMET_E_MERRA2_full_annual_mean_min = np.amin(AMET_E_MERRA2_full_annual_mean,0)
@@ -516,10 +516,10 @@ index_1979_2015 = np.arange(1,445,1)
 # total energy transport
 fig3 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_ERAI_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_MERRA2_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_JRA55_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_JRA55_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET at 60N with a window of %d months' % (window))
 plt.legend()
@@ -535,10 +535,10 @@ fig3.savefig(output_path + os.sep +'Comp_AMET_E_60N_running_mean_window_%d_comp.
 # internal energy
 fig4 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_cpT_ERAI_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_cpT_MERRA2_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_cpT_JRA55_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_cpT_JRA55_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (cpT) at 60N with a window of %d months' % (window))
 plt.legend()
@@ -554,10 +554,10 @@ fig4.savefig(output_path + os.sep +'Comp_AMET_cpT_60N_running_mean_window_%d_com
 # latent heat
 fig5 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_Lvq_ERAI_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_Lvq_MERRA2_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_Lvq_JRA55_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_Lvq_JRA55_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (Lvq) at 60N with a window of %d months' % (window))
 plt.legend()
@@ -573,10 +573,10 @@ fig5.savefig(output_path + os.sep +'Comp_AMET_E_Lvq_60N_running_mean_window_%d_c
 # geopotential
 fig6 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_gz_ERAI_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_gz_MERRA2_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_gz_JRA55_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_gz_JRA55_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (gz) at 60N with a window of %d months' % (window))
 plt.legend()
@@ -592,10 +592,10 @@ fig6.savefig(output_path + os.sep +'Comp_AMET_E_gz_60N_running_mean_window_%d_co
 # kinetic energy
 fig7 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_uv2_ERAI_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_uv2_MERRA2_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_uv2_JRA55_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_uv2_JRA55_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (uv2) at 60N with a window of %d months' % (window))
 plt.legend()
@@ -611,10 +611,10 @@ fig7.savefig(output_path + os.sep +'Comp_AMET_E_uv2_60N_running_mean_window_%d_c
 # plot the AMET after removing the seasonal cycling with running mean
 fig8 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_ERAI_white_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_MERRA2_white_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_JRA55_white_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_JRA55_white_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET Anomalies at 60N with a window of %d months' % (window))
 plt.legend()
@@ -630,10 +630,10 @@ fig8.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_anomaly_60N
 #internal energy
 fig9 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_cpT_ERAI_white_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_cpT_MERRA2_white_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_cpT_JRA55_white_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_cpT_JRA55_white_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (cpT) Anomalies at 60N with a window of %d months' % (window))
 plt.legend()
@@ -649,10 +649,10 @@ fig9.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_cpT_anomaly
 # latent heat
 fig10 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_Lvq_ERAI_white_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_Lvq_MERRA2_white_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_Lvq_JRA55_white_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_Lvq_JRA55_white_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (Lvq) Anomalies at 60N with a window of %d months' % (window))
 plt.legend()
@@ -668,10 +668,10 @@ fig10.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_Lvq_anomal
 # geopotential
 fig11 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_gz_ERAI_white_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_gz_MERRA2_white_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_gz_JRA55_white_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_gz_JRA55_white_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (gz) Anomalies at 60N with a window of %d months' % (window))
 plt.legend()
@@ -687,10 +687,10 @@ fig11.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_AMET_E_gz_anomal
 # kinetic energy
 fig12 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_uv2_ERAI_white_series,'b--',linewidth=1.0,label='ERAI time series')
-plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
 plt.plot(index_1980_2016,AMET_E_uv2_MERRA2_white_series,'r--',linewidth=1.0,label='MERRA2 time series')
-plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015,AMET_E_uv2_JRA55_white_series,'g--',linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_white_running_mean,'b-',linewidth=2.0,label='ERAI running mean')
+plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_white_running_mean,'r-',linewidth=2.0,label='MERRA2 running mean')
 plt.plot(index_1979_2015[window-1:],AMET_E_uv2_JRA55_white_running_mean,'g-',linewidth=2.0,label='JRA55 running mean')
 plt.title('Running Mean of AMET (uv2) Anomalies at 60N with a window of %d months' % (window))
 plt.legend()
