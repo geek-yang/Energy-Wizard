@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET from reanalysis (MERRA2,ERA-Interim,JRA55) with EC-Earth AMIP run
 Author          : Yang Liu
 Date            : 2018.01.12
-Last Update     : 2018.01.15
+Last Update     : 2018.01.17
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets with EC-Earth.
                   In this case, the reanalysis products include MERRA II from NASA, ERA-Interim
@@ -325,6 +325,39 @@ plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
 fig8.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_E_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+
+# plot the AMET after removing the seasonal cycling with running mean
+fig9 = plt.figure()
+plt.plot(index_1979_2016,AMET_E_ERAI_white_series,'b--',alpha=0.6,linewidth=1.0,label='ERA-Interim')
+plt.plot(index_1980_2016,AMET_E_MERRA2_white_series,'r--',alpha=0.6,linewidth=1.0,label='MERRA2')
+plt.plot(index_1979_2015,AMET_E_JRA55_white_series,'g--',alpha=0.6,linewidth=1.0,label='JRA55')
+plt.plot(index_1979_2015,AMET_E_ECE_white_series,'--',alpha=1.0,color='dimgrey',linewidth=1.0,label='EC-Earth')
+plt.title('AMET anomalies time series at 60N')
+plt.legend()
+fig9.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 456, 39), year_ERAI)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.legend()
+plt.show()
+fig9.savefig(output_path + os.sep + 'anomaly' + os.sep +'Comp_AMET_anomaly_E_60N_series.jpg', dpi = 500)
+
+fig10 = plt.figure()
+plt.plot(index_1979_2016,AMET_E_ERAI_series,'b--',alpha=0.6,linewidth=1.0,label='ERAI time series')
+plt.plot(index_1980_2016,AMET_E_MERRA2_series,'r--',alpha=0.6,linewidth=1.0,label='MERRA2 time series')
+plt.plot(index_1979_2015,AMET_E_JRA55_series,'g--',alpha=0.6,linewidth=1.0,label='JRA55 time series')
+plt.plot(index_1979_2015,AMET_E_ECE_series,'--',alpha=1.0,color='dimgrey',linewidth=1.0,label='EC-Earth time series')
+plt.title('AMET time series at 60N')
+plt.legend()
+fig10.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 456, 39), year_ERAI)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.legend()
+plt.show()
+fig10.savefig(output_path + os.sep +'Comp_AMET_E_60N.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
