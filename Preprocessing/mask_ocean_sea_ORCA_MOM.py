@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Land-sea mask for different oceans and seas on ORCA1, ORCA025 and MOM5 grid
 Author          : Yang Liu
 Date            : 2018.02.09
-Last Update     : 2018.02.09
+Last Update     : 2018.02.11
 Description     : The code aims to plot land sea mask for all the oceans and seas
                   on original ORCA1, ORCA025 and MOM5 grid. This info is very useful
                   for the study on compensation for over certain areas between ocean
@@ -17,12 +17,29 @@ variables       : Scaler and Vector coordinate of Arakawa C Grid
                   Meridional Grid Spacing Scale Factors     e2
                   Land-Sea Mask                             mask
 Caveat!!        : MOM5 Grid
-                  Direction of Axis: from
+                  Direction of Axis: from south to north, west to east
                   Model Level: MOM5 Arakawa-B grid
                   Dimension:
                   Latitude      1070
                   Longitude     1440
                   Depth         50
+
+                  ORCA1 Grid
+                  Direction of Axis: from south to north, west to east
+                  Model Level: MOM5 Arakawa-C grid
+                  Dimension:
+                  Latitude      362
+                  Longitude     292
+                  Depth         42
+
+                  ORCA025 Grid
+                  Direction of Axis: from south to north, west to east
+                  Model Level: MOM5 Arakawa-C grid
+                  Dimension:
+                  Latitude      1021
+                  Longitude     1440
+                  Depth         75
+
                   The mask might have filled value of 1E+20 (in order to maintain
                   the size of the netCDF file and make full use of the storage). When
                   take the mean of intergral, this could result in abnormal large results.

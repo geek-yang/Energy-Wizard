@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (SODA3) on Cartesius
 Author          : Yang Liu
 Date            : 2018.01.12
-Last Update     : 2018.01.24
+Last Update     : 2018.02.06
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset SODA3 from
                   Maryland University and TAMU. The complete computaiton is accomplished
@@ -97,7 +97,7 @@ datapath_mask = '/projects/0/blueactn/reanalysis/SODA3'
 # time of the data, which concerns with the name of input
 file_list_in = sys.stdin.readline()
 # starting time (year)
-file_name =
+file_name = str(file_list_in)
 # Ending time, if only for 1 year, then it should be the same as starting year
 end_year = 2015
 # specify output path for the netCDF4 file
@@ -133,9 +133,9 @@ def var_coordinate(datapath_mask):
     grid_y_C = mesh_mask_key.variables['grid_y_C'][:]           # Nominal Latitude of C-cell center
     # lat-lon-depth coordinate info (2D)
     x_T = mesh_mask_key.variables['x_T'][:]                     # Geographic Longitude of T-cell center
-    y_T = mesh_mask_key.variables['y_T'][:]                     # Geographic Longitude of T-cell center
+    y_T = mesh_mask_key.variables['y_T'][:]                     # Geographic Latitude of T-cell center
     x_C = mesh_mask_key.variables['x_C'][:]                     # Geographic Longitude of C-cell center
-    y_C = mesh_mask_key.variables['y_C'][:]                     # Geographic Longitude of C-cell center
+    y_C = mesh_mask_key.variables['y_C'][:]                     # Geographic Latitude of C-cell center
     # depth
     zt = mesh_mask_key.variables['zt'][:]                       # Depth of T cell (z50)
     zb = mesh_mask_key.variables['zb'][:]                       # Depth of T cell edges (z51)
@@ -160,12 +160,26 @@ def var_coordinate(datapath_mask):
     # topographic depth of cell
     topo_depth_t = mesh_mask_key.variables['depth'][:]          # topographic depth of T-cell
     topo_depth_c = mesh_mask_key.variables['depth_c'][:]        # topographic depth of C-cell
+    
+    # calculate the atlantic land sea mask
+    tmaskatl = tmask
+    tmaskatl[0:225,:] = 0 # boundary south
+    tmaskatl[:,0:727] = 0 # boundary west
+    tmaskatl[:,1200:] = 0 # boundary east
+    tmaskatl[y_T>70] = 0 # boundary north
+    # correction Mediterranean
+    tmaskatl[614:680,1100:1240] = 0
+    tmaskatl[660:720,1140:1280] = 0
+    # correction Pacific
+    tmaskatl[225:522,759:839] = 0
+    tmaskatl[225:545,670:780] = 0
+    tmaskatl[225:560,670:759] = 0
 
     print "Retrieve the MOM5 coordinate and mask info successfully!"
     logging.info('Finish retrieving the MOM5 coordinate and mask info')
 
     return grid_x_T, grid_y_T, grid_x_C, grid_y_C, x_T, y_T, x_C, y_C, zt, dz, area_T,\
-           e1t, e2t, e1c, e2c, tmask, cmask, mbathy_t, mbathy_c, topo_depth_t, topo_depth_c
+           e1t, e2t, e1c, e2c, tmask, tmaskatl, cmask, mbathy_t, mbathy_c, topo_depth_t, topo_depth_c
 
 
 def stream_function(soda_key,e1c):
@@ -176,7 +190,7 @@ def stream_function(soda_key,e1c):
     print "Compute the meridional overturning stream function for globle and Atlantic!"
     logging.info('Compute the meridional overturning stream function for globle and Atlantic!')
     #dominant equation for stream function
-    # psi = e1v(m) * rho(kg/m3) * v(m/s) * dz(m) = (kg/s)
+    # psi = e1c(m) * rho(kg/m3) * v(m/s) * dz(m) = (kg/s)
     # extract variables
     #u = soda_key.variables['u'][0,:,:,:]
     v = soda_key.variables['v'][0,:,:,:]
@@ -186,7 +200,7 @@ def stream_function(soda_key,e1c):
     # define the stream function psi
     psi_globe = np.zeros((level,jj,ji),dtype=float)
     #psi_atlantic = np.zeros((level,jj,ji),dtype=float)
-    # expand the grid size matrix e1v to avoid more loops
+    # expand the grid size matrix e1c to avoid more loops
     e1c_3D = np.repeat(e1c[np.newaxis,:,:],level,0)
     # choose the integration order
     int_order = 1  # 1 - from sea bottom to sea surface 2 from sea surfaca to sea bottom
@@ -195,36 +209,36 @@ def stream_function(soda_key,e1c):
         # global meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] -\
-                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz[i] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
             else:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] -\
-                                   e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz[i] + psi_globe[i+1,:,:] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
         # Atlantic meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] -\
-                                      e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] -\
+                                      e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
             else:
-                psi_atlantic[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] -\
-                                      e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_adjust[i,:,:]
+                psi_atlantic[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] -\
+                                      e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
                 psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] -\
-                                   e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
             else:
-                psi_globe[i,:,:] = e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] -\
-                                   e1v_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
     # take the zonal integral
     psi_stream_globe = np.sum(psi_globe,2)/1e+6 # the unit is changed to Sv
     psi_stream_atlantic = np.sum(psi_atlantic,2)/1e+6 # the unit is changed to Sv
@@ -306,12 +320,12 @@ def meridional_energy_transport(soda_key):
     for i in np.arange(level):
         if partial == 1: # include partial cells
             Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
-                                     T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:] -\
+                                     T_vgrid[i,:,:] * e1c * e3t_0[i] * vmask[i,:,:] -\
                                      constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
-                                     T_vgrid[i,:,:] * e1v * e3t_adjust[i,:,:] * vmask[i,:,:]
+                                     T_vgrid[i,:,:] * e1c * e3t_adjust[i,:,:] * vmask[i,:,:]
         else: # exclude partial cells
             Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
-                                     T_vgrid[i,:,:] * e1v * e3t_0[i] * vmask[i,:,:]
+                                     T_vgrid[i,:,:] * e1c * e3t_0[i] * vmask[i,:,:]
     # take the vertical integral
     Internal_E_int = np.zeros((jj,ji))
     Internal_E_int = np.sum(Internal_E_flux * vmask,0)/1e+12
@@ -442,21 +456,25 @@ if __name__=="__main__":
     level = 50
     # extract the mesh_mask and coordinate information
     grid_x_T, grid_y_T, grid_x_C, grid_y_C, x_T, y_T, x_C, y_C, zt, dz, area_T, e1t,\
-    e2t, e1c, e2c, tmask, cmask, mbathy_t, mbathy_c, topo_depth_t, topo_depth_c = var_coordinate(datapath_mask)
+    e2t, e1c, e2c, tmask, tmaskatl, cmask, mbathy_t, mbathy_c, topo_depth_t, topo_depth_c = var_coordinate(datapath_mask)
     print '*******************************************************************'
     print '*******************  Partial cells correction   *******************'
     print '*******************************************************************'
     # construct partial cell depth matrix
-    # the depth including partial cell is given by
+    # the depth including partial cell is given by topo_depth_t&c
+    # topo_depth_t and topo_depth_c are totally different
     # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
     # then minus this adjustment when calculate the OMET at each layer with mask
     # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
-    e3t_adjust = np.zeros((level,jj,ji),dtype = float)
-    for i in np.arange(1,level,1): # start from 1
-        for j in np.arange(jj):
-            for k in np.arange(ji):
-                if i == mbathy[j,k]:
-                    e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
+    #!!!
+    dz_adjust_t = np.zeros((level,jj,ji),dtype = float)
+    dz_adjust_c = np.zeros((level,jj,ji),dtype = float)
+    for i in np.arange(jj):
+        for j in np.arange(ji):
+            if mbathy_t[i,j] != 0:
+                dz_adjust[mbathy_t[i,j]-1,i,j] = np.sum(zt[0:mbathy_t[i,j]-1]) - topo_depth_t[i,j]          # python start with 0, so i-1
+            if mbathy_c[i,j] != 0:
+                dz_adjust[mbathy_c[i,j]-1,i,j] = np.sum(zt[0:mbathy_c[i,j]-1]) - topo_depth_c[i,j]          # python start with 0, so i-1
     ####################################################################
     ###  Create space for stroing intermediate variables and outputs ###
     ####################################################################
@@ -478,7 +496,7 @@ if __name__=="__main__":
         ########  Calculate meridional overturning stream function #########
         ####################################################################
         # calculate the stokes stream function and plot
-        psi_glo, psi_atl = stream_function(uv_key,e1v)
+        psi_glo, psi_atl = stream_function(uv_key,e1c)
         psi_pool_zonal_glo[i-1993,j,:,:] = psi_glo
         psi_pool_zonal_atl[i-1993,j,:,:] = psi_atl
         ####################################################################
