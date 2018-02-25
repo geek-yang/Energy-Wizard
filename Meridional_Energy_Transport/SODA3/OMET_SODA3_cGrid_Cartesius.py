@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (SODA3) on Cartesius
 Author          : Yang Liu
 Date            : 2018.01.12
-Last Update     : 2018.02.06
+Last Update     : 2018.02.24
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset SODA3 from
                   Maryland University and TAMU. The complete computaiton is accomplished
@@ -94,12 +94,26 @@ constant ={'g' : 9.80616,      # gravititional acceleration [m / s2]
 datapath = '/projects/0/blueactn/reanalysis/SODA3/5day'
 # path of mask file
 datapath_mask = '/projects/0/blueactn/reanalysis/SODA3'
-# time of the data, which concerns with the name of input
-file_list_in = sys.stdin.readline()
+# the input files are 5 days data
+# each file has a name with date
+# we have to load files for each month seperately, for the sake of monthly mean
+# each record for each month is placed in folders by month
+# the names are listed in a txt file line by line
+# we will load the name from the txt file
+datapath_namelist = '/projects/0/blueactn/reanalysis/SODA3/5day'
+ff = open(datapath_namelist + os.sep + 'namelist.txt','r')
+# can not skip \n
+#namelist = ff.readlines()
+# remember to skip \n
+namelist = ff.read().splitlines()
+print namelist
+ff.close()
+
+#file_list_in = sys.stdin.readline()
 # starting time (year)
-file_name = str(file_list_in)
+#file_name = str(file_list_in)
 # Ending time, if only for 1 year, then it should be the same as starting year
-end_year = 2015
+#end_year = 2015
 # specify output path for the netCDF4 file
 output_path = '/home/lwc16308/reanalysis/SODA3/output'
 ####################################################################################
@@ -141,8 +155,9 @@ def var_coordinate(datapath_mask):
     zb = mesh_mask_key.variables['zb'][:]                       # Depth of T cell edges (z51)
     # calculate the depth of each layer
     dz = np.zeros(zt.shape)
-    dz = zb[1:] - zb[:-1]
-    # area of T cell - for the computation of ocean heat content
+    dz[0] = zb[0]
+    dz[1:] = zb[1:] - zb[:-1]
+    # area of T cell - for the computation onamelistf ocean heat content
     area_T = mesh_mask_key.variables['area_T'][:]               # Area of T-cell
     # width (e1t) and height (e2t) of T-cell
     e1t = mesh_mask_key.variables['ds_01_21_T'][:]
@@ -150,7 +165,7 @@ def var_coordinate(datapath_mask):
     # width (e1c) and height (e2c) of C-cell
     e1c = mesh_mask_key.variables['ds_01_21_C'][:]
     e2c = mesh_mask_key.variables['ds_10_12_C'][:]
-    # land-sea mask
+    # land-sea mask (2D)
     tmask = mesh_mask_key.variables['wet'][:]                   # land/sea flag (0=land) for T-cell
     cmask = mesh_mask_key.variables['wet_c'][:]                 # land/sea flag (0=land) for C-cell
     # number of vertical cells - topography
@@ -160,7 +175,7 @@ def var_coordinate(datapath_mask):
     # topographic depth of cell
     topo_depth_t = mesh_mask_key.variables['depth'][:]          # topographic depth of T-cell
     topo_depth_c = mesh_mask_key.variables['depth_c'][:]        # topographic depth of C-cell
-    
+
     # calculate the atlantic land sea mask
     tmaskatl = tmask
     tmaskatl[0:225,:] = 0 # boundary south
@@ -199,7 +214,7 @@ def stream_function(soda_key,e1c):
     np.ma.set_fill_value(v,0)
     # define the stream function psi
     psi_globe = np.zeros((level,jj,ji),dtype=float)
-    #psi_atlantic = np.zeros((level,jj,ji),dtype=float)
+    psi_atlantic = np.zeros((level,jj,ji),dtype=float)
     # expand the grid size matrix e1c to avoid more loops
     e1c_3D = np.repeat(e1c[np.newaxis,:,:],level,0)
     # choose the integration order
@@ -207,38 +222,38 @@ def stream_function(soda_key,e1c):
     if int_order == 1:
         # take the integral from sea botton to the surface
         # global meridional overturning stream function
-        for i in (level - np.arange(level) -1 ):
+        for i in (level - np.arange(level) -1):
             if i == level -1:
-                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz[i] -\
-                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz_adjust_c[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz[i] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
-                psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
+                psi_globe[i,:,:] = psi_globe[i,:,:] * cmask[:]
             else:
-                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz[i] + psi_globe[i+1,:,:] -\
-                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * dz_adjust_c[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz[i] + psi_globe[i+1,:,:] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
-                psi_globe[i,:,:] = psi_globe[i,:,:] * vmask[i,:,:]
+                psi_globe[i,:,:] = psi_globe[i,:,:] * cmask[:]
         # Atlantic meridional overturning stream function
         for i in (level - np.arange(level) -1 ):
             if i == level -1:
-                psi_atlantic[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] -\
-                                      e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * dz_adjust_c[i,:,:]
+                psi_atlantic[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * tmaskatl * dz[i] -\
+                                      e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * tmaskatl * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
-                psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
+                psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * cmask[:]
             else:
-                psi_atlantic[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * e3t_0[i] + psi_atlantic[i+1,:,:] -\
-                                      e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * tmaskatl * dz_adjust_c[i,:,:]
+                psi_atlantic[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * tmaskatl * dz[i] + psi_atlantic[i+1,:,:] -\
+                                      e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * tmaskatl * dz_adjust_c[i,:,:]
                 # for old version of python to avoid the filling value during summation
-                psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * vmask[i,:,:]
+                psi_atlantic[i,:,:] = psi_atlantic[i,:,:] * tmaskatl * cmask[:]
     elif int_order == 2:
         # take the integral from sea surface to the bottom
         for i in np.arange(level):
             if i == 0:
-                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] -\
-                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz[i] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz_adjust_c[i,:,:]
             else:
-                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_0[i] + psi_globe[i+1,:,:] -\
-                                   e1c_3D[i,:,:] * v[i,:,:].filled() * vmask[i,:,:] * e3t_adjust[i,:,:]
+                psi_globe[i,:,:] = e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz[i] + psi_globe[i+1,:,:] -\
+                                   e1c_3D[i,:,:] * v[i,:,:].filled() * cmask[:] * dz_adjust_c[i,:,:]
     # take the zonal integral
     psi_stream_globe = np.sum(psi_globe,2)/1e+6 # the unit is changed to Sv
     psi_stream_atlantic = np.sum(psi_atlantic,2)/1e+6 # the unit is changed to Sv
@@ -256,8 +271,8 @@ def visualization_stream_function(psi_glo,psi_atl):
     psi_atl_mean = np.mean(np.mean(psi_atl,0),0)
     # plot the global meridional overturning stream function
     fig0 = plt.figure()
-    X , Y = np.meshgrid(gphiv[:,1060],zt)
-    contour_level = np.arange(-40,80,5)
+    X , Y = np.meshgrid(grid_y_C,zt)
+    #contour_level = np.arange(-40,80,5)
     plt.contour(X,Y,psi_glo_mean,linewidth= 0.2)
     #cs = plt.contourf(X,Y,psi_glo_mean,contour_level,linewidth= 0.2,cmap='RdYlGn')
     plt.title('Stokes Stream Function of Global Ocean')
@@ -273,8 +288,8 @@ def visualization_stream_function(psi_glo,psi_atl):
 
     # plot the Atlantic meridional overturning stream function
     fig1 = plt.figure()
-    X , Y = np.meshgrid(gphiv[:,1060],zt)
-    contour_level = np.arange(-40,80,5)
+    X , Y = np.meshgrid(grid_y_C,zt)
+    #contour_level = np.arange(-40,80,5)
     plt.contour(X,Y,psi_atl_mean,linewidth= 0.2)
     #cs = plt.contourf(X,Y,psi_atl_mean,contour_level,linewidth= 0.2,cmap='RdYlGn')
     plt.title('Stokes Stream Function of Atlantic Ocean')
@@ -297,7 +312,7 @@ def meridional_energy_transport(soda_key):
     '''
     # extract variables
     print "Start extracting variables for the quantification of meridional energy transport."
-    time = soda_key.variables['time'][:]                            # days since 1980-01-01 00:00:00, the unit is JULIAN
+    #time = soda_key.variables['time'][:]                            # days since 1980-01-01 00:00:00, the unit is JULIAN
     temp = soda_key.variables['temp'][0,:,:,:]                      # potential temperature, the unit is Celsius!
     #u = soda_key.variables['u'][0,:,:,:]
     v = soda_key.variables['v'][0,:,:,:]
@@ -307,82 +322,94 @@ def meridional_energy_transport(soda_key):
     print 'Extracting variables successfully!'
     #logging.info("Extracting variables successfully!")
     # calculate the meridional velocity at T grid
-    T_vgrid = np.zeros((level,jj,ji),dtype=float)
+    T_cgrid = np.zeros((level,jj,ji),dtype=float)
     # Interpolation of T on V grid through Nearest-Neighbor method
     for i in np.arange(jj):
-        if i == jj-1:
-            T_vgrid[:,i,:] = theta[:,i,:]
-        else:
-            T_vgrid[:,i,:] = (theta[:,i,:] + theta[:,i+1,:])/2
+        for j in np.arange(ji):
+            if i == jj-1:
+                if j == ji-1:
+                    T_cgrid[:,i,j] = (temp[:,i,j] + temp[:,i,0])/2
+                else:
+                    T_cgrid[:,i,j] = (temp[:,i,j] + temp[:,i,j+1])/2
+            else:
+                if j == ji-1:
+                    T_cgrid[:,i,j] = ((temp[:,i,j] + temp[:,i+1,j])/2 + (temp[:,i,0] + temp[:,i+1,0])/2)/2
+                else:
+                    T_cgrid[:,i,j] = ((temp[:,i,j] + temp[:,i+1,j])/2 + (temp[:,i,j+1] + temp[:,i+1,j+1])/2)/2
     # calculate heat flux at each grid point
     Internal_E_flux = np.zeros((level,jj,ji),dtype=float)
     partial = 1 # switch for the partial cells 1 = include & 0 = exclude
     for i in np.arange(level):
         if partial == 1: # include partial cells
             Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
-                                     T_vgrid[i,:,:] * e1c * e3t_0[i] * vmask[i,:,:] -\
+                                     T_cgrid[i,:,:] * e1c * dz[i] * cmask[:] -\
                                      constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
-                                     T_vgrid[i,:,:] * e1c * e3t_adjust[i,:,:] * vmask[i,:,:]
+                                     T_cgrid[i,:,:] * e1c * dz_adjust_c[i,:,:] * cmask[:]
         else: # exclude partial cells
             Internal_E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:].filled() *\
-                                     T_vgrid[i,:,:] * e1c * e3t_0[i] * vmask[i,:,:]
+                                     T_cgrid[i,:,:] * e1c * dz[i] * cmask[:]
     # take the vertical integral
     Internal_E_int = np.zeros((jj,ji))
-    Internal_E_int = np.sum(Internal_E_flux * vmask,0)/1e+12
+    Internal_E_int = np.sum(Internal_E_flux,0) * cmask / 1e+12
     print '*****************************************************************************'
     print "**** Computation of meridional energy transport in the ocean is finished ****"
     print "************         The result is in tera-watt (1E+12)          ************"
     print '*****************************************************************************'
     return Internal_E_int
 
-def zonal_int_plot(E_annual):
+def zonal_int_plot(E_monthly):
     # take the zonal means
-    E_zonal_int_mean = np.mean(np.mean(E_annual,0)/1000,0)
+    E_zonal_int_mean = np.mean(E_monthly,0)/1000
     fig3 = plt.figure()
-    plt.plot(gphiv[:,1060],E_zonal_int_mean)
+    plt.plot(grid_y_C,E_zonal_int_mean)
     plt.xlabel("Latitude")
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
-    fig3.savefig(output_path + os.sep + 'OMET_GLORYS2V3_1993_2014.png',dpi = 500)
+    fig3.savefig(output_path + os.sep + 'OMET_SODA3_monthly.png',dpi = 500)
 
 def create_netcdf_point (meridional_E_point_pool,output_path):
     print '*******************************************************************'
     print '*********************** create netcdf file ************************'
-    print '***********************    OMET on ORCA   *************************'
+    print '***********************    OMET on MOM    *************************'
     print '*******************************************************************'
     logging.info("Start creating netcdf file for total meridional energy transport at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
     data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_E_point.nc' ,'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
-    year_wrap_dim = data_wrap.createDimension('year',len(period))
-    month_wrap_dim = data_wrap.createDimension('month',12)
+    #year_wrap_dim = data_wrap.createDimension('year',len(period))
+    #month_wrap_dim = data_wrap.createDimension('month',12)
+    time_wrap_dim = data_wrap.createDimension('time',len(namelist))
     lat_wrap_dim = data_wrap.createDimension('j',jj)
     lon_wrap_dim = data_wrap.createDimension('i',ji)
     # create coordinate variables for 3-dimensions
     # 1D
-    year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
-    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    #year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
+    #month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    time_wrap_var = data_wrap.createVariable('time',np.int32,('time',))
     # 2D
     lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('j','i'))
     lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('j','i'))
     # 4D
-    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','j','i'))
+    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('time','j','i'))
     # global attributes
-    data_wrap.description = 'Monthly mean meridional energy transport on ORCA grid'
+    data_wrap.description = '5 daily meridional energy transport on MOM5 grid'
     # variable attributes
-    lat_wrap_var.units = 'ORCA025_latitude'
-    lon_wrap_var.units = 'ORCA025_longitude'
+    lat_wrap_var.units = 'MOM5_latitude'
+    lon_wrap_var.units = 'MOM5_longitude'
+    time_wrap_var.units = 'day'
     E_total_wrap_var.units = 'tera watt'
 
-    lat_wrap_var.long_name = 'ORCA025 grid latitude'
-    lon_wrap_var.long_name = 'ORCA025 grid longitude'
+    lat_wrap_var.long_name = 'MOM5 grid latitude'
+    lon_wrap_var.long_name = 'MOM5 grid longitude'
+    time_wrap_var.long_name = '5 day time'
     E_total_wrap_var.long_name = 'oceanic meridional energy transport'
     # writing data
-    year_wrap_var[:] = period
-    lat_wrap_var[:] = gphiv
-    lon_wrap_var[:] = glamv
-    month_wrap_var[:] = np.arange(1,13,1)
+    #year_wrap_var[:] = period
+    lat_wrap_var[:] = y_C
+    lon_wrap_var[:] = x_C
+    time_wrap_var[:] = np.arange(len(namelist))
+    #month_wrap_var[:] = np.arange(1,13,1)
     E_total_wrap_var[:] = meridional_E_point_pool
     # close the file
     data_wrap.close()
@@ -399,40 +426,45 @@ def create_netcdf_zonal_int (meridional_E_zonal_int_pool, meridional_psi_zonal_g
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
     data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_E_zonal_int.nc' ,'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
-    year_wrap_dim = data_wrap.createDimension('year',len(period))
-    month_wrap_dim = data_wrap.createDimension('month',12)
+    #year_wrap_dim = data_wrap.createDimension('year',len(period))
+    #month_wrap_dim = data_wrap.createDimension('month',12)
+    time_wrap_dim = data_wrap.createDimension('time',len(namelist))
     lat_wrap_dim = data_wrap.createDimension('latitude_aux',jj)
     lev_wrap_dim = data_wrap.createDimension('lev',level)
     # create coordinate variables for 3-dimensions
     # 1D
-    year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
-    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    #year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
+    #month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    time_wrap_var = data_wrap.createVariable('time',np.int32,('time',))
     lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('latitude_aux',))
     lev_wrap_var = data_wrap.createVariable('lev',np.float32,('lev',))
     # 3D
-    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude_aux'))
+    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('time','latitude_aux'))
     # 4D
-    psi_glo_wrap_var = data_wrap.createVariable('Psi_glo',np.float64,('year','month','lev','latitude_aux'))
-    psi_atl_wrap_var = data_wrap.createVariable('Psi_atl',np.float64,('year','month','lev','latitude_aux'))
+    psi_glo_wrap_var = data_wrap.createVariable('Psi_glo',np.float64,('time','lev','latitude_aux'))
+    psi_atl_wrap_var = data_wrap.createVariable('Psi_atl',np.float64,('time','lev','latitude_aux'))
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of meridional energy transport on ORCA grid'
     # variable attributes
     lat_wrap_var.units = 'degree_north'
     E_total_wrap_var.units = 'tera watt'
     lev_wrap_var.units = 'm'
+    time_wrap_var.units = 'day'
     psi_glo_wrap_var.units = 'Sv'
     psi_atl_wrap_var.units = 'Sv'
 
     lev_wrap_var.long_name = 'depth'
     lat_wrap_var.long_name = 'auxillary latitude'
+    time_wrap_var.long_name = '5 day time'
     E_total_wrap_var.long_name = 'Oceanic meridional energy transport'
     psi_glo_wrap_var.long_name = 'Meridional overturning stream function of global ocean'
     psi_atl_wrap_var.long_name = 'Meridional overturning stream function of Atlantic ocean'
     # writing data
-    year_wrap_var[:] = period
-    lat_wrap_var[:] = gphiv[:,1060]
-    month_wrap_var[:] = np.arange(1,13,1)
+    #year_wrap_var[:] = period
+    lat_wrap_var[:] = y_C
+    #month_wrap_var[:] = np.arange(1,13,1)
     lev_wrap_var[:] = zt
+    time_wrap_var[:] = np.arange(len(namelist))
     E_total_wrap_var[:] = meridional_E_zonal_int_pool
     psi_glo_wrap_var[:] = meridional_psi_zonal_glo
     psi_atl_wrap_var[:] = meridional_psi_zonal_atl
@@ -447,9 +479,9 @@ if __name__=="__main__":
     print '*******************************************************************'
     # create the year index
     #period = np.arange(start_year,end_year+1,1)
-    #namelist_month = ['01','02','03','04','05','06','07','08','09','10','11','12']
+    namelist_month = ['01','02','03','04','05','06','07','08','09','10','11','12']
     #index_month = np.arange(12)
-    index_filename = len()
+    #index_filename = len(namelist)
     # ORCA1_z42 info (Madec and Imbard 1996)
     ji = 1440
     jj = 1070
@@ -466,53 +498,55 @@ if __name__=="__main__":
     # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
     # then minus this adjustment when calculate the OMET at each layer with mask
     # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
-    #!!!
+    # !!!
     dz_adjust_t = np.zeros((level,jj,ji),dtype = float)
     dz_adjust_c = np.zeros((level,jj,ji),dtype = float)
     for i in np.arange(jj):
         for j in np.arange(ji):
             if mbathy_t[i,j] != 0:
-                dz_adjust[mbathy_t[i,j]-1,i,j] = np.sum(zt[0:mbathy_t[i,j]-1]) - topo_depth_t[i,j]          # python start with 0, so i-1
+                counter_t = int(mbathy_t[i,j] - 1)
+                dz_adjust_t[counter_t,i,j] = np.sum(zt[0:counter_t]) - topo_depth_t[i,j]    # python start with 0, so i-1
             if mbathy_c[i,j] != 0:
-                dz_adjust[mbathy_c[i,j]-1,i,j] = np.sum(zt[0:mbathy_c[i,j]-1]) - topo_depth_c[i,j]          # python start with 0, so i-1
+                counter_c = int(mbathy_c[i,j] - 1)
+                dz_adjust_c[counter_c,i,j] = np.sum(zt[0:counter_c]) - topo_depth_c[i,j]    # python start with 0, so i-1
     ####################################################################
     ###  Create space for stroing intermediate variables and outputs ###
     ####################################################################
     #create a data pool to save the OMET for each year and month
-    E_pool_point = np.zeros((len(period),12,jj,ji),dtype = float)
-    E_pool_zonal_int = np.zeros((len(period),12,jj),dtype = float)
+    E_pool_point = np.zeros((len(namelist),jj,ji),dtype = float)
+    E_pool_zonal_int = np.zeros((len(namelist),jj),dtype = float)
     #E_pool_point_regrid = np.zeros((len(period),900,1440),dtype = float)
     # Meridional overturning stream function
-    psi_pool_zonal_glo = np.zeros((len(period),12,level,jj),dtype = float) # for Globe
-    psi_pool_zonal_atl = np.zeros((len(period),12,level,jj),dtype = float) # for Atlantic
+    psi_pool_zonal_glo = np.zeros((len(namelist),level,jj),dtype = float) # for Globe
+    psi_pool_zonal_atl = np.zeros((len(namelist),level,jj),dtype = float) # for Atlantic
     # loop for calculation
-    for i in period:
+    for i in np.arange(len(namelist)):
         ####################################################################
         #########################  Extract variables #######################
         ####################################################################
         # get the key of each variable
-        soda_key = var_key(datapath, i)
+        soda_key = var_key(datapath, namelist[i])
         ####################################################################
         ########  Calculate meridional overturning stream function #########
         ####################################################################
         # calculate the stokes stream function and plot
-        psi_glo, psi_atl = stream_function(uv_key,e1c)
-        psi_pool_zonal_glo[i-1993,j,:,:] = psi_glo
-        psi_pool_zonal_atl[i-1993,j,:,:] = psi_atl
+        psi_glo, psi_atl = stream_function(soda_key,e1c)
+        psi_pool_zonal_glo[i,:,:] = psi_glo
+        psi_pool_zonal_atl[i,:,:] = psi_atl
         ####################################################################
         ##############  Calculate meridional energy transport ##############
         ####################################################################
         # calculate the meridional energy transport in the ocean
-        E_point = meridional_energy_transport(theta_key, uv_key)
-        E_pool_point[i-1993,j,:,:] = E_point
-        E_pool_zonal_int[i-1993,j,:] = np.sum(E_point,1)
-        # plot the zonal int of all time
-        zonal_int_plot(E_pool_zonal_int)
+        E_point = meridional_energy_transport(soda_key)
+        E_pool_point[i,:,:] = E_point
+        E_pool_zonal_int[i,:] = np.sum(E_point,1)
         # plot the stream function
         #visualization_stream_function(psi_pool_zonal_glo,psi_pool_zonal_atl)
         # create NetCDF file and save the output
-        create_netcdf_point(E_pool_point,output_path)
-        create_netcdf_zonal_int(E_pool_zonal_int,psi_pool_zonal_glo,psi_pool_zonal_atl,output_path)
+    # plot the zonal int of all time
+    zonal_int_plot(E_pool_zonal_int)
+    create_netcdf_point(E_pool_point,output_path)
+    create_netcdf_zonal_int(E_pool_zonal_int,psi_pool_zonal_glo,psi_pool_zonal_atl,output_path)
 
     print 'Computation of meridional energy transport on MOM5 grid for SODA3 is complete!!!'
     print 'The output is in sleep, safe and sound!!!'
