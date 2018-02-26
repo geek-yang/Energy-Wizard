@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Oceanic Meridional Energy Transport (SODA3) on Cartesius
 Author          : Yang Liu
 Date            : 2018.01.12
-Last Update     : 2018.02.24
+Last Update     : 2018.02.26
 Description     : The code aims to calculate the oceanic meridional energy
                   transport based on oceanic reanalysis dataset SODA3 from
                   Maryland University and TAMU. The complete computaiton is accomplished
@@ -48,7 +48,7 @@ import matplotlib
 # generate images without having a window appear
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap, cm
+#from mpl_toolkits.basemap import Basemap, cm
 #import cartopy.crs as ccrs
 #from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 #import iris
@@ -74,11 +74,11 @@ print os.path
 start_time = tttt.time()
 
 # Redirect all the console output to a file
-sys.stdout = open('/project/Reanalysis/SODA3/console_E.out','w')
+sys.stdout = open('/home/lwc16308/reanalysis/SODA3/console_E.out','w')
 
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 #logging.basicConfig(filename = 'F:\DataBase\ORAS4\history.log', filemode = 'w',level = logging.DEBUG,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logging.basicConfig(filename = '/project/Reanalysis/SODA3/history_E.log',
+logging.basicConfig(filename = '/home/lwc16308/reanalysis/SODA3/history_E.log',
                     filemode = 'w', level = logging.DEBUG,
                     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -90,8 +90,10 @@ constant ={'g' : 9.80616,      # gravititional acceleration [m / s2]
             }
 
 ################################   Input zone  ######################################
+folder_name_in = sys.stdin.readline()
+input_year = int(folder_name_in)
 # specify data path
-datapath = '/projects/0/blueactn/reanalysis/SODA3/5day'
+datapath = '/projects/0/blueactn/reanalysis/SODA3/5day/soda%d' % (input_year)
 # path of mask file
 datapath_mask = '/projects/0/blueactn/reanalysis/SODA3'
 # the input files are 5 days data
@@ -100,7 +102,7 @@ datapath_mask = '/projects/0/blueactn/reanalysis/SODA3'
 # each record for each month is placed in folders by month
 # the names are listed in a txt file line by line
 # we will load the name from the txt file
-datapath_namelist = '/projects/0/blueactn/reanalysis/SODA3/5day'
+datapath_namelist = '/projects/0/blueactn/reanalysis/SODA3/5day/soda%d' % (input_year)
 ff = open(datapath_namelist + os.sep + 'namelist.txt','r')
 # can not skip \n
 #namelist = ff.readlines()
@@ -109,11 +111,6 @@ namelist = ff.read().splitlines()
 print namelist
 ff.close()
 
-#file_list_in = sys.stdin.readline()
-# starting time (year)
-#file_name = str(file_list_in)
-# Ending time, if only for 1 year, then it should be the same as starting year
-#end_year = 2015
 # specify output path for the netCDF4 file
 output_path = '/home/lwc16308/reanalysis/SODA3/output'
 ####################################################################################
@@ -284,7 +281,7 @@ def visualization_stream_function(psi_glo,psi_atl):
     #invert the y axis
     plt.gca().invert_yaxis()
     plt.show()
-    fig0.savefig(output_path + os.sep + "OMET_SODA3_StreamFunction_Globe.png",dpi=500)
+    fig0.savefig(output_path + os.sep + "OMET_SODA3_StreamFunction_Globe_%d.png" % (input_year),dpi=500)
 
     # plot the Atlantic meridional overturning stream function
     fig1 = plt.figure()
@@ -301,7 +298,7 @@ def visualization_stream_function(psi_glo,psi_atl):
     #invert the y axis
     plt.gca().invert_yaxis()
     plt.show()
-    fig1.savefig(output_path + os.sep + "OMET_SODA3_StreamFunction_Atlantic.png",dpi=500)
+    fig1.savefig(output_path + os.sep + "OMET_SODA3_StreamFunction_Atlantic_%d.png" % (input_year),dpi=500)
 
     print "Export meridional overturning stream function for globle and Atlantic."
     logging.info('Export the meridional overturning stream function for globle and Atlantic.')
@@ -365,7 +362,7 @@ def zonal_int_plot(E_monthly):
     plt.xlabel("Latitude")
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
-    fig3.savefig(output_path + os.sep + 'OMET_SODA3_monthly.png',dpi = 500)
+    fig3.savefig(output_path + os.sep + 'OMET_SODA3_monthly_%d.png' % (input_year),dpi = 500)
 
 def create_netcdf_point (meridional_E_point_pool,output_path):
     print '*******************************************************************'
@@ -375,7 +372,7 @@ def create_netcdf_point (meridional_E_point_pool,output_path):
     logging.info("Start creating netcdf file for total meridional energy transport at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_E_point.nc' ,'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_E_point_%d.nc' % (input_year),'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     #year_wrap_dim = data_wrap.createDimension('year',len(period))
     #month_wrap_dim = data_wrap.createDimension('month',12)
@@ -424,7 +421,7 @@ def create_netcdf_zonal_int (meridional_E_zonal_int_pool, meridional_psi_zonal_g
     logging.info("Start creating netcdf file for total meridional energy transport at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_E_zonal_int.nc' ,'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_E_zonal_int_%d.nc' % (input_year),'w',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     #year_wrap_dim = data_wrap.createDimension('year',len(period))
     #month_wrap_dim = data_wrap.createDimension('month',12)
