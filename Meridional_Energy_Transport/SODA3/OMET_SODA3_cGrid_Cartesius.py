@@ -309,6 +309,7 @@ def meridional_energy_transport(soda_key):
     '''
     # extract variables
     print "Start extracting variables for the quantification of meridional energy transport."
+    logging.info('Start extracting variables for the quantification of meridional energy transport.')
     #time = soda_key.variables['time'][:]                            # days since 1980-01-01 00:00:00, the unit is JULIAN
     temp = soda_key.variables['temp'][0,:,:,:]                      # potential temperature, the unit is Celsius!
     #u = soda_key.variables['u'][0,:,:,:]
@@ -317,6 +318,7 @@ def meridional_energy_transport(soda_key):
     # set the filled value to be 0
     np.ma.set_fill_value(v,0)
     print 'Extracting variables successfully!'
+    logging.info('Start calculating the meridional energy transport.')
     #logging.info("Extracting variables successfully!")
     # calculate the meridional velocity at T grid
     T_cgrid = np.zeros((level,jj,ji),dtype=float)
@@ -352,6 +354,7 @@ def meridional_energy_transport(soda_key):
     print "**** Computation of meridional energy transport in the ocean is finished ****"
     print "************         The result is in tera-watt (1E+12)          ************"
     print '*****************************************************************************'
+    logging.info('Finish calculating the meridional energy transport.')
     return Internal_E_int
 
 def zonal_int_plot(E_monthly):
