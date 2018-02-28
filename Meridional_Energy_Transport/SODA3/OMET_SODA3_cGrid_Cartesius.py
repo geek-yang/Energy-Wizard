@@ -149,8 +149,7 @@ def var_coordinate(datapath_mask):
     y_C = mesh_mask_key.variables['y_C'][:]                     # Geographic Latitude of C-cell center
     # depth
     zt = mesh_mask_key.variables['zt'][:]                       # Depth of T cell (z50)
-    # sould use the 'ucell zstar depth edges' from each reanalysis data file
-    zb = mesh_mask_key.variables['zb'][:]                       # Depth of T cell edges (z51)
+    zb = mesh_mask_key.variables['zb'][:]                       # Depth of T cell edges (z50)
     # calculate the depth of each layer
     dz = np.zeros(zt.shape)
     dz[0] = zb[0]
@@ -191,7 +190,7 @@ def var_coordinate(datapath_mask):
     print "Retrieve the MOM5 coordinate and mask info successfully!"
     logging.info('Finish retrieving the MOM5 coordinate and mask info')
 
-    return grid_x_T, grid_y_T, grid_x_C, grid_y_C, x_T, y_T, x_C, y_C, zt, dz, area_T,\
+    return grid_x_T, grid_y_T, grid_x_C, grid_y_C, x_T, y_T, x_C, y_C, zt, zb, dz, area_T,\
            e1t, e2t, e1c, e2c, tmask, tmaskatl, cmask, mbathy_t, mbathy_c, topo_depth_t, topo_depth_c
 
 
@@ -503,7 +502,7 @@ if __name__=="__main__":
     jj = 1070
     level = 50
     # extract the mesh_mask and coordinate information
-    grid_x_T, grid_y_T, grid_x_C, grid_y_C, x_T, y_T, x_C, y_C, zt, dz, area_T, e1t,\
+    grid_x_T, grid_y_T, grid_x_C, grid_y_C, x_T, y_T, x_C, y_C, zt, zb, dz, area_T, e1t,\
     e2t, e1c, e2c, tmask, tmaskatl, cmask, mbathy_t, mbathy_c, topo_depth_t, topo_depth_c = var_coordinate(datapath_mask)
     print '*******************************************************************'
     print '*******************  Partial cells correction   *******************'
