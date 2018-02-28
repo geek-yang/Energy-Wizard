@@ -282,6 +282,7 @@ def visualization_stream_function(psi_glo,psi_atl):
     plt.gca().invert_yaxis()
     plt.show()
     fig0.savefig(output_path + os.sep + "OMET_SODA3_StreamFunction_Globe_%d.png" % (input_year),dpi=500)
+    plt.close(fig0)
 
     # plot the Atlantic meridional overturning stream function
     fig1 = plt.figure()
@@ -299,6 +300,7 @@ def visualization_stream_function(psi_glo,psi_atl):
     plt.gca().invert_yaxis()
     plt.show()
     fig1.savefig(output_path + os.sep + "OMET_SODA3_StreamFunction_Atlantic_%d.png" % (input_year),dpi=500)
+    plt.close(fig1)
 
     print "Export meridional overturning stream function for globle and Atlantic."
     logging.info('Export the meridional overturning stream function for globle and Atlantic.')
@@ -375,6 +377,7 @@ def zonal_int_plot(E_monthly):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.show()
     fig3.savefig(output_path + os.sep + 'OMET_SODA3_monthly_%d.png' % (input_year),dpi = 500)
+    plt.close(fig3)
 
 def create_netcdf_point (meridional_E_point_pool,output_path):
     print '*******************************************************************'
