@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Conservation of Oceanic Meridional Energy Transport
 Author          : Yang Liu
 Date            : 2018.02.26
-Last Update     : 2018.02.26
+Last Update     : 2018.03.02
 Description     : The code aims to inspect the conservation of the oceanic meridional
                   energy transport calculated from different oceanic reanalysis datasets.
                   This includes ORAS4 from ECMWF, GLORYS2V3 from Mercator Ocean, and SODA3
@@ -25,6 +25,7 @@ variables       : Meridional Energy Transport               E         [Tera-Watt
 
 Caveat!!        : Dimension of OMET from each Reanalysis product
                   SODA 3 (MOM5 Grid)
+                  Time: 1980 - 2015
                   Direction of Axis: from south to north, west to east
                   Model Level: MOM5 Arakawa-B grid
                   Dimension:
@@ -33,6 +34,7 @@ Caveat!!        : Dimension of OMET from each Reanalysis product
                   Depth         50
 
                   ORAS4 (ORCA1 Grid)
+                  Time: 1979 - 2014
                   Direction of Axis: from south to north, west to east
                   Model Level: ORCA Arakawa-C grid
                   Dimension:
@@ -41,6 +43,7 @@ Caveat!!        : Dimension of OMET from each Reanalysis product
                   Depth         42
 
                   GLORYS2V3 (ORCA025 Grid)
+                  Time: 1993 - 2014
                   Direction of Axis: from south to north, west to east
                   Model Level: ORCA Arakawa-C grid
                   Dimension:
@@ -49,6 +52,7 @@ Caveat!!        : Dimension of OMET from each Reanalysis product
                   Depth         75
 
                   OAflux (Geographic Grid)
+                  Time: 1983.07 - 2009.12
                   Direction of Axis: from south to north, west to east
                   Latitude      180
                   Longitude     360
@@ -141,8 +145,8 @@ print '*******************************************************************'
 ####################################################################################
 # get the key for the datasets
 # OMET
-dataset_GLORYS2V3_OMET = Dataset(datapath_GLORYS2V3_OMET + os.sep + 'GLORYS2V3_model_monthly_orca025_E_point.nc')
-dataset_ORAS4_OMET = Dataset(datapath_ORAS4_OMET + os.sep + 'oras4_model_monthly_orca1_E_point.nc')
+dataset_GLORYS2V3_OMET = Dataset(datapath_GLORYS2V3_OMET + os.sep + 'GLORYS2V3_model_monthly_orca025_E_zonal_int.nc')
+dataset_ORAS4_OMET = Dataset(datapath_ORAS4_OMET + os.sep + 'oras4_model_monthly_orca1_E_zonal_int.nc')
 #dataset_SODA3_OMET = Dataset()
 # OHC
 dataset_GLORYS2V3_OHC = Dataset(datapath_GLORYS2V3_OHC + os.sep + 'GLORYS2V3_model_monthly_orca025_OHC_point.nc')
@@ -160,13 +164,16 @@ dataset_OAflux = Dataset(datapath_OAflux + os.sep + 'OAflux_qnet_point.nc')
 
 # extract variables
 # OMET (peta watt)
-OMET_ORAS4 = dataset_ORAS4_OMET.variables['E'][21:,:,:,:]/1000 # start from 1979
+OMET_ORAS4 = dataset_ORAS4_OMET.variables['E'][21:,:,:]/1000 # start from 1979
 OMET_GLORYS2V3 = dataset_GLORYS2V3_OMET.variables['E'][:]/1000 # start from 1993
-# OHC
-OHC_ORAS4 = dataset_ORAS4_OHC.variables['OHC_atl_vert'][21:,:,:,:]/1000
-OHC_GLORYS2V3 = dataset_GLORYS2V3_OHC.variables['OHC_atl_vert'][:]/1000
-# Net Heat Flux
-NHF_OAflux = dataset_OAflux.variables['qnet'][:]/1000
+# OHC (peta joule)
+OHC_point_ORAS4 = dataset_ORAS4_OHC.variables['OHC_glo_vert'][21:,:,:,:]/1000
+OHC_ORAS4 = np.sum(OHC_point_ORAS4,3)
+OHC_point_GLORYS2V3 = dataset_GLORYS2V3_OHC.variables['OHC_glo_vert'][:]/1000
+OHC_GLORYS2V3 = np.sum(OHC_point_GLORYS2V3,3)
+# Net Heat Flux (peta watt)
+NHF_point_OAflux = dataset_OAflux.variables['qnet'][:]/1000
+NHF_OAflux = np.sum(NHF_point_OAflux,3)
 # year
 year_ORAS4 = dataset_ORAS4_OMET.variables['year'][21:]         # from 1979 to 2014
 year_GLORYS2V3 = dataset_GLORYS2V3_OMET.variables['year'][:]   # from 1993 to 2014
@@ -192,12 +199,82 @@ tmaskatl_GLORYS2V3 = dataset_GLORYS2V3_mask_ocean.variables['tmaskatl'][:,1:-1] 
 print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
-# index and namelist of years for time series and running mean time series
-index_1993_begin = np.arange(1,265,1)
-index_1993 = np.arange(169,433,1) # starting from index of year 1993
-index_year_1993 = np.arange(1993,2015,1)
 
-index_1979 = np.arange(1,433,1)
-index_year_1979 = np.arange(1979,2015,1)
+# OMET
+OMET_series_ORAS4 = OMET_ORAS4.reshape(len(year_ORAS4)*12,len(latitude_nom_ORAS4))
+OMET_series_GLORYS2V3 = OMET_GLORYS2V3.reshape(len(year_GLORYS2V3)*12,len(latitude_nom_GLORYS2V3))
+#OHC
+OHC_series_ORAS4 = OHC_ORAS4.reshape(len(year_ORAS4)*12,len(latitude_nom_ORAS4))
+OHC_series_GLORYS2V3 = OHC_GLORYS2V3.reshape(len(year_GLORYS2V3)*12,len(latitude_nom_GLORYS2V3))
+# Net Heat Flux (peta watt)
+# take care that the first 6 months have no values
+NHF_series_OAflux = NHF_OAflux.reshape(len(year_OAflux)*12,len(latitude_OAflux))
+
+# calculate the time derivative of Ocean Heat Content
+# now the OHC/dt time series start from Feb of the starting year!!!
+OHC_series_dt_ORAS4 = (OHC_series_ORAS4[1:,:] - OHC_series_ORAS4[:-1,:]) / (30*86400)
+OHC_series_dt_GLORYS2V3 = (OHC_series_GLORYS2V3[1:,:] - OHC_series_GLORYS2V3[:-1,:]) / (30*86400)
+
+print '*******************************************************************'
+print '************************* regional result *************************'
+print '*******************************************************************'
+# from 50N to 70N
+# OMET (energy flow in to the water parcel is positive)
+OMET_series_ORAS4_regional = OMET_series_ORAS4[:,lat_ORAS4_50] - OMET_series_ORAS4[:,lat_ORAS4_70]
+OMET_series_GLORYS2V3_regional = OMET_series_GLORYS2V3[:,lat_GLORYS2V3_50] - OMET_series_GLORYS2V3[:,lat_GLORYS2V3_70]
+# OHC
+OHC_series_ORAS4_regional = np.sum(OHC_series_dt_ORAS4[:,lat_ORAS4_50:lat_ORAS4_70],1)
+OHC_series_GLORYS2V3_regional = np.sum(OHC_series_dt_GLORYS2V3[:,lat_GLORYS2V3_50:lat_GLORYS2V3_70],1)
+#NHF
+NHF_series_OAflux_regional = np.sum(NHF_series_OAflux[:,lat_OAflux_50:lat_OAflux_70],1)
+
+# from 1983 to 2009
+##################################################
+# ORAS4
+# 1979.02 - 2014.12 (431 months)
+# index: 53 - 371
+# GLORYS2V3
+# 1993.01 - 2014.12
+# index: 0 - 204
+# OAflux
+# 1983.07 - 2009.12 (318 months)
+# index: 6 - 324
+
+# index and namelist of years for time series
+index = np.arange(0,324,1) # Starting from
+
+# time series plot of energy convergence between 50N and 70N
+fig1 = plt.figure()
+plt.plot(index[6:],NHF_series_OAflux_regional[6:],color='royalblue',label='OAflux')
+plt.plot(index[6:],OHC_series_ORAS4_regional[53:371],'c--',label='OHC_ORAS4')
+plt.plot(index[121:],OHC_series_GLORYS2V3_regional[0:203],'m--',label='OHC_GLORYS2V3')
+plt.plot(index[6:],OMET_series_ORAS4_regional[53:371],'c-',label='OMET_ORAS4')
+plt.plot(index[121:],OMET_series_GLORYS2V3_regional[0:203],'m-',label='OMET_GLORYS2V3')
+#plt.plot(index[],OMET_series_SODA3_regional[],'y-',label='OMET_SODA3')
+plt.title('Heat Convergence between 50N and 70N')
+plt.legend()
+fig1.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 324, 27), year_OAflux)
+plt.xticks(rotation=60)
+plt.ylabel("Energy Transport (PW)")
+plt.show()
+fig1.savefig(output_path + os.sep + 'Convergence_50N_70N_time_series_component.jpg', dpi = 500)
+
+# time series plot of energy convergence residuals between 50N and 70N
+# residual = d(OHC) / dt -NHF - OMET
+fig2 = plt.figure()
+plt.plot(index[6:],OHC_series_ORAS4_regional[53:371] - NHF_series_OAflux_regional[6:] - OMET_series_ORAS4_regional[53:371],'c--',label='ORAS4')
+plt.plot(index[121:],OHC_series_GLORYS2V3_regional[0:203] - NHF_series_OAflux_regional[121:] - OMET_series_GLORYS2V3_regional[0:203],'m--',label='GLORYS2V3')
+#plt.plot(index[],OMET_series_SODA3_regional[],'y-',label='OMET_SODA3')
+plt.title('Heat Convergence Residual between 50N and 70N')
+plt.legend()
+fig2.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 324, 27), year_OAflux)
+plt.xticks(rotation=60)
+plt.ylabel("Energy Transport (PW)")
+plt.show()
+fig2.savefig(output_path + os.sep + 'Convergence_50N_70N_time_series_residual.jpg', dpi = 500)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
