@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Post-processing of the net heat flux from OAflux
 Author          : Yang Liu
 Date            : 2018.02.26
-Last Update     : 2018.02.26
+Last Update     : 2018.03.02
 Description     : The code aims to calculate the energy flux within each grid.
                   The surface flux comes from the independent dataset OAflux from WHOI.
                   This dataset contains time series of ocean latent and sensible heat flux, which could be used to calculate
@@ -65,6 +65,7 @@ output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/OAflux/po
 ####################                 OAflux (WHOI)               ###################
 ####################          time: 1983 July - 2009 Dec         ###################
 #######     qnet: monthly mean net surface heat flux, positive downward     ########
+####################            qnet = SW - LW - LH - SH          ###################
 ####################                  unit: W/m2                 ###################
 ####################           spatial: lat 180 lon 360          ###################
 ####################################################################################
@@ -80,13 +81,15 @@ for i in year_OAflux:
         # get all the constants and the grid info
         lat = dataset_OAflux.variables['lat'][:]
         lon = dataset_OAflux.variables['lon'][:]
-        mask = np.ma.getmask(qnet_yearly[4,:,:])
+        # due to ice formation and melting, the mask is changing all the time
+        #mask = np.ma.getmask(qnet_yearly[4,:,:])
     else:
         dataset_OAflux = Dataset(datapath_OAflux + os.sep + 'qnet_%d.nc' % (i))
         qnet_yearly = dataset_OAflux.variables['qnet'][:]
         np.ma.set_fill_value(qnet_yearly,0)
         qnet_unit[i-1983,:,:,:] = qnet_yearly
 
+qnet_unit[qnet_unit==32766] = 0
 # calculate net surface heat flux per area
 qnet = np.zeros(qnet_unit.shape)
 # calculate zonal & meridional grid size on earth
@@ -95,7 +98,7 @@ dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * lat / 360) / len(lon)
 dy = np.pi * constant['R'] / (180-1)
 # calculate ocean surface net heat flux by area
 for i in np.arange(len(lat)):
-    qnet[:,:,i,:] = qnet_unit[:,:,i,:] * dx[i] * [dy] / 1E+12 # change the unit to tera watt
+    qnet[:,:,i,:] = qnet_unit[:,:,i,:] * dx[i] * dy / 1E+12 # change the unit to tera watt
 
 print '*******************************************************************'
 print '*********************** create netcdf file ************************'
@@ -114,6 +117,8 @@ year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
 month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
 lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('lat',))
 lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('lon',))
+# 2D
+#mask_wrap_var = data_wrap.createVariable('mask',np.int32,('lat','lon'))
 # 4D
 qnet_unit_wrap_var = data_wrap.createVariable('qnet_unit',np.float64,('year','month','lat','lon'))
 qnet_wrap_var = data_wrap.createVariable('qnet',np.float64,('year','month','lat','lon'))
@@ -127,7 +132,7 @@ qnet_wrap_var.units = 'tera watt'
 
 lat_wrap_var.long_name = 'Geographical grid latitude'
 lon_wrap_var.long_name = 'Geographical grid longitude'
-qnet_unit_wrap_var.long_name = 'Ocean surface net heat flux per square meter'
+qnet_wrap_var.long_name = 'Ocean surface net heat flux per square meter'
 qnet_wrap_var.long_name = 'Ocean surface net heat flux'
 # writing data
 #year_wrap_var[:] = period
