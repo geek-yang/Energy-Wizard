@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Post-processing of the net heat flux from OAflux
 Author          : Yang Liu
 Date            : 2018.02.26
-Last Update     : 2018.03.02
+Last Update     : 2018.03.05
 Description     : The code aims to calculate the energy flux within each grid.
                   The surface flux comes from the independent dataset OAflux from WHOI.
                   This dataset contains time series of ocean latent and sensible heat flux, which could be used to calculate
@@ -132,7 +132,7 @@ qnet_wrap_var.units = 'tera watt'
 
 lat_wrap_var.long_name = 'Geographical grid latitude'
 lon_wrap_var.long_name = 'Geographical grid longitude'
-qnet_wrap_var.long_name = 'Ocean surface net heat flux per square meter'
+qnet_unit_wrap_var.long_name = 'Ocean surface net heat flux per square meter'
 qnet_wrap_var.long_name = 'Ocean surface net heat flux'
 # writing data
 #year_wrap_var[:] = period
