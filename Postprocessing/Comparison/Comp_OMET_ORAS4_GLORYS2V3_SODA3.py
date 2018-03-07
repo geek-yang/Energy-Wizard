@@ -75,10 +75,49 @@ datapath_GLORYS2V3 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GL
 datapath_SODA3 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/postprocessing'
 # specify output path for figures
 output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/OMET/Comparison'
-# the threshold ( index of latitude) of the OMET
-lat_GLORYS2V3 = 788 # at 60 N
-lat_ORAS4 = 233 # at 60 N
-lat_SODA3 = 789 # at 60 N
+# index of latitude for insteret
+
+# 20 N (no cut)
+lat_ORAS4_20 = 181
+lat_GLORYS2V3_20 = 579
+lat_SODA3_20 = 569
+
+# 30 N (no cut)
+lat_ORAS4_30 = 192
+lat_GLORYS2V3_30 = 623
+lat_SODA3_30 = 613
+
+# 40 N (no cut)
+lat_ORAS4_40 = 204
+lat_GLORYS2V3_40 = 672
+lat_SODA3_40 = 662
+
+# 50 N (no cut)
+lat_ORAS4_50 = 218
+lat_GLORYS2V3_50 = 726
+lat_SODA3_50 = 719
+
+# 60 N (no cut)
+lat_ORAS4_60 = 233
+lat_GLORYS2V3_60 = 788
+lat_SODA3_60 = 789
+
+# 70 N (no cut)
+lat_ORAS4_70 = 250
+lat_GLORYS2V3_70 = 857
+lat_SODA3_70 = 880
+
+# 80 N (no cut)
+lat_ORAS4_80 = 269
+lat_GLORYS2V3_80 = 932
+lat_SODA3_80 = 974
+
+# make a dictionary for instereted sections (for process automation)
+lat_interest = {}
+lat_interest_list = [20,30,40,50,60,70,80]
+lat_interest['ORAS4'] = [lat_ORAS4_20,lat_ORAS4_30,lat_ORAS4_40,lat_ORAS4_50,lat_ORAS4_60,lat_ORAS4_70,lat_ORAS4_80]
+lat_interest['GLORYS2V3'] = [lat_GLORYS2V3_20,lat_GLORYS2V3_30,lat_GLORYS2V3_40,lat_GLORYS2V3_50,lat_GLORYS2V3_60,lat_GLORYS2V3_70,lat_GLORYS2V3_80]
+lat_interest['SODA3'] = [lat_SODA3_20,lat_SODA3_30,lat_SODA3_40,lat_SODA3_50,lat_SODA3_60,lat_SODA3_70,lat_SODA3_80]
 
 ####################################################################################
 print '*******************************************************************'
@@ -105,25 +144,18 @@ dataset_ORAS4 = Dataset(datapath_ORAS4 + os.sep + 'oras4_model_monthly_orca1_E_z
 dataset_SODA3 = Dataset(datapath_SODA3 + os.sep + 'OMET_SODA3_model_5daily_1980_2015_E_zonal_int.nc')
 # extract Oceanic meridional energy transport
 # dimension (year,month,latitude)
-# full latitude
-OMET_GLORYS2V3_full = dataset_GLORYS2V3.variables['E'][:]/1000
-OMET_ORAS4_full = dataset_ORAS4.variables['E'][21:,:,:]/1000
-OMET_SODA3_full = dataset_SODA3.variables['E'][:]/1000
 # selected latitude (60N)
-OMET_GLORYS2V3 = dataset_GLORYS2V3.variables['E'][:,:,lat_GLORYS2V3]/1000 # from Tera Watt to Peta Watt # start from 1993
-OMET_ORAS4 = dataset_ORAS4.variables['E'][21:,:,lat_ORAS4]/1000 # from Tera Watt to Peta Watt # start from 1979
-OMET_SODA3 = dataset_SODA3.variables['E'][:,:,lat_SODA3]/1000 # from Tera Watt to Peta Watt # start from 1979
+OMET_GLORYS2V3 = dataset_GLORYS2V3.variables['E'][:]/1000 # from Tera Watt to Peta Watt # start from 1993
+OMET_ORAS4 = dataset_ORAS4.variables['E'][21:,:,:]/1000 # from Tera Watt to Peta Watt # start from 1979
+OMET_SODA3 = dataset_SODA3.variables['E'][:]/1000 # from Tera Watt to Peta Watt # start from 1979
+#year
+year_ORAS4 = dataset_ORAS4.variables['year'][21:]         # from 1979 to 2014
+year_GLORYS2V3 = dataset_GLORYS2V3.variables['year'][:]   # from 1993 to 2014
+year_SODA3 = dataset_SODA3.variables['year'][:]           # from 1980 to 2014
 # latitude
-latitude_aux_GLORYS2V3 = dataset_GLORYS2V3.variables['latitude_aux'][:]
-latitude_aux_ORAS4 = dataset_ORAS4.variables['latitude_aux'][:]
-latitude_aux_SODA3 = dataset_SODA3.variables['latitude_aux'][:]
-print '*******************************************************************'
-print '*********************** prepare variables *************************'
-print '*******************************************************************'
-# take the time series of E
-OMET_GLORYS2V3_series = OMET_GLORYS2V3.reshape(264)
-OMET_ORAS4_series = OMET_ORAS4.reshape(432)
-OMET_SODA3_series = OMET_SODA3.reshape(432)
+latitude_GLORYS2V3 = dataset_GLORYS2V3.variables['latitude_aux'][:]
+latitude_ORAS4 = dataset_ORAS4.variables['latitude_aux'][:]
+latitude_SODA3 = dataset_SODA3.variables['latitude_aux'][:]
 
 print '*******************************************************************'
 print '*************************** whitening *****************************'
@@ -131,27 +163,44 @@ print '*******************************************************************'
 # remove the seasonal cycling of OMET at 60N
 month_ind = np.arange(12)
 # dimension of OMET[year,month]
-# GLORYS2V3
-OMET_GLORYS2V3_seansonal_cycle = np.mean(OMET_GLORYS2V3,axis=0)
-OMET_GLORYS2V3_white = np.zeros(OMET_GLORYS2V3.shape,dtype=float)
-for i in month_ind:
-    OMET_GLORYS2V3_white[:,i] = OMET_GLORYS2V3[:,i] - OMET_GLORYS2V3_seansonal_cycle[i]
-# take the time series of whitened OMET
-OMET_GLORYS2V3_white_series = OMET_GLORYS2V3_white.reshape(264)
-# ORAS4
-OMET_ORAS4_seansonal_cycle = np.mean(OMET_ORAS4,axis=0)
+
+seansonal_cycle_OMET_ORAS4 = np.mean(OMET_ORAS4,axis=0)
+seansonal_cycle_OMET_GLORYS2V3 = np.mean(OMET_GLORYS2V3,axis=0)
+seansonal_cycle_OMET_SODA3 = np.mean(OMET_SODA3,axis=0)
+
 OMET_ORAS4_white = np.zeros(OMET_ORAS4.shape,dtype=float)
-for i in month_ind:
-    OMET_ORAS4_white[:,i] = OMET_ORAS4[:,i] - OMET_ORAS4_seansonal_cycle[i]
-# take the time series of whitened OMET
-OMET_ORAS4_white_series = OMET_ORAS4_white.reshape(432)
-# ORAS4
-OMET_SODA3_seansonal_cycle = np.mean(OMET_SODA3,axis=0)
+OMET_GLORYS2V3_white = np.zeros(OMET_GLORYS2V3.shape,dtype=float)
 OMET_SODA3_white = np.zeros(OMET_SODA3.shape,dtype=float)
-for i in month_ind:
-    OMET_SODA3_white[:,i] = OMET_SODA3[:,i] - OMET_SODA3_seansonal_cycle[i]
-# take the time series of whitened OMET
-OMET_SODA3_white_series = OMET_SODA3_white.reshape(432)
+
+for i in np.arange(len(year_ORAS4)):
+    for j in month_ind:
+        OMET_ORAS4_white[i,j,:] = OMET_ORAS4[i,j,:] - seansonal_cycle_OMET_ORAS4[j,:]
+
+for i in np.arange(len(year_GLORYS2V3)):
+    for j in month_ind:
+        OMET_GLORYS2V3_white[i,j,:] = OMET_GLORYS2V3[i,j,:] - seansonal_cycle_OMET_GLORYS2V3[j,:]
+
+for i in np.arange(len(year_SODA3)):
+    for j in month_ind:
+        OMET_SODA3_white[i,j,:] = OMET_SODA3[i,j,:] - seansonal_cycle_OMET_SODA3[j,:]
+
+print '*******************************************************************'
+print '*********************** prepare variables *************************'
+print '*******************************************************************'
+# annual mean of AMET and OMET at different latitudes
+#OMET_ORAS4_mean = np.mean(np.mean(OMET_ORAS4,0),0)
+#OMET_GLORYS2V3_mean = np.mean(np.mean(OMET_GLORYS2V3,0),0)
+#OMET_SODA3_mean = np.mean(np.mean(OMET_SODA3,0),0)
+
+# take the time series of E
+OMET_ORAS4_series = OMET_ORAS4.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
+OMET_GLORYS2V3_series = OMET_GLORYS2V3.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
+OMET_SODA3_series = OMET_SODA3.reshape(len(year_SODA3)*len(month_ind),len(latitude_SODA3))
+# dataset without seasonal cycle - time series
+OMET_ORAS4_white_series = OMET_ORAS4_white.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
+OMET_GLORYS2V3_white_series = OMET_GLORYS2V3_white.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
+OMET_SODA3_white_series = OMET_SODA3_white.reshape(len(year_SODA3)*len(month_ind),len(latitude_SODA3))
+
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -160,49 +209,32 @@ print '*******************************************************************'
 window = 12 # in month
 #window = 60 # in month
 #window = 120 # in month
-# calculate the running mean and sum of OMET
-# GLORYS2V3
-OMET_GLORYS2V3_running_mean = np.zeros(len(OMET_GLORYS2V3_series)-window+1)
-#OMET_running_sum = np.zeros(len(OMET_series)-window+1)
-for i in np.arange(len(OMET_GLORYS2V3_series)-window+1):
-    OMET_GLORYS2V3_running_mean[i] = np.mean(OMET_GLORYS2V3_series[i:i+window])
-    #OMET_GLORYS2V3_running_sum[i] = np.sum(OMET_GLORYS2V3_series[i:i+window])
 
-# ORAS4
-OMET_ORAS4_running_mean = np.zeros(len(OMET_ORAS4_series)-window+1)
-#OMET_running_sum = np.zeros(len(OMET_series)-window+1)
-for i in np.arange(len(OMET_ORAS4_series)-window+1):
-    OMET_ORAS4_running_mean[i] = np.mean(OMET_ORAS4_series[i:i+window])
-    #OMET_running_sum[i] = np.sum(OMET_series[i:i+window])
+# calculate the running mean of OMET
+# original time series
+OMET_ORAS4_series_running_mean = np.zeros((len(OMET_ORAS4_series)-window+1,len(latitude_ORAS4)),dtype=float)
+OMET_GLORYS2V3_series_running_mean = np.zeros((len(OMET_GLORYS2V3_series)-window+1,len(latitude_GLORYS2V3)),dtype=float)
+OMET_SODA3_series_running_mean = np.zeros((len(OMET_SODA3_series)-window+1,len(latitude_SODA3)),dtype=float)
+# white time series
+OMET_ORAS4_white_series_running_mean = np.zeros((len(OMET_ORAS4_white_series)-window+1,len(latitude_ORAS4)),dtype=float)
+OMET_GLORYS2V3_white_series_running_mean = np.zeros((len(OMET_GLORYS2V3_white_series)-window+1,len(latitude_GLORYS2V3)),dtype=float)
+OMET_SODA3_white_series_running_mean = np.zeros((len(OMET_SODA3_white_series)-window+1,len(latitude_SODA3)),dtype=float)
 
-# SODA3
-OMET_SODA3_running_mean = np.zeros(len(OMET_SODA3_series)-window+1)
-#OMET_running_sum = np.zeros(len(OMET_series)-window+1)
-for i in np.arange(len(OMET_SODA3_series)-window+1):
-    OMET_SODA3_running_mean[i] = np.mean(OMET_SODA3_series[i:i+window])
-    #OMET_running_sum[i] = np.sum(OMET_series[i:i+window])
-
-# calculate the running mean and sum of OMET after removing the seasonal cycling
-# GLORYS2V3
-OMET_GLORYS2V3_white_running_mean = np.zeros(len(OMET_GLORYS2V3_white_series)-window+1)
-#OMET_running_sum = np.zeros(len(OMET_series)-window+1)
-for i in np.arange(len(OMET_GLORYS2V3_white_series)-window+1):
-    OMET_GLORYS2V3_white_running_mean[i] = np.mean(OMET_GLORYS2V3_white_series[i:i+window])
-    #OMET_white_running_sum[i] = np.sum(OMET_white_series[i:i+window])
-
-# ORAS4
-OMET_ORAS4_white_running_mean = np.zeros(len(OMET_ORAS4_white_series)-window+1)
-#OMET_running_sum = np.zeros(len(OMET_series)-window+1)
 for i in np.arange(len(OMET_ORAS4_white_series)-window+1):
-    OMET_ORAS4_white_running_mean[i] = np.mean(OMET_ORAS4_white_series[i:i+window])
-    #OMET_white_running_sum[i] = np.sum(OMET_white_series[i:i+window])
+    for j in np.arange(len(latitude_ORAS4)):
+        OMET_ORAS4_series_running_mean[i,j] = np.mean(OMET_ORAS4_series[i:i+window,j])
+        OMET_ORAS4_white_series_running_mean[i,j] = np.mean(OMET_ORAS4_white_series[i:i+window,j])
 
-# SODA3
-OMET_SODA3_white_running_mean = np.zeros(len(OMET_SODA3_white_series)-window+1)
-#OMET_running_sum = np.zeros(len(OMET_series)-window+1)
+for i in np.arange(len(OMET_GLORYS2V3_white_series)-window+1):
+    for j in np.arange(len(latitude_GLORYS2V3)):
+        OMET_GLORYS2V3_series_running_mean[i,j] = np.mean(OMET_GLORYS2V3_series[i:i+window,j])
+        OMET_GLORYS2V3_white_series_running_mean[i,j] = np.mean(OMET_GLORYS2V3_white_series[i:i+window,j])
+
 for i in np.arange(len(OMET_SODA3_white_series)-window+1):
-    OMET_SODA3_white_running_mean[i] = np.mean(OMET_SODA3_white_series[i:i+window])
-    #OMET_white_running_sum[i] = np.sum(OMET_white_series[i:i+window])
+    for j in np.arange(len(latitude_SODA3)):
+        OMET_SODA3_series_running_mean[i,j] = np.mean(OMET_SODA3_series[i:i+window,j])
+        OMET_SODA3_white_series_running_mean[i,j] = np.mean(OMET_SODA3_white_series[i:i+window,j])
+
 print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
@@ -225,75 +257,108 @@ index_year_full = np.arange(1979,2016,1)
 # index_running_mean_1979 = np.arange(1,433-window+1,1)
 # index_year_running_mean_1979 = np.arange(1979+window/12,2015,1)
 
-# plot the OMET after removing seasonal cycle
-fig1 = plt.figure()
-plt.plot(index_1979,OMET_ORAS4_white_series,'c-',label='ORAS4')
-plt.plot(index_1993,OMET_GLORYS2V3_white_series,'m-',label='GLORYS2V3')
-plt.plot(index_1980,OMET_SODA3_white_series,'y-',label='SODA3')
-plt.title('Oceanic Meridional Energy Transport Anomaly at 60N (1979-2015)')
-#plt.legend()
-fig1.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 444, 38), index_year_full)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
-plt.legend()
-plt.show()
-fig1.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_OMET_anomaly_60N_time_series_1979_2014.jpg', dpi = 500)
+# plot the OMET series before removing seasonal cycle
+for i in np.arange(len(lat_interest_list)):
+    fig1 = plt.figure()
+    plt.plot(index_1979,OMET_ORAS4_series[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993,OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980,OMET_SODA3_series[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Oceanic Meridional Energy Transport at %dN (1979-2015)' % (lat_interest_list[i]))
+    fig1.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig1.savefig(output_path + os.sep + 'original_series' + os.sep + 'Comp_OMET_%dN_time_series_1979_2015.jpg' % (lat_interest_list[i]), dpi = 500)
+
+# plot the OMET series after removing seasonal cycle
+for i in np.arange(len(lat_interest_list)):
+    fig2 = plt.figure()
+    plt.plot(index_1979,OMET_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993,OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980,OMET_SODA3_white_series[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Oceanic Meridional Energy Transport Anomaly at %dN (1979-2015)' % (lat_interest_list[i]))
+    fig2.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig2.savefig(output_path + os.sep + 'anomaly_series' + os.sep + 'Comp_OMET_anomaly_%dN_time_series_1979_2015.jpg' % (lat_interest_list[i]), dpi = 500)
+
+# plot the running mean of OMET before removing seasonal cycle
+for i in np.arange(len(lat_interest_list)):
+    fig3 = plt.figure()
+    plt.plot(index_1979[window-1:],OMET_ORAS4_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993[window-1:],OMET_GLORYS2V3_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980[window-1:],OMET_SODA3_series_running_mean[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Running Mean of OMET at %dN with a window of %d months (1979-2015)' % (lat_interest_list[i],window))
+    fig3.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig3.savefig(output_path + os.sep + 'original_lowpass' + os.sep + 'Comp_OMET_%dN_running_mean_window_%d_only.jpg' % (lat_interest_list[i],window), dpi = 500)
 
 # plot the running mean of OMET after removing seasonal cycle
-fig0 = plt.figure()
-plt.plot(index_1979[window-1:],OMET_ORAS4_white_running_mean,'c-',label='ORAS4')
-plt.plot(index_1993[window-1:],OMET_GLORYS2V3_white_running_mean,'m-',label='GLORYS2V3')
-plt.plot(index_1980[window-1:],OMET_SODA3_white_running_mean,'y-',label='SODA3')
-plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1979-2015)' % (window))
-#plt.legend()
-fig0.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 444, 38), index_year_full)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
-plt.legend()
-plt.show()
-fig0.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_OMET_anomaly_60N_running_mean_window_%d_only.jpg' % (window), dpi = 500)
+for i in np.arange(len(lat_interest_list)):
+    fig4 = plt.figure()
+    plt.plot(index_1979[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980[window-1:],OMET_SODA3_white_series_running_mean[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Running Mean of OMET Anomalies at %dN with a window of %d months (1979-2015)' % (lat_interest_list[i],window))
+    fig4.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig4.savefig(output_path + os.sep + 'anomaly_lowpass' + os.sep + 'Comp_OMET_anomaly_%dN_running_mean_window_%d_only.jpg' % (lat_interest_list[i],window), dpi = 500)
 
 # plot the OMET with running mean
-fig2 = plt.figure()
-plt.plot(index_1979,OMET_ORAS4_series,'c--',linewidth=1.0,label='ORAS4 time series')
-plt.plot(index_1993,OMET_GLORYS2V3_series,'m--',linewidth=1.0,label='GLORYS2V3 time series')
-plt.plot(index_1980,OMET_SODA3_series,'y--',linewidth=1.0,label='SODA3 time series')
-plt.plot(index_1979[window-1:],OMET_ORAS4_running_mean,'c-',linewidth=2.0,label='ORAS4 running mean')
-plt.plot(index_1993[window-1:],OMET_GLORYS2V3_running_mean,'m-',linewidth=2.0,label='GLORYS2V3 running mean')
-plt.plot(index_1980[window-1:],OMET_SODA3_running_mean,'y-',linewidth=2.0,label='SODA3 running mean')
-plt.title('Running Mean of OMET at 60N with a window of %d months (1979-2015)' % (window))
-#plt.legend()
-fig2.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 444, 38), index_year_full)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
-plt.legend()
-plt.show()
-fig2.savefig(output_path + os.sep +'Comp_OMET_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+for i in np.arange(len(lat_interest_list)):
+    fig5 = plt.figure()
+    plt.plot(index_1979,OMET_ORAS4_series[:,lat_interest['ORAS4'][i]],'c--',linewidth=1.0,label='ORAS4 time series')
+    plt.plot(index_1993,OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m--',linewidth=1.0,label='GLORYS2V3 time series')
+    plt.plot(index_1980,OMET_SODA3_series[:,lat_interest['SODA3'][i]],'y--',linewidth=1.0,label='SODA3 time series')
+    plt.plot(index_1979[window-1:],OMET_ORAS4_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',linewidth=2.0,label='ORAS4 running mean')
+    plt.plot(index_1993[window-1:],OMET_GLORYS2V3_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',linewidth=2.0,label='GLORYS2V3 running mean')
+    plt.plot(index_1980[window-1:],OMET_SODA3_series_running_mean[:,lat_interest['SODA3'][i]],'y-',linewidth=2.0,label='SODA3 running mean')
+    plt.title('Running Mean of OMET at %dN with a window of %d months (1979-2015)' % (lat_interest_list[i],window))
+    fig5.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig5.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_OMET_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
 
 # plot the OMET after removing the seasonal cycling with running mean
-fig3 = plt.figure()
-plt.plot(index_1979,OMET_ORAS4_white_series,'c--',linewidth=1.0,label='ORAS4 time series')
-plt.plot(index_1993,OMET_GLORYS2V3_white_series,'m--',linewidth=1.0,label='GLORYS2V3 time series')
-plt.plot(index_1980,OMET_SODA3_white_series,'y--',linewidth=1.0,label='SODA3 time series')
-plt.plot(index_1979[window-1:],OMET_ORAS4_white_running_mean,'c-',linewidth=2.0,label='ORAS4 running mean')
-plt.plot(index_1993[window-1:],OMET_GLORYS2V3_white_running_mean,'m-',linewidth=2.0,label='GLORYS2V3 running mean')
-plt.plot(index_1980[window-1:],OMET_SODA3_white_running_mean,'y-',linewidth=2.0,label='SODA3 running mean')
-plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1979-2015)' % (window))
-#plt.legend()
-fig3.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 444, 38), index_year_full)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
-plt.legend()
-plt.show()
-fig3.savefig(output_path + os.sep + 'anomaly' + os.sep + 'Comp_OMET_anomaly_60N_running_mean_window_%d_comp.jpg' % (window), dpi = 500)
+for i in np.arange(len(lat_interest_list)):
+    fig6 = plt.figure()
+    plt.plot(index_1979,OMET_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c--',linewidth=1.0,label='ORAS4 time series')
+    plt.plot(index_1993,OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m--',linewidth=1.0,label='GLORYS2V3 time series')
+    plt.plot(index_1980,OMET_SODA3_white_series[:,lat_interest['SODA3'][i]],'y--',linewidth=1.0,label='SODA3 time series')
+    plt.plot(index_1979[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',linewidth=2.0,label='ORAS4 running mean')
+    plt.plot(index_1993[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',linewidth=2.0,label='GLORYS2V3 running mean')
+    plt.plot(index_1980[window-1:],OMET_SODA3_white_series_running_mean[:,lat_interest['SODA3'][i]],'y-',linewidth=2.0,label='SODA3 running mean')
+    plt.title('Running Mean of OMET Anomalies at %dN with a window of %d months (1979-2015)' % (lat_interest_list[i],window))
+    #plt.legend()
+    fig6.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig6.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep + 'Comp_OMET_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
 
 
 print '*******************************************************************'
@@ -313,9 +378,9 @@ print '*******************************************************************'
 print '***************   span of annual mean at each lat   ***************'
 print '*******************************************************************'
 # calculate annual mean
-OMET_ORAS4_full_annual_mean = np.mean(OMET_ORAS4_full[:,:,180:],1)
-OMET_GLORYS2V3_full_annual_mean = np.mean(OMET_GLORYS2V3_full[:,:,579:],1)
-OMET_SODA3_full_annual_mean = np.mean(OMET_SODA3_full[:,:,569:],1)
+OMET_ORAS4_full_annual_mean = np.mean(OMET_ORAS4[:,:,180:],1)
+OMET_GLORYS2V3_full_annual_mean = np.mean(OMET_GLORYS2V3[:,:,579:],1)
+OMET_SODA3_full_annual_mean = np.mean(OMET_SODA3[:,:,569:],1)
 # calculate the difference between annual mean and mean of entire time series
 OMET_ORAS4_full_annual_mean_max = np.amax(OMET_ORAS4_full_annual_mean,0)
 OMET_GLORYS2V3_full_annual_mean_max = np.amax(OMET_GLORYS2V3_full_annual_mean,0)
@@ -327,14 +392,15 @@ OMET_SODA3_full_annual_mean_min = np.amin(OMET_SODA3_full_annual_mean,0)
 print '*******************************************************************'
 print '*************************** x-y lines  ****************************'
 print '*******************************************************************'
-fig44 = plt.figure()
+# annual mean of meridional energy transport at each latitude in north hemisphere
+fig7 = plt.figure()
 plt.axhline(y=0, color='k',ls='-')
-plt.plot(latitude_aux_ORAS4[180:],np.mean(np.mean(OMET_ORAS4_full[:,:,180:],0),0),'c-',label='ORAS4')
-plt.fill_between(latitude_aux_ORAS4[180:],OMET_ORAS4_full_annual_mean_max,OMET_ORAS4_full_annual_mean_min,alpha=0.3,edgecolor='aquamarine', facecolor='aquamarine')
-plt.plot(latitude_aux_GLORYS2V3[579:],np.mean(np.mean(OMET_GLORYS2V3_full[:,:,579:],0),0),'m-',label='GLORYS2V3')
-plt.fill_between(latitude_aux_GLORYS2V3[579:],OMET_GLORYS2V3_full_annual_mean_max,OMET_GLORYS2V3_full_annual_mean_min,alpha=0.3,edgecolor='plum', facecolor='plum')
-plt.plot(latitude_aux_SODA3[569:],np.mean(np.mean(OMET_SODA3_full[:,:,569:],0),0),'y-',label='SODA3')
-plt.fill_between(latitude_aux_SODA3[569:],OMET_SODA3_full_annual_mean_max,OMET_SODA3_full_annual_mean_min,alpha=0.3,edgecolor='lightyellow', facecolor='lightyellow')
+plt.plot(latitude_ORAS4[180:],np.mean(OMET_ORAS4_full_annual_mean,0),'c-',label='ORAS4')
+plt.fill_between(latitude_ORAS4[180:],OMET_ORAS4_full_annual_mean_max,OMET_ORAS4_full_annual_mean_min,alpha=0.3,edgecolor='aquamarine', facecolor='aquamarine')
+plt.plot(latitude_GLORYS2V3[579:],np.mean(OMET_GLORYS2V3_full_annual_mean,0),'m-',label='GLORYS2V3')
+plt.fill_between(latitude_GLORYS2V3[579:],OMET_GLORYS2V3_full_annual_mean_max,OMET_GLORYS2V3_full_annual_mean_min,alpha=0.3,edgecolor='plum', facecolor='plum')
+plt.plot(latitude_SODA3[569:],np.mean(OMET_SODA3_full_annual_mean,0),'y-',label='SODA3')
+plt.fill_between(latitude_SODA3[569:],OMET_SODA3_full_annual_mean_max,OMET_SODA3_full_annual_mean_min,alpha=0.3,edgecolor='lightyellow', facecolor='lightyellow')
 plt.title('Mean OMET of entire time series from 20N to 90N' )
 #plt.legend()
 plt.xlabel("Latitudes")
@@ -342,14 +408,14 @@ plt.xlabel("Latitudes")
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig44.savefig(output_path + os.sep + 'Comp_OMET_annual_mean_span.jpg', dpi = 500)
+fig7.savefig(output_path + os.sep + 'Comp_OMET_annual_mean_span.jpg', dpi = 500)
 
-# annual mean of meridional energy transport at each latitude in north hemisphere
-fig4 = plt.figure()
+# annual mean of meridional energy transport at each latitude in the entire globe
+fig8 = plt.figure()
 plt.axhline(y=0, color='k',ls='-')
-plt.plot(latitude_aux_ORAS4,np.mean(np.mean(OMET_ORAS4_full,0),0),'c-',label='ORAS4')
-plt.plot(latitude_aux_GLORYS2V3,np.mean(np.mean(OMET_GLORYS2V3_full,0),0),'m-',label='GLORYS2V3')
-plt.plot(latitude_aux_SODA3,np.mean(np.mean(OMET_SODA3_full,0),0),'y-',label='SODA3')
+plt.plot(latitude_ORAS4,np.mean(np.mean(OMET_ORAS4,0),0),'c-',label='ORAS4')
+plt.plot(latitude_GLORYS2V3,np.mean(np.mean(OMET_GLORYS2V3,0),0),'m-',label='GLORYS2V3')
+plt.plot(latitude_SODA3,np.mean(np.mean(OMET_SODA3,0),0),'y-',label='SODA3')
 plt.title('Mean OMET of entire time series from 90S to 90N' )
 #plt.legend()
 plt.xlabel("Latitudes")
@@ -357,23 +423,23 @@ plt.xlabel("Latitudes")
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig4.savefig(output_path + os.sep + 'Comp_OMET_annual_mean.jpg', dpi = 500)
+fig8.savefig(output_path + os.sep + 'Comp_OMET_annual_mean.jpg', dpi = 500)
 
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
 print '*******************************************************************'
-fig5 = plt.figure()
-plt.plot(index_1993_begin,OMET_GLORYS2V3_white_series-OMET_ORAS4_white_series[168:],'b-',linewidth=1.0,label='GLORYS2V3-ORAS4')
-plt.title('Difference between GLORYS2V3 and ORAS4 (time series) at 60N')
-#plt.legend()
-fig5.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 264, 23), index_year_1993)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport residual (PW)")
-plt.legend()
-plt.show()
-fig5.savefig(output_path + os.sep + 'Comp_OMET_GLORYS2V3_minus_ORAS4_60N.jpg', dpi = 500)
+# fig9 = plt.figure()
+# plt.plot(index_1993_begin,OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]]-OMET_ORAS4_white_series[168:,lat_interest['ORAS4'][i]],'b-',linewidth=1.0,label='GLORYS2V3-ORAS4')
+# plt.title('Difference between GLORYS2V3 and ORAS4 (time series) at %dN' % ())
+# #plt.legend()
+# fig9.set_size_inches(12, 5)
+# plt.xlabel("Time")
+# plt.xticks(np.linspace(0, 264, 23), index_year_1993)
+# plt.xticks(rotation=60)
+# plt.ylabel("Meridional Energy Transport residual (PW)")
+# plt.legend()
+# plt.show()
+# fig9.savefig(output_path + os.sep + 'Comp_OMET_GLORYS2V3_minus_ORAS4_%dN.jpg' % (), dpi = 500)
 
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
