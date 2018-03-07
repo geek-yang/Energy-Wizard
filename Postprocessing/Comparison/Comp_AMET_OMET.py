@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET of all reanalysis datasets
 Author          : Yang Liu
 Date            : 2017.11.12
-Last Update     : 2018.03.05
+Last Update     : 2018.03.07
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -64,6 +64,10 @@ sns.set()
 start_time = tttt.time()
 
 ################################   Input zone  ######################################
+print '****************************************************************************'
+print '*****************************   path   *************************************'
+print '****************************************************************************'
+
 # specify data path
 datapath_ERAI = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/postprocessing'
 datapath_MERRA2 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/MERRA2/postprocessing'
@@ -74,19 +78,113 @@ datapath_GLORYS2V3 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GL
 datapath_SODA3 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/postprocessing'
 # specify output path for the netCDF4 file
 output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/Bjerknes/AMET_OMET'
-# index of latitude for insteret
-# 60N
-lat_ERAI = 40 # at 60 N
-lat_MERRA2 = 80 # at 60 N
-lat_JRA55 = 53 # at 60 N
 
-lat_GLORYS2V3 = 788 # at 60 N
-lat_ORAS4 = 233 # at 60 N
-lat_SODA3 = 789 # at 60 N
+print '****************************************************************************'
+print '********************    latitude index of insteret     *********************'
+print '****************************************************************************'
+# There is a cut to JRA, too
+# index of latitude for insteret
+# 20N
+lat_ERAI_20 = 93
+lat_MERRA2_20 = 0
+lat_JRA55_20 = 124
+
+lat_ORAS4_20 = 181
+lat_GLORYS2V3_20 = 579
+lat_SODA3_20 = 569
 # after a cut to 20-90 N
-lat_ORAS4_cut = 53 # at 60 N
-lat_GLORYS2V3_cut = 209 # at 60 N
-lat_SODA3_cut = 220 # at 60 N
+lat_ORAS4_20_cut = 1
+lat_GLORYS2V3_20_cut = 0
+lat_SODA3_20_cut = 0
+
+# 30N
+lat_ERAI_30 = 80
+lat_MERRA2_30 = 20
+lat_JRA55_30 = 106
+
+lat_ORAS4_30 = 192
+lat_GLORYS2V3_30 = 623
+lat_SODA3_30 = 613
+# after a cut to 20-90 N
+lat_ORAS4_30_cut = 12
+lat_GLORYS2V3_30_cut = 44
+lat_SODA3_30_cut = 44
+
+# 40N
+lat_ERAI_40 = 67
+lat_MERRA2_40 = 40
+lat_JRA55_40 = 88
+
+lat_ORAS4_40 = 204
+lat_GLORYS2V3_40 = 672
+lat_SODA3_40 = 662
+# after a cut to 20-90 N
+lat_ORAS4_40_cut = 24
+lat_GLORYS2V3_40_cut = 93
+lat_SODA3_40_cut = 93
+
+# 50N
+lat_ERAI_50 = 53
+lat_MERRA2_50 = 60
+lat_JRA55_50 = 70
+
+lat_ORAS4_50 = 218
+lat_GLORYS2V3_50 = 726
+lat_SODA3_50 = 719
+# after a cut to 20-90 N
+lat_ORAS4_50_cut = 38
+lat_GLORYS2V3_50_cut = 147
+lat_SODA3_50_cut = 150
+
+# 60N
+lat_ERAI_60 = 40
+lat_MERRA2_60 = 80
+lat_JRA55_60 = 53
+
+lat_ORAS4_60 = 233
+lat_GLORYS2V3_60 = 788
+lat_SODA3_60 = 789
+# after a cut to 20-90 N
+lat_ORAS4_60_cut = 53
+lat_GLORYS2V3_60_cut = 209
+lat_SODA3_60_cut = 220
+
+# 70N
+lat_ERAI_70 = 27
+lat_MERRA2_70 = 100
+lat_JRA55_70 = 35
+
+lat_ORAS4_70 = 250
+lat_GLORYS2V3_70 = 857
+lat_SODA3_70 = 880
+# after a cut to 20-90 N
+lat_ORAS4_70_cut = 70
+lat_GLORYS2V3_70_cut = 278
+lat_SODA3_70_cut = 311
+
+# 80N
+lat_ERAI_80 = 13
+lat_MERRA2_80 = 120
+lat_JRA55_80 = 17
+
+lat_ORAS4_80 = 269
+lat_GLORYS2V3_80 = 932
+lat_SODA3_80 = 974
+# after a cut to 20-90 N
+lat_ORAS4_80_cut = 89
+lat_GLORYS2V3_80_cut = 353
+lat_SODA3_80_cut = 405
+
+# make a dictionary for instereted sections (for process automation)
+lat_interest = {}
+lat_interest_list = [20,30,40,50,60,70,80]
+lat_interest['ERAI'] = [lat_ERAI_20,lat_ERAI_30,lat_ERAI_40,lat_ERAI_50,lat_ERAI_60,lat_ERAI_70,lat_ERAI_80]
+lat_interest['MERRA2'] = [lat_MERRA2_20,lat_MERRA2_30,lat_MERRA2_40,lat_MERRA2_50,lat_MERRA2_60,lat_MERRA2_70,lat_MERRA2_80]
+lat_interest['JRA55'] = [lat_JRA55_20,lat_JRA55_30,lat_JRA55_40,lat_JRA55_50,lat_JRA55_60,lat_JRA55_70,lat_JRA55_80]
+# after cut
+lat_interest['ORAS4'] = [lat_ORAS4_20_cut,lat_ORAS4_30_cut,lat_ORAS4_40_cut,lat_ORAS4_50_cut,lat_ORAS4_60_cut,lat_ORAS4_70_cut,lat_ORAS4_80_cut]
+lat_interest['GLORYS2V3'] = [lat_GLORYS2V3_20_cut,lat_GLORYS2V3_30_cut,lat_GLORYS2V3_40_cut,lat_GLORYS2V3_50_cut,lat_GLORYS2V3_60_cut,lat_GLORYS2V3_70_cut,lat_GLORYS2V3_80_cut]
+lat_interest['SODA3'] = [lat_SODA3_20_cut,lat_SODA3_30_cut,lat_SODA3_40_cut,lat_SODA3_50_cut,lat_SODA3_60_cut,lat_SODA3_70_cut,lat_SODA3_80_cut]
 # mask path
 #mask_path = 'F:\DataBase\ORAS\ORAS4\Monthly\Model'
 ####################################################################################
@@ -102,6 +200,11 @@ print '*******************************************************************'
 # ji_025 = 1440
 # jj_025 = 1021
 # level_025 = 75
+
+# # MOM5_z50 grid info
+# ji_5 = 1440
+# jj_5 = 1070
+# level_5 = 50
 
 dataset_ERAI = Dataset(datapath_ERAI + os.sep + 'model_daily_075_1979_2016_E_zonal_int.nc')
 dataset_MERRA2 = Dataset(datapath_MERRA2 + os.sep + 'AMET_MERRA2_model_daily_1980_2016_E_zonal_int.nc')
@@ -121,7 +224,7 @@ for k in dataset_ERAI.variables:
 # from 20N - 90N
 AMET_ERAI = dataset_ERAI.variables['E'][:]/1000 # from Tera Watt to Peta Watt
 AMET_MERRA2 = dataset_MERRA2.variables['E'][:]/1000 # from Tera Watt to Peta Watt
-AMET_JRA55 = dataset_JRA55.variables['E'][:,:,0:124]/1000 # from Tera Watt to Peta Watt
+AMET_JRA55 = dataset_JRA55.variables['E'][:,:,0:125]/1000 # from Tera Watt to Peta Watt
 
 OMET_ORAS4 = dataset_ORAS4.variables['E'][21:,:,180:]/1000 # start from 1979
 OMET_GLORYS2V3 = dataset_GLORYS2V3.variables['E'][:,:,579:]/1000 # start from 1993
@@ -137,7 +240,7 @@ year_SODA3 = dataset_SODA3.variables['year'][:]           # from 1980 to 2014
 
 latitude_ERAI = dataset_ERAI.variables['latitude'][:]
 latitude_MERRA2 = dataset_MERRA2.variables['latitude'][:]
-latitude_JRA55 = dataset_JRA55.variables['latitude'][0:124]
+latitude_JRA55 = dataset_JRA55.variables['latitude'][0:125]
 
 latitude_ORAS4 = dataset_ORAS4.variables['latitude_aux'][180:]
 latitude_GLORYS2V3 = dataset_GLORYS2V3.variables['latitude_aux'][579:]
@@ -227,6 +330,16 @@ window = 12 # in month
 #window = 120 # in month
 #window = 180 # in month
 # calculate the running mean of AMET and OMET at differnt latitudes
+# original time series
+AMET_ERAI_series_running_mean = np.zeros((len(AMET_ERAI_series)-window+1,len(latitude_ERAI)),dtype=float)
+AMET_MERRA2_series_running_mean = np.zeros((len(AMET_MERRA2_series)-window+1,len(latitude_MERRA2)),dtype=float)
+AMET_JRA55_series_running_mean = np.zeros((len(AMET_JRA55_series)-window+1,len(latitude_JRA55)),dtype=float)
+
+OMET_ORAS4_series_running_mean = np.zeros((len(OMET_ORAS4_series)-window+1,len(latitude_ORAS4)),dtype=float)
+OMET_GLORYS2V3_series_running_mean = np.zeros((len(OMET_GLORYS2V3_series)-window+1,len(latitude_GLORYS2V3)),dtype=float)
+OMET_SODA3_series_running_mean = np.zeros((len(OMET_SODA3_series)-window+1,len(latitude_SODA3)),dtype=float)
+
+# white time series
 AMET_ERAI_white_series_running_mean = np.zeros((len(AMET_ERAI_white_series)-window+1,len(latitude_ERAI)),dtype=float)
 AMET_MERRA2_white_series_running_mean = np.zeros((len(AMET_MERRA2_white_series)-window+1,len(latitude_MERRA2)),dtype=float)
 AMET_JRA55_white_series_running_mean = np.zeros((len(AMET_JRA55_white_series)-window+1,len(latitude_JRA55)),dtype=float)
@@ -237,26 +350,32 @@ OMET_SODA3_white_series_running_mean = np.zeros((len(OMET_SODA3_white_series)-wi
 
 for i in np.arange(len(AMET_ERAI_white_series)-window+1):
     for j in np.arange(len(latitude_ERAI)):
+        AMET_ERAI_series_running_mean[i,j] = np.mean(AMET_ERAI_series[i:i+window,j])
         AMET_ERAI_white_series_running_mean[i,j] = np.mean(AMET_ERAI_white_series[i:i+window,j])
 
 for i in np.arange(len(AMET_MERRA2_white_series)-window+1):
     for j in np.arange(len(latitude_MERRA2)):
+        AMET_MERRA2_series_running_mean[i,j] = np.mean(AMET_MERRA2_series[i:i+window,j])
         AMET_MERRA2_white_series_running_mean[i,j] = np.mean(AMET_MERRA2_white_series[i:i+window,j])
 
 for i in np.arange(len(AMET_JRA55_white_series)-window+1):
     for j in np.arange(len(latitude_JRA55)):
+        AMET_JRA55_series_running_mean[i,j] = np.mean(AMET_JRA55_series[i:i+window,j])
         AMET_JRA55_white_series_running_mean[i,j] = np.mean(AMET_JRA55_white_series[i:i+window,j])
 
 for i in np.arange(len(OMET_ORAS4_white_series)-window+1):
     for j in np.arange(len(latitude_ORAS4)):
+        OMET_ORAS4_series_running_mean[i,j] = np.mean(OMET_ORAS4_series[i:i+window,j])
         OMET_ORAS4_white_series_running_mean[i,j] = np.mean(OMET_ORAS4_white_series[i:i+window,j])
 
 for i in np.arange(len(OMET_GLORYS2V3_white_series)-window+1):
     for j in np.arange(len(latitude_GLORYS2V3)):
+        OMET_GLORYS2V3_series_running_mean[i,j] = np.mean(OMET_GLORYS2V3_series[i:i+window,j])
         OMET_GLORYS2V3_white_series_running_mean[i,j] = np.mean(OMET_GLORYS2V3_white_series[i:i+window,j])
 
 for i in np.arange(len(OMET_SODA3_white_series)-window+1):
     for j in np.arange(len(latitude_SODA3)):
+        OMET_SODA3_series_running_mean[i,j] = np.mean(OMET_SODA3_series[i:i+window,j])
         OMET_SODA3_white_series_running_mean[i,j] = np.mean(OMET_SODA3_white_series[i:i+window,j])
 
 print '*******************************************************************'
@@ -376,60 +495,100 @@ index_1979_2016 = np.arange(1,457,1)
 index_1979_2015 = np.arange(1,445,1)
 index_1980_2015 = np.arange(13,445,1)
 
-# time series plot of meridional energy transport at 60N
-fig1 = plt.figure()
-plt.plot(index_1979_2016,AMET_ERAI_series[:,lat_ERAI],'b-',label='ERA-Interim')
-plt.plot(index_1980_2016,AMET_MERRA2_series[:,lat_MERRA2],'r-',label='MERRA2')
-plt.plot(index_1979_2015,AMET_JRA55_series[:,lat_JRA55],'g-',label='JRA55')
-plt.plot(index_1979_2014,OMET_ORAS4_series[:,lat_ORAS4_cut],'c-',label='ORAS4')
-plt.plot(index_1993_2014,OMET_GLORYS2V3_series[:,lat_GLORYS2V3_cut],'m-',label='GLORYS2V3')
-plt.plot(index_1980_2015,OMET_SODA3_series[:,lat_SODA3_cut],'y-',label='SODA3')
-plt.title('Meridional Energy Transport at 60 N')
-plt.legend()
-fig1.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456, 39), year_ERAI)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
-plt.show()
-fig1.savefig(output_path + os.sep + 'AMET_OMET_60N_total_time_series.jpg', dpi = 500)
+# time series plot of meridional energy transport at xN
+for i in np.arange(len(lat_interest_list)):
+    fig1 = plt.figure()
+    plt.plot(index_1979_2016,AMET_ERAI_series[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
+    plt.plot(index_1980_2016,AMET_MERRA2_series[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
+    plt.plot(index_1979_2015,AMET_JRA55_series[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
+    plt.plot(index_1979_2014,OMET_ORAS4_series[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993_2014,OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980_2015,OMET_SODA3_series[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Meridional Energy Transport at %d N' % (lat_interest_list[i]))
+    plt.legend()
+    fig1.set_size_inches(13, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 456, 39), year_ERAI)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig1.savefig(output_path + os.sep + 'original_series' + os.sep + 'AMET_OMET_%dN_time_series.jpg' % (lat_interest_list[i]), dpi = 500)
 
-# time series plot of meridional energy transport anomalies at 60N
-fig2 = plt.figure()
-plt.plot(index_1979_2016,AMET_ERAI_white_series[:,lat_ERAI],'b-',label='ERA-Interim')
-plt.plot(index_1980_2016,AMET_MERRA2_white_series[:,lat_MERRA2],'r-',label='MERRA2')
-plt.plot(index_1979_2015,AMET_JRA55_white_series[:,lat_JRA55],'g-',label='JRA55')
-plt.plot(index_1979_2014,OMET_ORAS4_white_series[:,lat_ORAS4_cut],'c-',label='ORAS4')
-plt.plot(index_1993_2014,OMET_GLORYS2V3_white_series[:,lat_GLORYS2V3_cut],'m-',label='GLORYS2V3')
-plt.plot(index_1980_2015,OMET_SODA3_white_series[:,lat_SODA3_cut],'y-',label='SODA3')
-plt.title('Meridional Energy Transport Anomalies at 60 N')
-plt.legend()
-fig2.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456, 39), year_ERAI)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
-plt.show()
-fig2.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_time_series.jpg', dpi = 500)
+# time series plot of meridional energy transport anomalies at xN
+for i in np.arange(len(lat_interest_list)):
+    fig2 = plt.figure()
+    plt.plot(index_1979_2016,AMET_ERAI_white_series[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
+    plt.plot(index_1980_2016,AMET_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
+    plt.plot(index_1979_2015,AMET_JRA55_white_series[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
+    plt.plot(index_1979_2014,OMET_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993_2014,OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980_2015,OMET_SODA3_white_series[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Meridional Energy Transport Anomalies at %d N' % (lat_interest_list[i]))
+    plt.legend()
+    fig2.set_size_inches(13, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 456, 39), year_ERAI)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig2.savefig(output_path + os.sep + 'anomaly_series' + os.sep + 'AMET_OMET_%dN_anomaly_time_series.jpg' % (lat_interest_list[i]), dpi = 500)
 
-# time series plot of meridional energy transport anomalies at 60N with x years running mean
-fig3 = plt.figure()
-plt.plot(index_1979_2016[window-1:],AMET_ERAI_white_series_running_mean[:,lat_ERAI],'b-',label='ERA-Interim')
-plt.plot(index_1980_2016[window-1:],AMET_MERRA2_white_series_running_mean[:,lat_MERRA2],'r-',label='MERRA2')
-plt.plot(index_1979_2015[window-1:],AMET_JRA55_white_series_running_mean[:,lat_JRA55],'g-',label='JRA55')
-plt.plot(index_1979_2014[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_ORAS4_cut],'c-',label='ORAS4')
-plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_GLORYS2V3_cut],'m-',label='GLORYS2V3')
-plt.plot(index_1980_2015[window-1:],OMET_SODA3_white_series_running_mean[:,lat_SODA3_cut],'y-',label='SODA3')
-plt.title('Meridional Energy Transport Anomalies with running mean of %d months at 60 N' % (window))
-plt.legend()
-fig3.set_size_inches(12, 5)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456, 39), year_ERAI)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
-plt.show()
-fig3.savefig(output_path + os.sep + 'AMET_OMET_60N_anomaly_running_mean_%dm_time_series.jpg' % (window), dpi = 500)
+# time series plot of meridional energy transport at xN with x years running mean
+for i in np.arange(len(lat_interest_list)):
+    fig3 = plt.figure()
+    plt.plot(index_1979_2016[window-1:],AMET_ERAI_series_running_mean[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
+    plt.plot(index_1980_2016[window-1:],AMET_MERRA2_series_running_mean[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
+    plt.plot(index_1979_2015[window-1:],AMET_JRA55_series_running_mean[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
+    plt.plot(index_1979_2014[window-1:],OMET_ORAS4_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980_2015[window-1:],OMET_SODA3_series_running_mean[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Meridional Energy Transport Anomalies with running mean of %d months at %d N' % (window,lat_interest_list[i]))
+    plt.legend()
+    fig3.set_size_inches(13, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 456, 39), year_ERAI)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig3.savefig(output_path + os.sep + 'original_lowpass' + os.sep + 'AMET_OMET_%dN_running_mean_%dm_time_series.jpg' % (lat_interest_list[i],window), dpi = 500)
+
+# time series plot of meridional energy transport anomalies at xN with x years running mean
+for i in np.arange(len(lat_interest_list)):
+    fig4 = plt.figure()
+    plt.plot(index_1979_2016[window-1:],AMET_ERAI_white_series_running_mean[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
+    plt.plot(index_1980_2016[window-1:],AMET_MERRA2_white_series_running_mean[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
+    plt.plot(index_1979_2015[window-1:],AMET_JRA55_white_series_running_mean[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
+    plt.plot(index_1979_2014[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
+    plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
+    plt.plot(index_1980_2015[window-1:],OMET_SODA3_white_series_running_mean[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.title('Meridional Energy Transport Anomalies with running mean of %d months at %d N' % (window,lat_interest_list[i]))
+    plt.legend()
+    fig4.set_size_inches(13, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 456, 39), year_ERAI)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport (PW)")
+    plt.show()
+    fig4.savefig(output_path + os.sep + 'anomaly_lowpass' + os.sep + 'AMET_OMET_%dN_anomaly_running_mean_%dm_time_series.jpg' % (lat_interest_list[i],window), dpi = 500)
 
 print '*******************************************************************'
 print '****************** maps (average of point data) *******************'
 print '*******************************************************************'
+
+#3D
+# fig1=plt.figure()
+# ax=fig1.gca(projection='3d') # change figure into 3D
+# plt.hold(True)
+# for i in Index_i:
+#     ax.plot(aux['Ur_%d_B_0' % (i)][:300],freq_y['Ur_%d_B_0' % (i)][:300],mag_y['Ur_%d_B_0' % (i)][:300],label='Ur=%d' % (i))
+#
+# ax.plot(refer_x_sway,refer_y_sway,refer_z_sway,c='r',linewidth=3,label='Natural freq sway')
+# ax.plot(refer_x_yaw,refer_y_yaw,refer_z_yaw,c='m',linewidth=3,label='Natural freq yaw')
+# #ax.grid()
+# ax.set_xlabel("Reduced velocity Ur")
+# ax.set_ylabel("Frequency (Hz)")
+# ax.set_zlabel("Power spectrum density (m^2/s)")
+# ax.view_init(30,220)
+# plt.title("B=0%")
+# plt.legend()
+# plt.show()
