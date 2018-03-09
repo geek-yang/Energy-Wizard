@@ -13,7 +13,13 @@ Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
 variables       : Meridional Energy Transport               E         [Tera-Watt]
                   Meridional Overturning Circulation        Psi       [Sv]
-Caveat!!        : MOM5 Grid
+Caveat!!        : Resolution
+
+                  GLORYS2V3   1993 - 2014
+                  ORAS4       1958 - 2014
+                  SODA3       1980 - 2015
+
+                  MOM5 Grid
                   Direction of Axis: from south to north, west to east
                   Model Level: MOM5 Arakawa-B grid
                   Dimension:
@@ -57,6 +63,8 @@ import matplotlib
 # generate images without having a window appear
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import pandas
+from scipy import stats
 
 # print the system structure and the path of the kernal
 print platform.architecture()
@@ -156,7 +164,8 @@ year_SODA3 = dataset_SODA3.variables['year'][:]           # from 1980 to 2014
 latitude_GLORYS2V3 = dataset_GLORYS2V3.variables['latitude_aux'][:]
 latitude_ORAS4 = dataset_ORAS4.variables['latitude_aux'][:]
 latitude_SODA3 = dataset_SODA3.variables['latitude_aux'][:]
-
+# csv file for saving statistic matrix
+csv_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/OMET/Comparison'
 print '*******************************************************************'
 print '*************************** whitening *****************************'
 print '*******************************************************************'
@@ -511,3 +520,79 @@ print OMET_ORAS4_white_mean
 OMET_SODA3_white_mean = np.mean(OMET_SODA3_white_series)
 print 'The mean of OMET anomaly from SODA3 is (in peta Watt):'
 print OMET_SODA3_white_mean
+
+print '*******************************************************************'
+print '************************** correlation  ***************************'
+print '*******************************************************************'
+# create correlation matrix
+row_name_correlation = ['ORAS - GLORYS','ORAS - SODA','SODA - GLORYS',
+                        'ORAS - GLORYS (anomaly)','ORAS - SODA (anomaly)','SODA - GLORYS (anomaly)']
+column_name_correlation = lat_interest_list
+
+# original & white time series
+slope = np.zeros((len(column_name_correlation),len(row_name_correlation)),dtype=float)
+r_value = np.zeros((len(column_name_correlation),len(row_name_correlation)),dtype=float)
+p_value = np.zeros((len(column_name_correlation),len(row_name_correlation)),dtype=float)
+# return value: slope, intercept, r_value, p_value, stderr
+for i in np.arange(len(lat_interest_list)):
+    slope[i,0],_,r_value[i,0],p_value[i,0],_ = stats.linregress(OMET_ORAS4_series[168:,lat_interest['ORAS4'][i]],OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]])
+    slope[i,1],_,r_value[i,1],p_value[i,1],_ = stats.linregress(OMET_ORAS4_series[12:,lat_interest['ORAS4'][i]],OMET_SODA3_series[:-12,lat_interest['SODA3'][i]])
+    slope[i,2],_,r_value[i,2],p_value[i,2],_ = stats.linregress(OMET_SODA3_series[156:-12,lat_interest['SODA3'][i]],OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]])
+    slope[i,3],_,r_value[i,3],p_value[i,3],_ = stats.linregress(OMET_ORAS4_white_series[168:,lat_interest['ORAS4'][i]],OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]])
+    slope[i,4],_,r_value[i,4],p_value[i,4],_ = stats.linregress(OMET_ORAS4_white_series[12:,lat_interest['ORAS4'][i]],OMET_SODA3_white_series[:-12,lat_interest['SODA3'][i]])
+    slope[i,5],_,r_value[i,5],p_value[i,5],_ = stats.linregress(OMET_SODA3_white_series[156:-12,lat_interest['SODA3'][i]],OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]])
+
+# low pass original & white time series
+slope_lowpass = np.zeros((len(column_name_correlation),len(row_name_correlation)),dtype=float)
+r_value_lowpass = np.zeros((len(column_name_correlation),len(row_name_correlation)),dtype=float)
+p_value_lowpass = np.zeros((len(column_name_correlation),len(row_name_correlation)),dtype=float)
+# return value: slope, intercept, r_value, p_value, stderr
+for i in np.arange(len(lat_interest_list)):
+    slope_lowpass[i,0],_,r_value_lowpass[i,0],p_value_lowpass[i,0],_ = stats.linregress(OMET_ORAS4_series_running_mean[168:,lat_interest['ORAS4'][i]],OMET_GLORYS2V3_series_running_mean[:,lat_interest['GLORYS2V3'][i]])
+    slope_lowpass[i,1],_,r_value_lowpass[i,1],p_value_lowpass[i,1],_ = stats.linregress(OMET_ORAS4_series_running_mean[12:,lat_interest['ORAS4'][i]],OMET_SODA3_series_running_mean[:-12,lat_interest['SODA3'][i]])
+    slope_lowpass[i,2],_,r_value_lowpass[i,2],p_value_lowpass[i,2],_ = stats.linregress(OMET_SODA3_series_running_mean[156:-12,lat_interest['SODA3'][i]],OMET_GLORYS2V3_series_running_mean[:,lat_interest['GLORYS2V3'][i]])
+    slope_lowpass[i,3],_,r_value_lowpass[i,3],p_value_lowpass[i,3],_ = stats.linregress(OMET_ORAS4_white_series_running_mean[168:,lat_interest['ORAS4'][i]],OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][i]])
+    slope_lowpass[i,4],_,r_value_lowpass[i,4],p_value_lowpass[i,4],_ = stats.linregress(OMET_ORAS4_white_series_running_mean[12:,lat_interest['ORAS4'][i]],OMET_SODA3_white_series_running_mean[:-12,lat_interest['SODA3'][i]])
+    slope_lowpass[i,5],_,r_value_lowpass[i,5],p_value_lowpass[i,5],_ = stats.linregress(OMET_SODA3_white_series_running_mean[156:-12,lat_interest['SODA3'][i]],OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][i]])
+
+print '*******************************************************************'
+print '************************** save tp csv  ***************************'
+print '*******************************************************************'
+# statistical matrix
+row_name_statistic = ['ORAS4','GLORYS2V3','SODA3']
+column_name_statistic = ['mean','mean(anomaly)','std','std(anomaly)']
+data_for_save_statistic = np.array(([OMET_ORAS4_mean,OMET_GLORYS2V3_mean,OMET_SODA3_mean],
+                          [OMET_ORAS4_white_mean,OMET_GLORYS2V3_white_mean,OMET_SODA3_white_mean],
+                          [OMET_ORAS4_std,OMET_GLORYS2V3_std,OMET_SODA3_std],
+                          [OMET_ORAS4_white_std,OMET_GLORYS2V3_white_std,OMET_SODA3_white_std]
+                          ),dtype=float)
+df_statistic = pandas.DataFrame(data_for_save_statistic,column_name_statistic,row_name_statistic)
+#f_csv = open('csv_path' + 'AMET_statistic_matrix.csv','wb') # b indicates binary
+df_statistic.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'OMET_statistic_matrix.csv',
+                    index=True, header=True, decimal='.', float_format='%.3f')
+
+# correlation matrix - original & anomaly time series
+df_correlation = pandas.DataFrame(slope,column_name_correlation,row_name_correlation)
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'OMET_correlation_slope_matrix.csv',
+                      index=True, header=True, decimal='.',float_format='%.3f')
+
+df_correlation = pandas.DataFrame(r_value,column_name_correlation,row_name_correlation)
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'OMET_correlation_r_matrix.csv',
+                      index=True, header=True, decimal='.', float_format='%.3f')
+
+df_correlation = pandas.DataFrame(p_value,column_name_correlation,row_name_correlation)
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'OMET_correlation_p_matrix.csv',
+                      index=True, header=True, decimal='.', float_format='%.3f')
+
+# correlation matrix - low pass original & anomaly time series
+df_correlation = pandas.DataFrame(slope_lowpass,column_name_correlation,row_name_correlation)
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'OMET_correlation_slope_lowpass_%dm_matrix.csv' % (window),
+                      index=True, header=True, decimal='.',float_format='%.3f')
+
+df_correlation = pandas.DataFrame(r_value_lowpass,column_name_correlation,row_name_correlation)
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'OMET_correlation_r_lowpass_%dm_matrix.csv' % (window),
+                      index=True, header=True, decimal='.', float_format='%.3f')
+
+df_correlation = pandas.DataFrame(p_value_lowpass,column_name_correlation,row_name_correlation)
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'OMET_correlation_p_lowpass_%dm_matrix.csv' % (window),
+                      index=True, header=True, decimal='.', float_format='%.3f')
