@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Packing netCDF files for the monthly output from Cartesius (JRA55)
 Author          : Yang Liu
 Date            : 2018.02.28
-Last Update     : 2018.02.28
+Last Update     : 2018.03.10
 Description     : The code aims to reorganize the output from the Cartesius
                   regarding the computation of oceanic meridional energy
                   transport based on SODA3 output.
@@ -13,7 +13,7 @@ Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, matplotlib, sys
 variables       : Meridional Energy Transport                       E         [Tera-Watt]
                   Meridional Overturning Stream Function (Globe)    Psi       [Sv]
-                  Meridional Overturning Stream Function (Atlantic)    Psi       [Sv]
+                  Meridional Overturning Stream Function (Atlantic) Psi       [Sv]
 
 Caveat!!        : The data is from 90 deg north to 90 deg south (Globe).
                   Latitude: North to South(90 to -90)
@@ -159,8 +159,8 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
-    lat_wrap_dim = data_wrap.createDimension('latitude',ji)
-    lon_wrap_dim = data_wrap.createDimension('longitude',jj)
+    lat_wrap_dim = data_wrap.createDimension('latitude',jj)
+    lon_wrap_dim = data_wrap.createDimension('longitude',ji)
     # create coordinate variables for 3-dimensions
     year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
     month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
@@ -184,7 +184,6 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     lon_wrap_var[:] = longitude
     month_wrap_var[:] = month
     E_wrap_var[:] = E
-
 
     # close the file
     data_wrap.close()
