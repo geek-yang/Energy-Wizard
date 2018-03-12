@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2017.11.06
-Last Update     : 2018.03.09
+Last Update     : 2018.03.12
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF and
@@ -476,7 +476,7 @@ plt.xticks(np.linspace(20, 90, 8),labels)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig0.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_E_span.jpg', dpi = 500)
+fig0.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_E_span.jpg', dpi = 300)
 
 
 # annual mean of meridional energy transport at each latitude in north hemisphere
@@ -496,7 +496,8 @@ plt.xticks(np.linspace(20, 90, 8),labels)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig1.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_E_stdBar.jpg', dpi = 500)
+fig1.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_E_stdBar.jpg', dpi = 300)
+plt.close(fig1)
 
 # annual mean of meridional energy transport and each component at each latitude in north hemisphere
 fig2 = plt.figure()
@@ -525,7 +526,8 @@ plt.xticks(np.linspace(20, 90, 8),labels)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend()
 plt.show()
-fig2.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_full_components.jpg',dpi = 500)
+fig2.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_full_components.jpg',dpi = 300)
+plt.close(fig2)
 
 print '*******************************************************************'
 print '*************************** time series ***************************'
@@ -533,6 +535,7 @@ print '*******************************************************************'
 index_1980_2016 = np.arange(13,457,1)
 index_1979_2016 = np.arange(1,457,1)
 index_1979_2015 = np.arange(1,445,1)
+index_1980_2015 = np.arange(1,433,1)
 
 # plot the AMET with running mean
 # total energy transport
@@ -553,7 +556,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig3.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig3.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig3)
 
 # internal energy
 for i in np.arange(len(lat_interest_list)):
@@ -573,7 +577,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig4.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_cpT_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig4.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_cpT_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig4)
 
 # latent heat
 for i in np.arange(len(lat_interest_list)):
@@ -593,7 +598,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig5.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_Lvq_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig5.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_Lvq_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig5)
 
 # geopotential
 for i in np.arange(len(lat_interest_list)):
@@ -613,7 +619,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig6.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_gz_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig6.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_gz_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig6)
 
 # kinetic energy
 for i in np.arange(len(lat_interest_list)):
@@ -633,7 +640,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig7.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_uv2_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig7.savefig(output_path + os.sep + 'original_series_lowpass' + os.sep + 'Comp_AMET_E_uv2_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig7)
 
 # plot the AMET after removing the seasonal cycling with running mean
 for i in np.arange(len(lat_interest_list)):
@@ -653,7 +661,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig8.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep + 'Comp_AMET_E_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig8.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep + 'Comp_AMET_E_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig8)
 
 #internal energy
 for i in np.arange(len(lat_interest_list)):
@@ -673,7 +682,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig9.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep +'Comp_AMET_E_cpT_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig9.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep +'Comp_AMET_E_cpT_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig9)
 
 # latent heat
 for i in np.arange(len(lat_interest_list)):
@@ -693,7 +703,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig10.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep +'Comp_AMET_E_Lvq_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig10.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep +'Comp_AMET_E_Lvq_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig10)
 
 # geopotential
 for i in np.arange(len(lat_interest_list)):
@@ -713,7 +724,8 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig11.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep + 'Comp_AMET_E_gz_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
+    fig11.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep + 'Comp_AMET_E_gz_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig11)
 
 # kinetic energy
 for i in np.arange(len(lat_interest_list)):
@@ -733,49 +745,128 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Meridional Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig12.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep +'Comp_AMET_E_uv2_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 500)
-
+    fig12.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep +'Comp_AMET_E_uv2_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
+    plt.close(fig12)
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
 print '*******************************************************************'
-# caculate the differnce between datasets for each component
-# ERA-Interim minus MERRA2
-# time series at 60N
-# fig13 = plt.figure()
-# plt.plot(index_1980_2016,AMET_E_ERAI_series[12:] - AMET_E_MERRA2_series,'b-',linewidth=1.0,label='Total')
-# plt.plot(index_1980_2016,AMET_E_cpT_ERAI_series[12:] - AMET_E_cpT_MERRA2_series,'r-',linewidth=1.0,label='cpT')
-# plt.plot(index_1980_2016,AMET_E_Lvq_ERAI_series[12:] - AMET_E_Lvq_MERRA2_series,'m-',linewidth=1.0,label='Lvq')
-# plt.plot(index_1980_2016,AMET_E_gz_ERAI_series[12:] - AMET_E_gz_MERRA2_series,'g-',linewidth=1.0,label='gz')
-# plt.plot(index_1980_2016,AMET_E_uv2_ERAI_series[12:] - AMET_E_uv2_MERRA2_series,'c-',linewidth=1.0,label='uv2')
-# plt.title('Difference between ERA-Interim and MERRA2 (time series) at 60N')
-# plt.legend()
-# fig13.set_size_inches(12, 5)
-# plt.xlabel("Time")
-# plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
-# plt.xticks(rotation=60)
-# plt.ylabel("Meridional Energy Transport residual (PW)")
-# plt.legend()
-# plt.show()
-# fig13.savefig(output_path + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_60N.jpg', dpi = 500)
+#calculate the differnce between datasets for each component
+#ERA-Interim minus MERRA2
+for i in np.arange(len(lat_interest_list)):
+    fig13 = plt.figure()
+    plt.plot(index_1980_2016,AMET_E_ERAI_series[12:,lat_interest['ERAI'][i]] - AMET_E_MERRA2_series[:,lat_interest['MERRA2'][i]],'b-',linewidth=1.0,label='Total')
+    plt.plot(index_1980_2016,AMET_E_cpT_ERAI_series[12:,lat_interest['ERAI'][i]] - AMET_E_cpT_MERRA2_series[:,lat_interest['MERRA2'][i]],'r-',linewidth=1.0,label='cpT')
+    plt.plot(index_1980_2016,AMET_E_Lvq_ERAI_series[12:,lat_interest['ERAI'][i]] - AMET_E_Lvq_MERRA2_series[:,lat_interest['MERRA2'][i]],'m-',linewidth=1.0,label='Lvq')
+    plt.plot(index_1980_2016,AMET_E_gz_ERAI_series[12:,lat_interest['ERAI'][i]] - AMET_E_gz_MERRA2_series[:,lat_interest['MERRA2'][i]],'g-',linewidth=1.0,label='gz')
+    plt.plot(index_1980_2016,AMET_E_uv2_ERAI_series[12:,lat_interest['ERAI'][i]] - AMET_E_uv2_MERRA2_series[:,lat_interest['MERRA2'][i]],'c-',linewidth=1.0,label='uv2')
+    plt.title('Difference between ERA-Interim and MERRA2 (time series) at %dN' % (lat_interest_list[i]))
+    plt.legend()
+    fig13.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport residual (PW)")
+    plt.legend()
+    plt.show()
+    fig13.savefig(output_path + os.sep + 'original_minus' + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_%dN.jpg' % (lat_interest_list[i]), dpi = 300)
 
-# anomaly of time series at 60N
-# fig14 = plt.figure()
-# plt.plot(index_1980_2016,AMET_E_ERAI_white_series[12:] - AMET_E_MERRA2_white_series,'b-',linewidth=1.0,label='Total')
-# plt.plot(index_1980_2016,AMET_E_cpT_ERAI_white_series[12:] - AMET_E_cpT_MERRA2_white_series,'r-',linewidth=1.0,label='cpT')
-# plt.plot(index_1980_2016,AMET_E_Lvq_ERAI_white_series[12:] - AMET_E_Lvq_MERRA2_white_series,'m-',linewidth=1.0,label='Lvq')
-# plt.plot(index_1980_2016,AMET_E_gz_ERAI_white_series[12:] - AMET_E_gz_MERRA2_white_series,'g-',linewidth=1.0,label='gz')
-# plt.plot(index_1980_2016,AMET_E_uv2_ERAI_white_series[12:] - AMET_E_uv2_MERRA2_white_series,'c-',linewidth=1.0,label='uv2')
-# plt.title('Difference between ERA-Interim and MERRA2 anomalies (time series) at 60N')
-# plt.legend()
-# fig14.set_size_inches(12, 5)
-# plt.xlabel("Time")
-# plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
-# plt.xticks(rotation=60)
-# plt.ylabel("Meridional Energy Transport residual (PW)")
-# plt.legend()
-# plt.show()
-# fig14.savefig(output_path + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_anomaly_60N.jpg', dpi = 500)
 
+for i in np.arange(len(lat_interest_list)):
+    fig14 = plt.figure()
+    plt.plot(index_1980_2016,AMET_E_ERAI_white_series[12:,lat_interest['ERAI'][i]] - AMET_E_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'b-',linewidth=1.0,label='Total')
+    plt.plot(index_1980_2016,AMET_E_cpT_ERAI_white_series[12:,lat_interest['ERAI'][i]] - AMET_E_cpT_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r-',linewidth=1.0,label='cpT')
+    plt.plot(index_1980_2016,AMET_E_Lvq_ERAI_white_series[12:,lat_interest['ERAI'][i]] - AMET_E_Lvq_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'m-',linewidth=1.0,label='Lvq')
+    plt.plot(index_1980_2016,AMET_E_gz_ERAI_white_series[12:,lat_interest['ERAI'][i]] - AMET_E_gz_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'g-',linewidth=1.0,label='gz')
+    plt.plot(index_1980_2016,AMET_E_uv2_ERAI_white_series[12:,lat_interest['ERAI'][i]] - AMET_E_uv2_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'c-',linewidth=1.0,label='uv2')
+    plt.title('Difference between ERA-Interim and MERRA2 anomalies (time series) at %dN' % (lat_interest_list[i]))
+    plt.legend()
+    fig14.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport residual (PW)")
+    plt.legend()
+    plt.show()
+    fig14.savefig(output_path + os.sep + 'anomaly_minus' + os.sep + 'Comp_AMET_ERAI_minus_MERRA2_anomaly_%dN.jpg' % (lat_interest_list[i]), dpi = 300)
+    plt.close(fig14)
+
+#ERA-Interim minus JRA55
+for i in np.arange(len(lat_interest_list)):
+    fig15 = plt.figure()
+    plt.plot(index_1979_2015,AMET_E_ERAI_series[:-12,lat_interest['ERAI'][i]] - AMET_E_JRA55_series[:,lat_interest['JRA55'][i]],'b-',linewidth=1.0,label='Total')
+    plt.plot(index_1979_2015,AMET_E_cpT_ERAI_series[:-12,lat_interest['ERAI'][i]] - AMET_E_cpT_JRA55_series[:,lat_interest['JRA55'][i]],'r-',linewidth=1.0,label='cpT')
+    plt.plot(index_1979_2015,AMET_E_Lvq_ERAI_series[:-12,lat_interest['ERAI'][i]] - AMET_E_Lvq_JRA55_series[:,lat_interest['JRA55'][i]],'m-',linewidth=1.0,label='Lvq')
+    plt.plot(index_1979_2015,AMET_E_gz_ERAI_series[:-12,lat_interest['ERAI'][i]] - AMET_E_gz_JRA55_series[:,lat_interest['JRA55'][i]],'g-',linewidth=1.0,label='gz')
+    plt.plot(index_1979_2015,AMET_E_uv2_ERAI_series[:-12,lat_interest['ERAI'][i]] - AMET_E_uv2_JRA55_series[:,lat_interest['JRA55'][i]],'c-',linewidth=1.0,label='uv2')
+    plt.title('Difference between ERA-Interim and JRA55 (time series) at %dN' % (lat_interest_list[i]))
+    plt.legend()
+    fig15.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), year_JRA55)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport residual (PW)")
+    plt.legend()
+    plt.show()
+    fig15.savefig(output_path + os.sep + 'original_minus' + os.sep + 'Comp_AMET_ERAI_minus_JRA55_%dN.jpg' % (lat_interest_list[i]), dpi = 300)
+    plt.close(fig15)
+
+for i in np.arange(len(lat_interest_list)):
+    fig16 = plt.figure()
+    plt.plot(index_1979_2015,AMET_E_ERAI_white_series[:-12,lat_interest['ERAI'][i]] - AMET_E_JRA55_white_series[:,lat_interest['JRA55'][i]],'b-',linewidth=1.0,label='Total')
+    plt.plot(index_1979_2015,AMET_E_cpT_ERAI_white_series[:-12,lat_interest['ERAI'][i]] - AMET_E_cpT_JRA55_white_series[:,lat_interest['JRA55'][i]],'r-',linewidth=1.0,label='cpT')
+    plt.plot(index_1979_2015,AMET_E_Lvq_ERAI_white_series[:-12,lat_interest['ERAI'][i]] - AMET_E_Lvq_JRA55_white_series[:,lat_interest['JRA55'][i]],'m-',linewidth=1.0,label='Lvq')
+    plt.plot(index_1979_2015,AMET_E_gz_ERAI_white_series[:-12,lat_interest['ERAI'][i]] - AMET_E_gz_JRA55_white_series[:,lat_interest['JRA55'][i]],'g-',linewidth=1.0,label='gz')
+    plt.plot(index_1979_2015,AMET_E_uv2_ERAI_white_series[:-12,lat_interest['ERAI'][i]] - AMET_E_uv2_JRA55_white_series[:,lat_interest['JRA55'][i]],'c-',linewidth=1.0,label='uv2')
+    plt.title('Difference between ERA-Interim and JRA55 anomalies (time series) at %dN' % (lat_interest_list[i]))
+    plt.legend()
+    fig16.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), year_JRA55)
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport residual (PW)")
+    plt.legend()
+    plt.show()
+    fig16.savefig(output_path + os.sep + 'anomaly_minus' + os.sep + 'Comp_AMET_ERAI_minus_JRA55_anomaly_%dN.jpg' % (lat_interest_list[i]), dpi = 300)
+    plt.close(fig16)
+
+# MERRA2 minus JRA55
+for i in np.arange(len(lat_interest_list)):
+    fig17 = plt.figure()
+    plt.plot(index_1980_2015,AMET_E_MERRA2_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_JRA55_series[12:,lat_interest['JRA55'][i]],'b-',linewidth=1.0,label='Total')
+    plt.plot(index_1980_2015,AMET_E_cpT_MERRA2_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_cpT_JRA55_series[12:,lat_interest['JRA55'][i]],'r-',linewidth=1.0,label='cpT')
+    plt.plot(index_1980_2015,AMET_E_Lvq_MERRA2_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_Lvq_JRA55_series[12:,lat_interest['JRA55'][i]],'m-',linewidth=1.0,label='Lvq')
+    plt.plot(index_1980_2015,AMET_E_gz_MERRA2_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_gz_JRA55_series[12:,lat_interest['JRA55'][i]],'g-',linewidth=1.0,label='gz')
+    plt.plot(index_1980_2015,AMET_E_uv2_MERRA2_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_uv2_JRA55_series[12:,lat_interest['JRA55'][i]],'c-',linewidth=1.0,label='uv2')
+    plt.title('Difference between MERRA2 and JRA55 (time series) at %dN' % (lat_interest_list[i]))
+    plt.legend()
+    fig17.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 432, 37), year_JRA55[1:])
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport residual (PW)")
+    plt.legend()
+    plt.show()
+    fig17.savefig(output_path + os.sep + 'original_minus' + os.sep + 'Comp_AMET_MERRA2_minus_JRA55_%dN.jpg' % (lat_interest_list[i]), dpi = 300)
+    plt.close(fig17)
+
+for i in np.arange(len(lat_interest_list)):
+    fig16 = plt.figure()
+    plt.plot(index_1980_2015,AMET_E_MERRA2_white_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_JRA55_white_series[12:,lat_interest['JRA55'][i]],'b-',linewidth=1.0,label='Total')
+    plt.plot(index_1980_2015,AMET_E_cpT_MERRA2_white_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_cpT_JRA55_white_series[12:,lat_interest['JRA55'][i]],'r-',linewidth=1.0,label='cpT')
+    plt.plot(index_1980_2015,AMET_E_Lvq_MERRA2_white_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_Lvq_JRA55_white_series[12:,lat_interest['JRA55'][i]],'m-',linewidth=1.0,label='Lvq')
+    plt.plot(index_1980_2015,AMET_E_gz_MERRA2_white_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_gz_JRA55_white_series[12:,lat_interest['JRA55'][i]],'g-',linewidth=1.0,label='gz')
+    plt.plot(index_1980_2015,AMET_E_uv2_MERRA2_white_series[:-12,lat_interest['MERRA2'][i]] - AMET_E_uv2_JRA55_white_series[12:,lat_interest['JRA55'][i]],'c-',linewidth=1.0,label='uv2')
+    plt.title('Difference between MERRA2 and JRA55 anomalies (time series) at %dN' % (lat_interest_list[i]))
+    plt.legend()
+    fig16.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 432, 37), year_JRA55[1:])
+    plt.xticks(rotation=60)
+    plt.ylabel("Meridional Energy Transport residual (PW)")
+    plt.legend()
+    plt.show()
+    fig16.savefig(output_path + os.sep + 'anomaly_minus' + os.sep + 'Comp_AMET_MERRA2_minus_JRA55_anomaly_%dN.jpg' % (lat_interest_list[i]), dpi = 300)
+    plt.close(fig16)
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
 print '****************   contour of time series (lat)   *****************'
@@ -912,13 +1003,13 @@ df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'AMET_correlation_
 
 # correlation matrix - low pass original & anomaly time series
 df_correlation = pandas.DataFrame(slope_lowpass,column_name_correlation,row_name_correlation)
-df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'AMET_correlation_slope_lowpass_matrix.csv',
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'AMET_correlation_slope_lowpass_%dm_matrix.csv' % (window),
                       index=True, header=True, decimal='.',float_format='%.3f')
 
 df_correlation = pandas.DataFrame(r_value_lowpass,column_name_correlation,row_name_correlation)
-df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'AMET_correlation_r_lowpass_matrix.csv',
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'AMET_correlation_r_lowpass_%dm_matrix.csv' % (window),
                       index=True, header=True, decimal='.', float_format='%.3f')
 
 df_correlation = pandas.DataFrame(p_value_lowpass,column_name_correlation,row_name_correlation)
-df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'AMET_correlation_p_lowpass_matrix.csv',
+df_correlation.to_csv(csv_path + os.sep + 'matrix' + os.sep + 'AMET_correlation_p_lowpass_%dm_matrix.csv' % (window),
                       index=True, header=True, decimal='.', float_format='%.3f')
