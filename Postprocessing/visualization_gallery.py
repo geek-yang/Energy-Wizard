@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Visualization of AMET and OMET from reanalysis datasets
 Author          : Yang Liu
 Date            : 2017.11.28
-Last Update     : 2018.03.12
+Last Update     : 2018.03.13
 Description     : The code aims to project the atmospheric/oceanic meridional energy
                   transport on the map.
 Return Value    : PNGs
@@ -702,7 +702,7 @@ circle = mpath.Path(verts * radius + center)
 ax.set_boundary(circle, transform=ax.transAxes)
 
 # plot with Iris quickplot pcolormesh
-cs = iplt.pcolormesh(cube_GLORYS2V3_regrid,cmap='coolwarm',vmin=-0.2,vmax=0.2)
+cs = iplt.pcolormesh(cube_SODA3_regrid,cmap='coolwarm',vmin=-0.2,vmax=0.2)
 cbar = fig11.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.05,format="%.1f")
 cbar.set_ticks([-0.2, -0.1, 0, 0.1, 0.2])
 cbar.set_label('PW (1E+15W)',size = 6)
@@ -830,7 +830,7 @@ for i in year_MERRA2:
         gl.xlabel_style = {'size': 6, 'color': 'gray'}
         gl.ylabel_style = {'size': 6, 'color': 'gray'}
         cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-1.2,vmax=1.2)
-        cbar = fig16.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.05,format="%.1f")
+        cbar = fig16.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.1f")
         cbar.set_label('PW (1E+15W)',size = 6)
         cbar.set_ticks([-1.2, -0.8, -0.4, 0, 0.4, 0.8, 1.2])
         cbar.ax.tick_params(labelsize = 6)
@@ -932,7 +932,7 @@ for i in year_ORAS4:
         cbar.set_label('PW (1E+15W)',size = 6)
         # show and save plot
         iplt.show()
-        fig20.savefig(output_path + os.sep + 'ORAS4' + os.sep + 'PlateCarree' + os.sep + 'OMET_ORAS4_%dy_%dm.png' % (i,j+1),dpi = 300)
+        fig20.savefig(output_path + os.sep + 'ORAS4' + os.sep + 'animation' + os.sep + 'PlateCarree' + os.sep + 'OMET_ORAS4_%dy_%dm.png' % (i,j+1),dpi = 300)
         plt.close(fig20)
 
 # animation for GLORYS2V3 - NorthPolarStereo
@@ -982,7 +982,7 @@ for i in year_GLORYS2V3:
         cbar.set_label('PW (1E+15W)',size = 6)
         # show and save plot
         iplt.show()
-        fig22.savefig(output_path + os.sep + 'GLORYS2V3' + os.sep + 'PlateCarree' + os.sep + 'OMET_GLORYS2V3_%dy_%dm.png' % (i,j+1),dpi = 300)
+        fig22.savefig(output_path + os.sep + 'GLORYS2V3' + os.sep + 'animation' + os.sep + 'PlateCarree' + os.sep + 'OMET_GLORYS2V3_%dy_%dm.png' % (i,j+1),dpi = 300)
         plt.close(fig22)
 
 # animation for SODA3 - NorthPolarStereo
@@ -1032,7 +1032,7 @@ for i in year_SODA3:
         cbar.set_label('PW (1E+15W)',size = 6)
         # show and save plot
         iplt.show()
-        fig24.savefig(output_path + os.sep + 'SODA3' + os.sep + 'PlateCarree' + os.sep + 'OMET_SODA3_%dy_%dm.png' % (i,j+1),dpi = 300)
+        fig24.savefig(output_path + os.sep + 'SODA3' + os.sep + 'animation' + os.sep + 'PlateCarree' + os.sep + 'OMET_SODA3_%dy_%dm.png' % (i,j+1),dpi = 300)
         plt.close(fig24)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
