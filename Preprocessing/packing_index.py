@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Packing index
 Author          : Yang Liu
 Date            : 2018.03.18
-Last Update     : 2018.03.18
+Last Update     : 2018.03.26
 Description     : The code aims to pack climate large scale index.
                   Those index include:
                   NAO (based on CDAS from NOAA)
@@ -19,6 +19,8 @@ variables       : NAO           1950 Jan - 2018 Feb (818 records)
                   http://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/nao.shtml
                   ENSO - MEI    1950 Jan - 2018 Jan (817 records)
                   https://www.esrl.noaa.gov/psd/enso/mei/table.html
+                  ENSO - NINO 3.4 SST   1950 Jan - 2018 Jan (817 records)
+                  https://www.esrl.noaa.gov/psd/gcos_wgsp/Timeseries/Nino34/
                   AO            1950 Jan - 2018 Feb (818 records)
                   http://www.cpc.ncep.noaa.gov/products/precip/CWlink/daily_ao_index/ao.shtml
                   AMO           1950 Jan - 2018 Feb (818 records)
@@ -78,13 +80,22 @@ NAO = NAO[:-2] # take 1950 - 2017
 NAO_file.close()
 
 print '***********************      ENSO      *************************'
-# *************** ENSO - NOAA CSAD ***************** #
+# *************** ENSO MEI - NOAA CSAD ***************** #
 # from 1950 Jan to 2017 Dec (816 records)
-datapath_MEI_NOAA = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/Climate_index/ENSO/NOAA'
-MEI_file = open(datapath_MEI_NOAA + os.sep + 'MEI_monthly_NOAA_valueonly.txt', 'r')
+datapath_ENSO_NOAA = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/Climate_index/ENSO/NOAA'
+MEI_file = open(datapath_ENSO_NOAA + os.sep + 'MEI_monthly_NOAA_valueonly.txt', 'r')
 MEI_value = MEI_file.read().split() # get a list of values
 MEI = np.array(MEI_value,dtype=float) # convert str to float
 MEI_file.close()
+
+print '***********************      ENSO      *************************'
+# *************** ENSO NINO 3.4 SST - NOAA CSAD ***************** #
+# from 1950 Jan to 2017 Dec (816 records)
+datapath_ENSO_NOAA = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/Climate_index/ENSO/NOAA'
+NINO_file = open(datapath_ENSO_NOAA + os.sep + 'NINO3.4_monthly_NOAA_valueonly.txt', 'r')
+NINO_value = NINO_file.read().split() # get a list of values
+NINO = np.array(NINO_value,dtype=float) # convert str to float
+NINO_file.close()
 
 print '***********************      AO      *************************'
 # *************** AO - NOAA CSAD ***************** #
@@ -119,7 +130,7 @@ PDO_file.close()
 
 # save output datasets
 # we only pack our timeseries from 1979 to 2016
-def create_netcdf_point (NAO,MEI,AO,AMO,PDO,period,output_path):
+def create_netcdf_point (NAO,MEI,NINO,AO,AMO,PDO,period,output_path):
     series = len(period) * 12
     print '*******************************************************************'
     print '*********************** create netcdf file*************************'
@@ -136,6 +147,7 @@ def create_netcdf_point (NAO,MEI,AO,AMO,PDO,period,output_path):
     # create the actual 3-d variable
     NAO_wrap_var = data_wrap.createVariable('NAO',np.float64,('series',))
     MEI_wrap_var = data_wrap.createVariable('MEI',np.float64,('series',))
+    NINO_wrap_var = data_wrap.createVariable('NINO',np.float64,('series',))
     AO_wrap_var = data_wrap.createVariable('AO',np.float64,('series',))
     AMO_wrap_var = data_wrap.createVariable('AMO',np.float64,('series',))
     PDO_wrap_var = data_wrap.createVariable('PDO',np.float64,('series',))
@@ -146,12 +158,14 @@ def create_netcdf_point (NAO,MEI,AO,AMO,PDO,period,output_path):
 
     NAO_wrap_var.units = '1'
     MEI_wrap_var.units = '1'
+    NINO_wrap_var.units = '1'
     AO_wrap_var.units = '1'
     AMO_wrap_var.units = '1'
     PDO_wrap_var.units = '1'
 
     NAO_wrap_var.long_name = 'North Atlantic Oscillation Index'
     MEI_wrap_var.long_name = 'Multivariate ENSO Index'
+    NINO_wrap_var.long_name = 'EI NINO 3.4 SST Index'
     AO_wrap_var.long_name = 'Atlantic Oscillation Index'
     AMO_wrap_var.long_name = 'Atlantic Multidecadal Oscillation Index'
     PDO_wrap_var.long_name = 'Pacific Decadal Oscillation Index'
@@ -161,6 +175,7 @@ def create_netcdf_point (NAO,MEI,AO,AMO,PDO,period,output_path):
 
     NAO_wrap_var[:] = NAO
     MEI_wrap_var[:] = MEI
+    NINO_wrap_var[:] = NINO
     AO_wrap_var[:] = AO
     AMO_wrap_var[:] = AMO
     PDO_wrap_var[:] = PDO
@@ -174,4 +189,4 @@ if __name__=="__main__":
     # create time dimension for saving the fields
     period = np.arange(1950,2018,1) # take 1950 - 2017
     # create netCDF file
-    create_netcdf_point(NAO,MEI,AO,AMO,PDO,period,output_path)
+    create_netcdf_point(NAO,MEI,NINO,AO,AMO,PDO,period,output_path)
