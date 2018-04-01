@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic variable fields (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.01.14
-Last Update     : 2018.03.27
+Last Update     : 2018.04.02
 Description     : The code aims to compare the spatial and temporal distribution of
                   different fields from difference atmospheric reanalysis datasets on pressure
                   level. In this,case, this includes ERA-Interim from ECMWF, MERRA2 from NASA
@@ -38,6 +38,7 @@ import os
 import platform
 import sys
 import logging
+import scipy
 import matplotlib
 # generate images without having a window appear
 #matplotlib.use('Agg')
@@ -90,7 +91,6 @@ datapath_MERRA2 = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/MERRA
 datapath_ERAI_surface = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/regression'
 # specify output path for figures
 output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/AMET/Comparison/var'
-
 print '****************************************************************************'
 print '********************    latitude index of insteret     *********************'
 print '****************************************************************************'
@@ -167,7 +167,7 @@ month_ind = np.arange(12)
 year_ind = np.arange(1994,1999,1)
 
 # surface pressure for mask
-sp_ERAI_convert = dataset_ERAI_surface.variables['sp'][223,0:95,:] / 100 # 1997.07
+sp_ERAI_convert = dataset_ERAI_surface.variables['sp'][222,0:95,:] / 100 # 1997.07
 sp_ERAI = np.zeros(sp_ERAI_convert.shape,dtype=float)
 sp_ERAI[:,0:239] = sp_ERAI_convert[:,241:]
 sp_ERAI[:,239:] = sp_ERAI_convert[:,:241]
@@ -214,12 +214,6 @@ for i in year_ind:
     v_ERAI[(i-1994)*12:(i-1994)*12+12,:,:,0:239] = v_ERAI_convert[:,:,:,241:] # -180 - 0
     v_ERAI[(i-1994)*12:(i-1994)*12+12,:,:,239:] = v_ERAI_convert[:,:,:,:241] # 0 -180
 
-# mask the values
-# np.ma.masked_where(T_ERAI_mask_4D,T_ERAI)
-# np.ma.masked_where(T_ERAI_mask_4D,v_ERAI)
-# np.ma.set_fill_value(T_ERAI,0)
-# np.ma.set_fill_value(v_ERAI,0)
-
 # calculate potential temperature
 theta_ERAI = np.zeros(T_ERAI.shape,dtype=float)
 theta_MERRA2 = np.zeros(T_MERRA2.shape,dtype=float)
@@ -230,6 +224,7 @@ for i in np.arange(len(level_ERAI)):
 for i in np.arange(len(level_MERRA2)):
     theta_MERRA2[:,i,:,:] = T_MERRA2[:,i,:,:] * (1000/level_MERRA2[i])**0.286
 
+np.ma.set_fill_value(theta_MERRA2,0)
 # dp
 dp_ERAI = np.zeros(level_ERAI.shape)
 dp_MERRA2 = np.zeros(level_MERRA2.shape)
@@ -248,248 +243,167 @@ for i in np.arange(len(level_MERRA2)):
 print '*******************************************************************'
 print '************************ data preparation *************************'
 print '*******************************************************************'
-# # zonal mean at 60N July
-# T_zonal_ERAI = np.mean(T_ERAI,2)
-# T_zonal_MERRA2 = np.mean(T_MERRA2,2)
-# v_zonal_ERAI = np.mean(v_ERAI,2)
-# v_zonal_MERRA2 = np.mean(v_MERRA2,2)
-# # vertical mean at 60N July
-# T_vert_ERAI_weight = np.zeros(T_ERAI.shape)
-# T_vert_MERRA2_weight = np.zeros(T_MERRA2.shape)
-# v_vert_ERAI_weight = np.zeros(v_ERAI.shape)
-# v_vert_MERRA2_weight = np.zeros(T_MERRA2.shape)
-#
-# for i in np.arange(len(level_ERAI)):
-#     T_vert_ERAI_weight[i,:,:] = T_ERAI[i,:,:] * dp_ERAI[i]
-#     v_vert_ERAI_weight[i,:,:] = v_ERAI[i,:,:] * dp_ERAI[i]
-#
-# for i in np.arange(len(level_MERRA2)):
-#     T_vert_MERRA2_weight[i,:,:] = T_MERRA2[i,:,:] * dp_MERRA2[i]
-#     v_vert_MERRA2_weight[i,:,:] = v_MERRA2[i,:,:] * dp_MERRA2[i]
-#
-# T_vert_ERAI = np.sum(T_vert_ERAI_weight,0)/level_ERAI[-1]
-# T_vert_MERRA2 = np.sum(T_vert_MERRA2_weight,0)/level_MERRA2[0]
-# v_vert_ERAI = np.sum(v_vert_ERAI_weight,0)/level_ERAI[-1]
-# v_vert_MERRA2 = np.sum(v_vert_MERRA2_weight,0)/level_MERRA2[0]
 
-print '*******************************************************************'
-print '********************** horizontal profile *************************'
-print '*******************************************************************'
-########################      control panel      #########################
-# time: 1997.07 lat lon : 20N - 80N
-
-##########################################################################
-print 'Contour plots for certain fields'
-
-# print 'Dot plots of the integral of variables'
-# # temperature
-# fig1 = plt.figure()
-# #plt.axhline(y=0, color='k',ls='-')
-# plt.scatter(longitude_ERAI,T_vert_ERAI[40,:],c='c',marker='.',label='ERA-Interim')
-# plt.scatter(longitude_MERRA2,T_vert_MERRA2[80,:],c='m',marker='.',label='MERRA2')
-# plt.title('Monthly Mean T Field of 1997-07 at 60N (horizontal profile)' )
-# fig1.set_size_inches(8, 5)
-# #plt.legend()
-# plt.xlabel("Longitude")
-# #plt.xticks()
-# plt.ylabel("Temperature (Celsius)")
-# plt.legend()
-# plt.show()
-# fig1.savefig(output_path + os.sep + 'Comp_var_monthly_vert_mean_T_199707_60N.jpg', dpi = 500)
-#
-# # velocity
-# # meridional velocity time: 2001.01 lat lon : 60N
-# fig2 = plt.figure()
-# plt.axhline(y=0, color='k',ls='-')
-# plt.scatter(longitude_ERAI,v_vert_ERAI[40,:],c='c',marker='.',label='ERA-Interim')
-# plt.scatter(longitude_MERRA2,v_vert_MERRA2[80,:],c='m',marker='.',label='MERRA2')
-# plt.title('Monthly Mean v Field of 1997-07 at 60N (horizontal profile)' )
-# fig2.set_size_inches(8, 5)
-# #plt.legend()
-# plt.xlabel("Longitude")
-# #plt.xticks()
-# plt.ylabel("Meridional Wind Velocity (m/s)")
-# plt.legend()
-# plt.show()
-# fig2.savefig(output_path + os.sep + 'Comp_var_monthly_vert_mean_v_199707_60N.jpg', dpi = 500)
-
-print '*******************************************************************'
-print '*********************** vertical profile **************************'
-print '*******************************************************************'
-
-print '*******************************************************************'
-print '************         1997.07 instaneous fields        *************'
-
-print 'Contour plots for temperature fields'
-for c in np.arange(len(lat_interest_list)):
+def contour_plot(fields,longitude,level,contour_level,title,c_label,output,cmap):
     fig0 = plt.figure()
-    X , Y = np.meshgrid(longitude_ERAI,level_ERAI)
-    contour_level = np.arange(-90,30,3)
+    X , Y = np.meshgrid(longitude,level)
     #plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-    #cs = plt.contourf(X,Y,T_ERAI[42,:,lat_ERAI_60,:]- 273.15,contour_level,linewidth= 0.2,cmap='coolwarm')
-    cs = plt.contourf(X,Y,np.ma.masked_where(T_ERAI_mask[:,lat_interest['ERAI'][c],:],T_ERAI[42,:,lat_interest['ERAI'][c],:]- 273.15),contour_level,linewidth= 0.2,cmap='coolwarm')
-    plt.title('Vertical profile of temperature (ERA-interim)(1997.7) at %dN' % (lat_interest_list[c]),fontsize = 7,y=0.93)
-    plt.xlabel("Longitude")
-    plt.xticks(np.linspace(-180,180,13))
-    plt.ylabel("pressure (hPa)")
+    cs = plt.contourf(X,Y,fields,contour_level, linewidth= 0.2, extend='both',cmap=cmap)
+    plt.title(title,fontsize = 7,y=0.99)
+    plt.xlabel("Longitude",fontsize = 6)
+    plt.xticks(np.linspace(-180,180,13),labelsize = 6)
+    plt.ylabel("pressure (hPa)",fontsize = 6)
+    plt.tick_params(labelsize=6)
     cbar = plt.colorbar(orientation='horizontal')
-    cbar.set_label('Temperature (Celsius)')
+    cbar.set_label(c_label,size = 6)
+    cbar.ax.tick_params(labelsize = 6)
     #invert the y axis
     plt.gca().invert_yaxis()
     plt.show()
-    fig0.savefig(output_path + os.sep + 'T' + os.sep + "Comp_var_monthly_ERAI_vert_distrib_T_199707_60N.png",dpi=300)
+    fig0.savefig(output,dpi=300)
+    plt.close(fig0)
 
-fig1 = plt.figure()
-X , Y = np.meshgrid(longitude_MERRA2,level_MERRA2)
-contour_level = np.arange(-90,30,3)
-#plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-cs = plt.contourf(X,Y,T_MERRA2[42,:,lat_MERRA2_60,:]- 273.15,contour_level,linewidth= 0.2,cmap='coolwarm')
-plt.title('Vertical profile of temperature (MERRA2)(1997.7)')
-plt.xlabel("Longitude")
-plt.xticks(np.linspace(-180,180,13))
-plt.ylabel("Pressure (hPa)")
-cbar = plt.colorbar(orientation='horizontal')
-cbar.set_label('Temperature (Celsius)')
-#invert the y axis
-plt.gca().invert_yaxis()
-plt.show()
-fig1.savefig(output_path + os.sep + "Comp_var_monthly_MERRA2_vert_distrib_T_199707_60N.png",dpi=300)
-
-print 'Contour plots for meridional velocity fields'
-fig2 = plt.figure()
-X , Y = np.meshgrid(longitude_ERAI,level_ERAI)
-contour_level = np.arange(-30,30,1)
-#plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-cs = plt.contourf(X,Y,np.ma.masked_where(T_ERAI_mask[:,lat_ERAI_60,:],v_ERAI[42,:,lat_ERAI_60,:]),contour_level,linewidth= 0.2,cmap='coolwarm')
-plt.title('Vertical profile of meridional velocity (ERA-interim)(1997.7)')
-plt.xlabel("Longitude")
-plt.xticks(np.linspace(-180,180,13))
-plt.ylabel("Pressure (hPa)")
-cbar = plt.colorbar(orientation='horizontal')
-cbar.set_label('Meridional velocity (m/s)')
-#invert the y axis
-plt.gca().invert_yaxis()
-plt.show()
-fig2.savefig(output_path + os.sep + "Comp_var_monthly_ERAI_vert_distrib_v_199707_60N.png",dpi=300)
-
-fig3 = plt.figure()
-X , Y = np.meshgrid(longitude_MERRA2,level_MERRA2)
-contour_level = np.arange(-30,30,1)
-#plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-cs = plt.contourf(X,Y,v_MERRA2[42,:,lat_MERRA2_60,:],contour_level,linewidth= 0.2,cmap='coolwarm')
-plt.title('Vertical profile of meridional velocity (MERRA2)(1997.7)')
-plt.xlabel("Longitude")
-plt.xticks(np.linspace(-180,180,13))
-plt.ylabel("pressure (hPa)")
-cbar = plt.colorbar(orientation='horizontal')
-cbar.set_label('Meridional velocity (m/s)')
-#invert the y axis
-plt.gca().invert_yaxis()
-plt.show()
-fig3.savefig(output_path + os.sep + "Comp_var_monthly_MERRA2_vert_distrib_v_199707_60N.png",dpi=300)
-
-print '*******************************************************************'
-print '*********      1994.01 - 1998.12 annual mean fields      **********'
-
-print 'Contour plots for temperature fields'
-fig4 = plt.figure()
-X , Y = np.meshgrid(longitude_ERAI,level_ERAI)
-contour_level = np.arange(-90,30,3)
-#plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-#cs = plt.contourf(X,Y,T_ERAI[42,:,lat_ERAI_60,:]- 273.15,contour_level,linewidth= 0.2,cmap='coolwarm')
-cs = plt.contourf(X,Y,np.ma.masked_where(T_ERAI_mask[:,lat_ERAI_60,:],T_ERAI[42,:,lat_ERAI_60,:]- 273.15),contour_level,linewidth= 0.2,cmap='coolwarm')
-plt.title('Vertical profile of temperature (ERA-interim)(1997.7)')
-plt.xlabel("Longitude")
-plt.xticks(np.linspace(-180,180,13))
-plt.ylabel("pressure (hPa)")
-cbar = plt.colorbar(orientation='horizontal')
-cbar.set_label('Temperature (Celsius)')
-#invert the y axis
-plt.gca().invert_yaxis()
-plt.show()
-fig4.savefig(output_path + os.sep + "Comp_var_monthly_ERAI_vert_distrib_T_1994_1998_60N.png",dpi=300)
-
-fig5 = plt.figure()
-X , Y = np.meshgrid(longitude_MERRA2,level_MERRA2)
-contour_level = np.arange(-90,30,3)
-#plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-cs = plt.contourf(X,Y,T_MERRA2[42,:,lat_MERRA2_60,:]- 273.15,contour_level,linewidth= 0.2,cmap='coolwarm')
-plt.title('Vertical profile of temperature (MERRA2)(1997.7)')
-plt.xlabel("Longitude")
-plt.xticks(np.linspace(-180,180,13))
-plt.ylabel("Pressure (hPa)")
-cbar = plt.colorbar(orientation='horizontal')
-cbar.set_label('Temperature (Celsius)')
-#invert the y axis
-plt.gca().invert_yaxis()
-plt.show()
-fig5.savefig(output_path + os.sep + "Comp_var_monthly_MERRA2_vert_distrib_T_1994_1998_60N.png",dpi=300)
-
-print 'Contour plots for meridional velocity fields'
-fig6 = plt.figure()
-X , Y = np.meshgrid(longitude_ERAI,level_ERAI)
-contour_level = np.arange(-30,30,1)
-#plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-cs = plt.contourf(X,Y,np.ma.masked_where(T_ERAI_mask[:,lat_ERAI_60,:],v_ERAI[42,:,lat_ERAI_60,:]),contour_level,linewidth= 0.2,cmap='coolwarm')
-plt.title('Vertical profile of meridional velocity (ERA-interim)(1997.7)')
-plt.xlabel("Longitude")
-plt.xticks(np.linspace(-180,180,13))
-plt.ylabel("Pressure (hPa)")
-cbar = plt.colorbar(orientation='horizontal')
-cbar.set_label('Meridional velocity (m/s)')
-#invert the y axis
-plt.gca().invert_yaxis()
-plt.show()
-fig6.savefig(output_path + os.sep + "Comp_var_monthly_ERAI_vert_distrib_v_1994_1998_60N.png",dpi=300)
-
-fig7 = plt.figure()
-X , Y = np.meshgrid(longitude_MERRA2,level_MERRA2)
-contour_level = np.arange(-30,30,1)
-#plt.contour(X,Y,T_ERAI[:,lat_ERAI_60,:],linewidth= 0.2)
-cs = plt.contourf(X,Y,v_MERRA2[42,:,lat_MERRA2_60,:],contour_level,linewidth= 0.2,cmap='coolwarm')
-plt.title('Mean Vertical profile of meridional velocity (MERRA2) from 1994 to 1998')
-plt.xlabel("Longitude")
-plt.xticks(np.linspace(-180,180,13))
-plt.ylabel("pressure (hPa)")
-cbar = plt.colorbar(orientation='horizontal')
-cbar.set_label('Meridional velocity (m/s)')
-#invert the y axis
-plt.gca().invert_yaxis()
-plt.show()
-fig7.savefig(output_path + os.sep + "Comp_var_monthly_MERRA2_vert_distrib_v_1994_1998_60N.png",dpi=300)
-
-# print 'Dot plots of the integral of variables'
-# # temperature
-# fig3 = plt.figure()
-# #plt.axhline(y=0, color='k',ls='-')
-# #plt.scatter(depth_ORAS4,theta_glo_zonal_ORAS4[43,0,:,233],c='c',marker='o',label='ORAS4')
-# #plt.scatter(depth_GLORYS2V3,theta_glo_zonal_GLORYS2V3[8,0,:,788],c='m',marker='o',label='GLORYS2V3')
-# plt.scatter(T_zonal_ERAI[:,40],level_ERAI,c='c',marker='.',label='ERA-Interim')
-# plt.scatter(T_zonal_MERRA2[:,80],level_MERRA2,c='m',marker='.',label='MERRA2')
-# plt.title('Monthly Mean T Field of 1997-07 at 60N (vertical profile)' )
-# fig3.set_size_inches(5, 8)
-# #plt.legend()
-# plt.xlabel("Temperature (Celsius)")
-# #plt.xticks()
-# plt.ylabel("Height (hPa)")
-# plt.legend()
-# #invert the y axis
-# plt.gca().invert_yaxis()
-# plt.show()
-# fig3.savefig(output_path + os.sep + 'Comp_var_monthly_zonal_mean_T_199707_60N.jpg', dpi = 500)
-#
-# fig4 = plt.figure()
-# #plt.axhline(y=0, color='k',ls='-')
-# plt.scatter(v_zonal_ERAI[:,40],level_ERAI,c='c',marker='.',label='ORAS4')
-# plt.scatter(v_zonal_MERRA2[:,80],level_MERRA2,c='m',marker='.',label='GLORYS2V3')
-# plt.title('Monthly Mean v Field of 1997-07 at 60N (vertical profile)' )
-# fig4.set_size_inches(5, 8)
-# #plt.legend()
-# plt.xlabel("Meridional Wind Velocity (m/s)")
-# #plt.xticks()
-# plt.ylabel("Height (hPa)")
-# plt.legend()
-# #invert the y axis
-# plt.gca().invert_yaxis()
-# plt.show()
-# fig4.savefig(output_path + os.sep + 'Comp_var_monthly_zonal_mean_v_199707_60N.jpg', dpi = 500)
+if __name__=="__main__":
+    '''
+    This function aims to make plots.
+    '''
+    contour_level_T = np.arange(-80,40,2)
+    # contour_level_theta = np.array([-30,-20,-10,0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,
+    #                                 25,30,35,40,45,50,55,60,70,80,90,100,120,140,160,180,
+    #                                 200,250,300,400],dtype=int)
+    contour_level_theta = np.array([-30,-20,-10,0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,
+                                    25,30,35,40,45,50,55,60,70,80,90,100],dtype=int)
+    contour_level_v = np.array([-20,-15,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,
+                                8,9,10,15,20],dtype=int)
+    contour_minus_theta = np.arange(-10,10,1)
+    contour_minus_v = np.arange(-5,5,0.5)
+    contour_minus_T = np.arange(-10,10,1)
+    c_label_T = 'Absolute temperature (Celsius)'
+    c_label_theta = 'Potential temperature (Celsius)'
+    c_label_v = 'Meridional velocity (m/s)'
+    cmap_jet = 'jet'
+    cmap_coolwarm = 'coolwarm'
+    print '*******************************************************************'
+    print '********************** horizontal profile *************************'
+    print '*******************************************************************'
+    #
+    print '*******************************************************************'
+    print '*********************** vertical profile **************************'
+    print '*******************************************************************'
+    # profile at different lat
+    for c in np.arange(len(lat_interest_list)):
+        print '*******************************************************************'
+        print '************         1997.07 instaneous fields        *************'
+        # ERAI absolute temperature
+        fields = np.ma.masked_where(T_ERAI_mask[:,lat_interest['ERAI'][c],:],T_ERAI[42,:,lat_interest['ERAI'][c],:]- 273.15)
+        title = 'Vertical profile of temperature (ERA-interim)(1997.7) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'T','instaneous',"Comp_var_monthly_ERAI_vert_distrib_T_199707_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI,contour_level_T,title,c_label_T,output,cmap_coolwarm)
+        # MERRA2 absolute temperature
+        fields = np.ma.masked_where(T_MERRA2_mask[:,lat_interest['MERRA2'][c],:],T_MERRA2[42,:,lat_interest['MERRA2'][c],:]- 273.15)
+        title = 'Vertical profile of temperature (MERRA2)(1997.7) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'T','instaneous',"Comp_var_monthly_MERRA2_vert_distrib_T_199707_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_MERRA2,level_MERRA2,contour_level_T,title,c_label_T,output,cmap_coolwarm)
+        # ERAI potential temperature
+        fields = np.ma.masked_where(T_ERAI_mask[:,lat_interest['ERAI'][c],:],theta_ERAI[42,:,lat_interest['ERAI'][c],:]- 273.15)
+        title = 'Vertical profile of potential temperature (ERA-interim)(1997.7) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'theta','instaneous',"Comp_var_monthly_ERAI_vert_distrib_theta_199707_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI,contour_level_theta,title,c_label_theta,output,cmap_coolwarm)
+        # MERRA2 potential temperature
+        fields = np.ma.masked_where(T_MERRA2_mask[:,lat_interest['MERRA2'][c],:],theta_MERRA2[42,:,lat_interest['MERRA2'][c],:]- 273.15)
+        title = 'Vertical profile of potential temperature (MERRA2)(1997.7) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'theta','instaneous',"Comp_var_monthly_MERRA2_vert_distrib_theta_199707_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_MERRA2,level_MERRA2,contour_level_theta,title,c_label_theta,output,cmap_coolwarm)
+        # ERAI velocity
+        fields = np.ma.masked_where(T_ERAI_mask[:,lat_interest['ERAI'][c],:],v_ERAI[42,:,lat_interest['ERAI'][c],:])
+        title = 'Vertical profile of velocity (ERAI)(1997.7) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'v','instaneous',"Comp_var_monthly_ERAI_vert_distrib_v_199707_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI,contour_level_v,title,c_label_v,output,cmap_coolwarm)
+        # MERRA2 velocity
+        fields = np.ma.masked_where(v_MERRA2_mask[:,lat_interest['MERRA2'][c],:],v_MERRA2[42,:,lat_interest['MERRA2'][c],:])
+        title = 'Vertical profile of velocity (MERRA2)(1997.7) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'v','instaneous',"Comp_var_monthly_MERRA2_vert_distrib_v_199707_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_MERRA2,level_MERRA2,contour_level_v,title,c_label_v,output,cmap_coolwarm)
+        print '*******************************************************************'
+        print '*********      1994.01 - 1998.12 annual mean fields      **********'
+        # ERAI mean temperature
+        fields = np.ma.masked_where(T_ERAI_mask[:,lat_interest['ERAI'][c],:],np.mean(T_ERAI[:,:,lat_interest['ERAI'][c],:]- 273.15,0))
+        title ='Vertical profile of mean temperature (ERAI)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'T','mean',"Comp_var_monthly_ERAI_vert_distrib_T_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI,contour_level_T,title,c_label_T,output,cmap_coolwarm)
+        # MERRA2 mean temperature
+        fields = np.ma.masked_where(T_MERRA2_mask[:,lat_interest['MERRA2'][c],:],np.mean(T_MERRA2[:,:,lat_interest['MERRA2'][c],:]- 273.15,0))
+        title ='Vertical profile of mean temperature (MERRA2)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'T','mean',"Comp_var_monthly_MERRA2_vert_distrib_T_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_MERRA2,level_MERRA2,contour_level_T,title,c_label_T,output,cmap_coolwarm)
+        # ERAI mean potential temperature
+        fields = np.ma.masked_where(T_ERAI_mask[:,lat_interest['ERAI'][c],:],np.mean(theta_ERAI[:,:,lat_interest['ERAI'][c],:]- 273.15,0))
+        title ='Vertical profile of mean potential temperature (ERAI)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'theta','mean',"Comp_var_monthly_ERAI_vert_distrib_theta_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI,contour_level_theta,title,c_label_theta,output,cmap_coolwarm)
+        # MERRA2 mean potential temperature
+        fields = np.ma.masked_where(T_MERRA2_mask[:,lat_interest['MERRA2'][c],:],np.mean(theta_MERRA2[:,:,lat_interest['MERRA2'][c],:]- 273.15,0))
+        title ='Vertical profile of mean potential temperature (MERRA2)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'theta','mean',"Comp_var_monthly_MERRA2_vert_distrib_theta_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_MERRA2,level_MERRA2,contour_level_theta,title,c_label_theta,output,cmap_coolwarm)
+        # ERAI mean velocity
+        fields = np.ma.masked_where(T_ERAI_mask[:,lat_interest['ERAI'][c],:],np.mean(v_ERAI[:,:,lat_interest['ERAI'][c],:],0))
+        title = 'Vertical profile of mean meridional velocity (ERAI)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'v','mean',"Comp_var_monthly_ERAI_vert_distrib_v_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI,contour_level_v,title,c_label_v,output,cmap_coolwarm)
+        # MERRA2 mean velocity
+        fields = np.ma.masked_where(v_MERRA2_mask[:,lat_interest['MERRA2'][c],:],np.mean(v_MERRA2[:,:,lat_interest['MERRA2'][c],:],0))
+        title = 'Vertical profile of mean meridional velocity (MERRA2)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'v','mean',"Comp_var_monthly_MERRA2_vert_distrib_v_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_MERRA2,level_MERRA2,contour_level_v,title,c_label_v,output,cmap_coolwarm)
+        print '*******************************************************************'
+        print '*********      1994.01 - 1998.12 annual mean fields      **********'
+        print '*********            MERRA2 minus ERA-Interim            **********'
+        # take out vertical slice
+        slice_level_ERAI = [0,1,2,3,4,5,6,7,8,9,10,12,14,16,17,18,
+                            19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]
+        slice_level_MERRA2 = [36,35,34,32,31,30,29,28,26,25,24,23,22,
+                              21,20,19,18,17,16,15,14,13,12,10,9,8,7,6,5,4,3,2,1,0]
+        # take the slice of mask and level
+        T_ERAI_mask_slice = np.zeros((len(slice_level_ERAI),len(longitude_ERAI)), dtype=int)
+        level_ERAI_slice = np.zeros(len(slice_level_ERAI), dtype=int)
+        for i in np.arange(len(slice_level_ERAI)):
+            T_ERAI_mask_slice[i,:] = T_ERAI_mask[slice_level_ERAI[i],lat_interest['ERAI'][c],:]
+            level_ERAI_slice[i] = level_ERAI[slice_level_ERAI[i]]
+        # interpolate MERRA2 on ERA-Interim and do the subtraction
+        T_MERRA2_interpolate = np.zeros(len(longitude_ERAI),dtype=float)
+        theta_MERRA2_interpolate = np.zeros(len(longitude_ERAI),dtype=float)
+        v_MERRA2_interpolate = np.zeros(len(longitude_ERAI),dtype=float)
+        T_MERRA2_minus_ERAI = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
+        theta_MERRA2_minus_ERAI = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
+        v_MERRA2_minus_ERAI = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
+        for i in np.arange(len(year_ind)*len(month_ind)):
+            for j in np.arange(len(slice_level_ERAI)):
+                ius = scipy.interpolate.interp1d(longitude_MERRA2, T_MERRA2[i,slice_level_MERRA2[j],lat_interest['MERRA2'][c],:], kind='slinear',bounds_error=False,fill_value=0.0)
+                T_MERRA2_interpolate = ius(longitude_ERAI)
+                T_MERRA2_minus_ERAI[i,j,:] = T_MERRA2_interpolate - T_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:]
+                ius = scipy.interpolate.interp1d(longitude_MERRA2, theta_MERRA2[i,slice_level_MERRA2[j],lat_interest['MERRA2'][c],:], kind='slinear',bounds_error=False,fill_value=0.0)
+                theta_MERRA2_interpolate = ius(longitude_ERAI)
+                theta_MERRA2_minus_ERAI[i,j,:] = theta_MERRA2_interpolate - theta_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:]
+                ius = scipy.interpolate.interp1d(longitude_MERRA2, v_MERRA2[i,slice_level_MERRA2[j],lat_interest['MERRA2'][c],:], kind='slinear',bounds_error=False,fill_value=0.0)
+                v_MERRA2_interpolate = ius(longitude_ERAI)
+                v_MERRA2_minus_ERAI[i,j,:] = v_MERRA2_interpolate - v_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:]
+        # correct the subtration due to the interpolation of filled values
+        T_MERRA2_minus_ERAI[T_MERRA2_minus_ERAI>100] = 0
+        theta_MERRA2_minus_ERAI[theta_MERRA2_minus_ERAI>100] = 0
+        v_MERRA2_minus_ERAI[v_MERRA2_minus_ERAI>100] = 0
+        # temperature difference
+        fields = np.ma.masked_where(T_ERAI_mask_slice,np.mean(T_MERRA2_minus_ERAI,0))
+        title = 'Vertical profile of the subtraction of temperature (MERRA2-ERAI)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'minus',"Comp_var_monthly_MERRA2_minus_ERAI_T_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_T,title,c_label_T,output,cmap_coolwarm)
+        # potential temperature difference
+        fields = np.ma.masked_where(T_ERAI_mask_slice,np.mean(theta_MERRA2_minus_ERAI,0))
+        title = 'Vertical profile of the subtraction of potential temperature (MERRA2-ERAI)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'minus',"Comp_var_monthly_MERRA2_minus_ERAI_theta_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_theta,title,c_label_theta,output,cmap_coolwarm)
+        # meridional velocity difference
+        fields = np.ma.masked_where(T_ERAI_mask_slice,np.mean(v_MERRA2_minus_ERAI,0))
+        title = 'Vertical profile of the subtraction of meridional velocity (MERRA2-ERAI)(1994-1998) at {}N'.format(lat_interest_list[c])
+        output = os.path.join(output_path,'minus',"Comp_var_monthly_MERRA2_minus_ERAI_v_1994_1998_{}N.png".format(lat_interest_list[c]))
+        contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_v,title,c_label_v,output,cmap_coolwarm)
