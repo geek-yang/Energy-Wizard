@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Investigate the correlation between AMET (MERRA2,ERA-Interim,JRA55) and all kinds of fields
 Author          : Yang Liu
 Date            : 2018.03.16
-Last Update     : 2018.03.22
+Last Update     : 2018.03.26
 Description     : The code aims to dig into the correlation between atmospheric meridional
                   energy transport and all kinds of climatological fields, as well as some
                   climate index.
@@ -15,7 +15,8 @@ Description     : The code aims to dig into the correlation between atmospheric 
                   The index of interest include NAO, AO, AMO, PDO, ENSO.
 
                   The variable fields of insterest include Sea Level Pressure (SLP), Sea
-                  Surface Tmperature (SST) and Sea Ice Concentration (SIC).
+                  Surface Tmperature (SST), Surface Skin Temperature (TS) and Sea
+                  Ice Concentration (SIC).
 
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
@@ -129,6 +130,8 @@ dataset_JRA55 = Dataset(datapath_JRA55 + os.sep + 'AMET_JRA55_model_daily_1979_2
 dataset_ERAI_fields = Dataset(datapath_ERAI_fields + os.sep + 'surface_ERAI_monthly_regress_1979_2016.nc')
 dataset_MERRA2_fields = Dataset(datapath_MERRA2_fields + os.sep + 'surface_MERRA2_monthly_regress_1980_2016.nc')
 
+dataset_ERAI_fields_extra = Dataset(datapath_ERAI_fields + os.sep + 'surface_ERAI_monthly_regress_1979_2016_extra.nc')
+
 dataset_index = Dataset(datapath_index + os.sep + 'index_climate_monthly_regress_1950_2017.nc')
 
 AMET_ERAI = dataset_ERAI.variables['E'][:]/1000 # from Tera Watt to Peta Watt
@@ -143,8 +146,8 @@ latitude_ERAI = dataset_ERAI.variables['latitude'][:]
 latitude_MERRA2 = dataset_MERRA2.variables['latitude'][:]
 latitude_JRA55 = dataset_JRA55.variables['latitude'][0:125]
 
-SLP_ERAI_series = dataset_ERAI_fields.variables['msl'][:]      # dimension (time, lat, lon)
-SLP_MERRA2 = dataset_MERRA2_fields.variables['SLP'][:]  # dimension (year, month, lat, lon)
+SLP_ERAI_series = dataset_ERAI_fields.variables['msl'][:]   # dimension (time, lat, lon)
+SLP_MERRA2 = dataset_MERRA2_fields.variables['SLP'][:]      # dimension (year, month, lat, lon)
 
 SST_ERAI_series = dataset_ERAI_fields.variables['sst'][:]
 SST_ERAI_mask = np.ma.getmaskarray(SST_ERAI_series[0,:,:])
@@ -158,6 +161,12 @@ SIC_ERAI_series = dataset_ERAI_fields.variables['ci'][:]
 SIC_ERAI_mask = np.ma.getmaskarray(SIC_ERAI_series[0,:,:])
 SIC_MERRA2 = dataset_MERRA2_fields.variables['SIC'][:]
 SIC_MERRA2_mask = np.ma.getmaskarray(SIC_MERRA2[0,0,:,:])
+
+TS_ERAI = dataset_ERAI_fields_extra.variables['ts'][:]
+TS_MERRA2 = dataset_MERRA2_fields.variables['ts'][:]
+
+T2M_ERAI = dataset_ERAI_fields_extra.variables['t2m'][:]
+T2M_MERRA2 = dataset_MERRA2_fields.variables['t2m'][:]
 
 latitude_ERAI_fields = dataset_ERAI_fields.variables['latitude'][:]
 latitude_MERRA2_fields = dataset_MERRA2_fields.variables['latitude'][:]
@@ -233,6 +242,30 @@ SST_MERRA2_white = np.zeros(SST_MERRA2.shape,dtype=float)
 for i in np.arange(len(year_MERRA2_fields)):
     for j in month_ind:
         SST_MERRA2_white[i,j,:,:] = SST_MERRA2[i,j,:,:] - seasonal_cycle_SST_MERRA2[j,:,:]
+
+seasonal_cycle_TS_ERAI = np.mean(TS_ERAI,axis=0)
+TS_ERAI_white = np.zeros(TS_ERAI.shape,dtype=float)
+for i in np.arange(len(year_ERAI_fields)):
+    for j in month_ind:
+        TS_ERAI_white[i,j,:,:] = TS_ERAI[i,j,:,:] - seasonal_cycle_TS_ERAI[j,:,:]
+
+seasonal_cycle_TS_MERRA2 = np.mean(TS_MERRA2,axis=0)
+TS_MERRA2_white = np.zeros(TS_MERRA2.shape,dtype=float)
+for i in np.arange(len(year_MERRA2_fields)):
+    for j in month_ind:
+        TS_MERRA2_white[i,j,:,:] = TS_MERRA2[i,j,:,:] - seasonal_cycle_TS_MERRA2[j,:,:]
+
+seasonal_cycle_T2M_ERAI = np.mean(T2M_ERAI,axis=0)
+T2M_ERAI_white = np.zeros(T2M_ERAI.shape,dtype=float)
+for i in np.arange(len(year_ERAI_fields)):
+    for j in month_ind:
+        T2M_ERAI_white[i,j,:,:] = T2M_ERAI[i,j,:,:] - seasonal_cycle_T2M_ERAI[j,:,:]
+
+seasonal_cycle_T2M_MERRA2 = np.mean(T2M_MERRA2,axis=0)
+T2M_MERRA2_white = np.zeros(T2M_MERRA2.shape,dtype=float)
+for i in np.arange(len(year_MERRA2_fields)):
+    for j in month_ind:
+        T2M_MERRA2_white[i,j,:,:] = T2M_MERRA2[i,j,:,:] - seasonal_cycle_T2M_MERRA2[j,:,:]
 print '*******************************************************************'
 print '****************** prepare variables for plot *********************'
 print '*******************************************************************'
@@ -245,12 +278,21 @@ AMET_ERAI_white_series = AMET_ERAI_white.reshape(len(year_ERAI)*len(month_ind),l
 AMET_MERRA2_white_series = AMET_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
 AMET_JRA55_white_series = AMET_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
 # fields with seasonal cycle - time series
+TS_ERAI_series = TS_ERAI.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
+T2M_ERAI_series = T2M_ERAI.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
+
 SLP_MERRA2_series = SLP_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
 SST_MERRA2_series = SST_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
+TS_MERRA2_series = TS_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
+T2M_MERRA2_series = T2M_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
 # fields without seasonal cycle - time series
+TS_ERAI_white_series = TS_ERAI_white.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
+T2M_ERAI_white_series = T2M_ERAI_white.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
+
 SLP_MERRA2_white_series = SLP_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
 SST_MERRA2_white_series = SST_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
-
+TS_MERRA2_white_series = TS_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
+T2M_MERRA2_white_series = T2M_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -272,6 +314,9 @@ SLP_MERRA2_white_series_running_mean = np.zeros((len(year_MERRA2_fields)*len(mon
 SST_ERAI_white_series_running_mean = np.zeros((len(year_ERAI_fields)*len(month_ind)-window+1,len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype=float)
 SST_MERRA2_white_series_running_mean = np.zeros((len(year_MERRA2_fields)*len(month_ind)-window+1,len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype=float)
 
+TS_ERAI_white_series_running_mean = np.zeros((len(year_ERAI_fields)*len(month_ind)-window+1,len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype=float)
+TS_MERRA2_white_series_running_mean = np.zeros((len(year_MERRA2_fields)*len(month_ind)-window+1,len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype=float)
+
 for i in np.arange(len(year_ERAI)*len(month_ind)-window+1):
     AMET_ERAI_white_series_running_mean[i,:] = np.mean(AMET_ERAI_white_series[i:i+window,:],0)
 
@@ -292,6 +337,12 @@ for i in np.arange(len(year_ERAI_fields)*len(month_ind)-window+1):
 
 for i in np.arange(len(year_MERRA2_fields)*len(month_ind)-window+1):
     SST_MERRA2_white_series_running_mean[i,:,:] = np.mean(SST_MERRA2_white_series[i:i+window,:,:],0)
+
+for i in np.arange(len(year_ERAI_fields)*len(month_ind)-window+1):
+    TS_ERAI_white_series_running_mean[i,:,:] = np.mean(TS_ERAI_white_series[i:i+window,:,:],0)
+
+for i in np.arange(len(year_MERRA2_fields)*len(month_ind)-window+1):
+    TS_MERRA2_white_series_running_mean[i,:,:] = np.mean(TS_MERRA2_white_series[i:i+window,:,:],0)
 print '*******************************************************************'
 print '**********************     regression     *************************'
 print '******************    original and anomalies   ********************'
@@ -1111,7 +1162,7 @@ for c in np.arange(len(lat_interest_list)):
             slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_MERRA2_white_series[:,lat_interest['MERRA2'][c]],SST_MERRA2_white_series[:,i,j])
     # figsize works for the size of the map, not the entire figure
     fig17 = plt.figure()
-    cube_MERRA2 = iris.cube.Cube(np.ma.masked_where(SST_MERRA2_mask,r_value_MERRA2_fields),long_name='Correlation coefficient between SLP and AMET',
+    cube_MERRA2 = iris.cube.Cube(np.ma.masked_where(SST_MERRA2_mask,r_value_MERRA2_fields),long_name='Correlation coefficient between SST and AMET',
                                var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
     cube_MERRA2.coord('latitude').coord_system = coord_sys
     cube_MERRA2.coord('longitude').coord_system = coord_sys
@@ -1241,10 +1292,10 @@ for c in np.arange(len(lat_interest_list)):
     gl.ylabel_style = {'size': 6, 'color': 'gray'}
     # Load a Cynthia Brewer palette.
     #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
-    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.60,vmax=0.60)
     cbar = fig19.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
-    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
-    cbar.set_clim(-0.30, 0.30)
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
     cbar.ax.tick_params(labelsize = 6)
     cbar.set_label('Correlation coefficient',size = 6)
     # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
@@ -1282,10 +1333,10 @@ for c in np.arange(len(lat_interest_list)):
     # specify label styles
     gl.xlabel_style = {'size': 6, 'color': 'gray'}
     gl.ylabel_style = {'size': 6, 'color': 'gray'}
-    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.60,vmax=0.60)
     cbar = fig20.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
-    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
-    cbar.set_clim(-0.30, 0.30)
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
     cbar.ax.tick_params(labelsize = 6)
     cbar.set_label('Correlation coefficient',size = 6)
     # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
@@ -1323,10 +1374,10 @@ for c in np.arange(len(lat_interest_list)):
     # specify label styles
     gl.xlabel_style = {'size': 6, 'color': 'gray'}
     gl.ylabel_style = {'size': 6, 'color': 'gray'}
-    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.60,vmax=0.60)
     cbar = fig21.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
-    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
-    cbar.set_clim(-0.30, 0.30)
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
     cbar.ax.tick_params(labelsize = 6)
     cbar.set_label('Correlation coefficient',size = 6)
     # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
@@ -1339,13 +1390,158 @@ for c in np.arange(len(lat_interest_list)):
     plt.close(fig21)
 
 #***************************************************************************#
-#*****************   regress of MERRA2 SLP fields   *******************#
+#*****************      regress of MERRA2 SLP fields     *******************#
 #*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
 #*************            both with low pass filter          ***************#
 #***************************************************************************#
+# create an array to store the correlation coefficient
+slope_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+r_value_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+p_value_MERRA2_fields= np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+
+latitude_MERRA2_iris = iris.coords.DimCoord(latitude_MERRA2_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_MERRA2_iris = iris.coords.DimCoord(longitude_MERRA2_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             SLP anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      ERA-Interim      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    # linear regress SLP on AMET (anomalies)
+    # plot correlation coefficient
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_ERAI_white_series_running_mean[12:,lat_interest['ERAI'][c]],SLP_MERRA2_white_series_running_mean[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig22 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(r_value_MERRA2_fields,long_name='Correlation coefficient between SLP and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig22.suptitle('Regression of SLP Anomaly from MERRA2 on AMET Anomaly of ERA-Interim across %d N with a running mean of %d months' % (lat_interest_list[c],window) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.60,vmax=0.60)
+    cbar = fig22.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig22.savefig(output_path + os.sep + 'SLP' + os.sep + 'AMET_ERAI_fields_MERRA2' + os.sep + "Regression_AMET_ERAI_%dN_SLP_MERRA2_white_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi=300)
+    plt.close(fig22)
+
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      MERRA2      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_MERRA2_white_series_running_mean[:,lat_interest['MERRA2'][c]],SLP_MERRA2_white_series_running_mean[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig23 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(r_value_MERRA2_fields,long_name='Correlation coefficient between SLP and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig23.suptitle('Regression of SLP Anomaly from MERRA2 on AMET Anomaly of MERRA2 across %d N with a running mean of %d months' % (lat_interest_list[c],window) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.60,vmax=0.60)
+    cbar = fig23.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig23.savefig(output_path + os.sep + 'SLP' + os.sep + 'AMET_MERRA2_fields_MERRA2' + os.sep + "Regression_AMET_MERRA2_%dN_SLP_MERRA2_white_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi=300)
+    plt.close(fig23)
+
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@       JRA55      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_JRA55_white_series_running_mean[12:,lat_interest['JRA55'][c]],SLP_MERRA2_white_series_running_mean[:-12,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig24 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(r_value_MERRA2_fields,long_name='Correlation coefficient between SLP and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig24.suptitle('Regression of SLP Anomaly from MERRA2 on AMET Anomaly of JRA55 across %d N with a running mean of %d months' % (lat_interest_list[c],window) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.60,vmax=0.60)
+    cbar = fig24.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig24.savefig(output_path + os.sep + 'SLP' + os.sep + 'AMET_JRA55_fields_MERRA2' + os.sep + "Regression_AMET_JRA55_%dN_SLP_MERRA2_white_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi=300)
+    plt.close(fig24)
 
 #***************************************************************************#
-#*****************   regress of ERAI SST fields   *******************#
+#******************      regress of ERAI SST fields      *******************#
 #*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
 #*************            both with low pass filter          ***************#
 #***************************************************************************#
@@ -1394,10 +1590,10 @@ for c in np.arange(len(lat_interest_list)):
     gl.ylabel_style = {'size': 6, 'color': 'gray'}
     # Load a Cynthia Brewer palette.
     #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
-    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.60,vmax=0.60)
     cbar = fig25.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
-    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
-    cbar.set_clim(-0.30, 0.30)
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
     cbar.ax.tick_params(labelsize = 6)
     cbar.set_label('Correlation coefficient',size = 6)
     # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
@@ -1435,10 +1631,10 @@ for c in np.arange(len(lat_interest_list)):
     # specify label styles
     gl.xlabel_style = {'size': 6, 'color': 'gray'}
     gl.ylabel_style = {'size': 6, 'color': 'gray'}
-    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.60,vmax=0.60)
     cbar = fig26.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
-    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
-    cbar.set_clim(-0.30, 0.30)
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
     cbar.ax.tick_params(labelsize = 6)
     cbar.set_label('Correlation coefficient',size = 6)
     # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
@@ -1476,10 +1672,10 @@ for c in np.arange(len(lat_interest_list)):
     # specify label styles
     gl.xlabel_style = {'size': 6, 'color': 'gray'}
     gl.ylabel_style = {'size': 6, 'color': 'gray'}
-    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.60,vmax=0.60)
     cbar = fig27.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
-    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
-    cbar.set_clim(-0.30, 0.30)
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
     cbar.ax.tick_params(labelsize = 6)
     cbar.set_label('Correlation coefficient',size = 6)
     # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
@@ -1495,7 +1691,399 @@ for c in np.arange(len(lat_interest_list)):
 #*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
 #*************            both with low pass filter          ***************#
 #***************************************************************************#
+# create an array to store the correlation coefficient
+slope_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+r_value_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+p_value_MERRA2_fields= np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
 
+latitude_MERRA2_iris = iris.coords.DimCoord(latitude_MERRA2_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_MERRA2_iris = iris.coords.DimCoord(longitude_MERRA2_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             SST anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      ERA-Interim      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    # linear regress SST on AMET (anomalies)
+    # plot correlation coefficient
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_ERAI_white_series_running_mean[12:,lat_interest['ERAI'][c]],SST_MERRA2_white_series_running_mean[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig28 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(np.ma.masked_where(SST_MERRA2_mask,r_value_MERRA2_fields),long_name='Correlation coefficient between SST and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig28.suptitle('Regression of SST Anomaly from MERRA2 on AMET Anomaly of ERA-Interim across %d N with a running mean of %d months' % (lat_interest_list[c],window) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.60,vmax=0.60)
+    cbar = fig28.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig28.savefig(output_path + os.sep + 'SST' + os.sep + 'AMET_ERAI_fields_MERRA2' + os.sep + "Regression_AMET_ERAI_%dN_SST_MERRA2_white_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi=300)
+    plt.close(fig28)
+
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      MERRA2      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_MERRA2_white_series_running_mean[:,lat_interest['MERRA2'][c]],SST_MERRA2_white_series_running_mean[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig29 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(np.ma.masked_where(SST_MERRA2_mask,r_value_MERRA2_fields),long_name='Correlation coefficient between SST and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig29.suptitle('Regression of SST Anomaly from MERRA2 on AMET Anomaly of MERRA2 across %d N with a running mean of %d months' % (lat_interest_list[c],window) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.60,vmax=0.60)
+    cbar = fig29.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig29.savefig(output_path + os.sep + 'SST' + os.sep + 'AMET_MERRA2_fields_MERRA2' + os.sep + "Regression_AMET_MERRA2_%dN_SST_MERRA2_white_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi=300)
+    plt.close(fig29)
+
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@       JRA55      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_JRA55_white_series_running_mean[12:,lat_interest['JRA55'][c]],SST_MERRA2_white_series_running_mean[:-12,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig30 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(np.ma.masked_where(SST_MERRA2_mask,r_value_MERRA2_fields),long_name='Correlation coefficient between SST and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig30.suptitle('Regression of SST Anomaly from MERRA2 on AMET Anomaly of JRA55 across %d N' % (lat_interest_list[c]) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.60,vmax=0.60)
+    cbar = fig30.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.60, -0.50, -0.40, -0.30, -0.20, -0.10, 0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60])
+    cbar.set_clim(-0.60, 0.60)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig30.savefig(output_path + os.sep + 'SST' + os.sep + 'AMET_JRA55_fields_MERRA2' + os.sep + "Regression_AMET_JRA55_%dN_SST_MERRA2_white_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi=300)
+    plt.close(fig30)
+
+#***************************************************************************#
+#******************   regress of ERA Interim TS fields   *******************#
+#*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
+#***************************************************************************#
+# create an array to store the correlation coefficient
+slope_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+r_value_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+p_value_ERAI_fields= np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+
+latitude_ERAI_iris = iris.coords.DimCoord(latitude_ERAI_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_ERAI_iris = iris.coords.DimCoord(longitude_ERAI_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             TS anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      ERA-Interim      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    # linear regress SST on AMET (anomalies)
+    # plot correlation coefficient
+    for i in np.arange(len(latitude_ERAI_fields)):
+        for j in np.arange(len(longitude_ERAI_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(AMET_ERAI_white_series[:,lat_interest['ERAI'][c]],TS_ERAI_white_series[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig31 = plt.figure()
+    cube_ERAI = iris.cube.Cube(r_value_ERAI_fields,long_name='Correlation coefficient between TS and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_ERAI_iris, 0), (longitude_ERAI_iris, 1)])
+    cube_ERAI.coord('latitude').coord_system = coord_sys
+    cube_ERAI.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig31.suptitle('Regression of TS Anomaly from ERA-Interim on AMET Anomaly of ERA-Interim across %d N' % (lat_interest_list[c]) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cbar = fig31.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
+    cbar.set_clim(-0.30, 0.30)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig31.savefig(output_path + os.sep + 'TS' + os.sep + 'AMET_ERAI_fields_ERAI' + os.sep + "Regression_AMET_ERAI_%dN_TS_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    plt.close(fig31)
+
+#***************************************************************************#
+#******************     regress of MERRA2 TS fields     ********************#
+#*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
+#***************************************************************************#
+# create an array to store the correlation coefficient
+slope_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+r_value_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+p_value_MERRA2_fields= np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+
+latitude_MERRA2_iris = iris.coords.DimCoord(latitude_MERRA2_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_MERRA2_iris = iris.coords.DimCoord(longitude_MERRA2_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             TS anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      MERRA2      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_MERRA2_white_series[:,lat_interest['MERRA2'][c]],TS_MERRA2_white_series[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig32 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(r_value_MERRA2_fields,long_name='Correlation coefficient between TS and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig32.suptitle('Regression of TS Anomaly from MERRA2 on AMET Anomaly of MERRA2 across %d N' % (lat_interest_list[c]) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cbar = fig32.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
+    cbar.set_clim(-0.30, 0.30)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig32.savefig(output_path + os.sep + 'TS' + os.sep + 'AMET_MERRA2_fields_MERRA2' + os.sep + "Regression_AMET_MERRA2_%dN_TS_MERRA2_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    plt.close(fig32)
+
+#***************************************************************************#
+#******************   regress of ERA Interim T2M fields   *******************#
+#*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
+#***************************************************************************#
+# create an array to store the correlation coefficient
+slope_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+r_value_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+p_value_ERAI_fields= np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+
+latitude_ERAI_iris = iris.coords.DimCoord(latitude_ERAI_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_ERAI_iris = iris.coords.DimCoord(longitude_ERAI_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             TS anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      ERA-Interim      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    # linear regress SST on AMET (anomalies)
+    # plot correlation coefficient
+    for i in np.arange(len(latitude_ERAI_fields)):
+        for j in np.arange(len(longitude_ERAI_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(AMET_ERAI_white_series[:,lat_interest['ERAI'][c]],T2M_ERAI_white_series[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig33 = plt.figure()
+    cube_ERAI = iris.cube.Cube(r_value_ERAI_fields,long_name='Correlation coefficient between T2M and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_ERAI_iris, 0), (longitude_ERAI_iris, 1)])
+    cube_ERAI.coord('latitude').coord_system = coord_sys
+    cube_ERAI.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig33.suptitle('Regression of T2M Anomaly from ERA-Interim on AMET Anomaly of ERA-Interim across %d N' % (lat_interest_list[c]) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cbar = fig33.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
+    cbar.set_clim(-0.30, 0.30)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig33.savefig(output_path + os.sep + 'T2M' + os.sep + 'AMET_ERAI_fields_ERAI' + os.sep + "Regression_AMET_ERAI_%dN_T2M_ERAI_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    plt.close(fig33)
+
+#***************************************************************************#
+#******************     regress of MERRA2 T2M fields     ********************#
+#*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
+#***************************************************************************#
+# create an array to store the correlation coefficient
+slope_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+r_value_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+p_value_MERRA2_fields= np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+
+latitude_MERRA2_iris = iris.coords.DimCoord(latitude_MERRA2_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_MERRA2_iris = iris.coords.DimCoord(longitude_MERRA2_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             TS anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      MERRA2      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_MERRA2_white_series[:,lat_interest['MERRA2'][c]],T2M_MERRA2_white_series[:,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig34 = plt.figure()
+    cube_MERRA2 = iris.cube.Cube(r_value_MERRA2_fields,long_name='Correlation coefficient between T2M and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    # suptitle is the title for the figure
+    fig34.suptitle('Regression of T2M Anomaly from MERRA2 on AMET Anomaly of MERRA2 across %d N' % (lat_interest_list[c]) ,fontsize = 7,y=0.93)
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 6, 'color': 'gray'}
+    gl.ylabel_style = {'size': 6, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_MERRA2,cmap='coolwarm',vmin=-0.30,vmax=0.30)
+    cbar = fig34.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.30, -0.25, -0.20, -0.15, -0.10, -0.05, 0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30])
+    cbar.set_clim(-0.30, 0.30)
+    cbar.ax.tick_params(labelsize = 6)
+    cbar.set_label('Correlation coefficient',size = 6)
+    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+    ii, jj = np.where(p_value_MERRA2_fields<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_MERRA2_fields[jj],latitude_MERRA2_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig34.savefig(output_path + os.sep + 'T2M' + os.sep + 'AMET_MERRA2_fields_MERRA2' + os.sep + "Regression_AMET_MERRA2_%dN_T2M_MERRA2_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    plt.close(fig34)
 print '*******************************************************************'
 print '*********************** correlation Index *************************'
 print '*******************************************************************'
