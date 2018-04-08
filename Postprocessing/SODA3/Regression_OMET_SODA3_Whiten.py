@@ -2,7 +2,7 @@
 """
 Copyright Netherlands eScience Center
 
-Function        : Regression of climatological variable on OMET (GLORYS2V3) with whitening
+Function        : Regression of climatological variable on OMET (SODA3) with whitening
 Author          : Yang Liu
 Date            : 2017.11.10
 Last Update     : 2018.04.07
@@ -14,7 +14,7 @@ Description     : The code aims to explore the association between climatologica
                   will be projected on meridional energy transport. This will enhance
                   our understanding of climate change. Notice that the time series
                   of input data will be whitened (the seasonal cycles are removed).
-                  The fields come from ERA-Interim surface level data, from 1993-2014.
+                  The fields come from ERA-Interim surface level data, from 1980-2014.
 
 Return Value    : Map of correlation
 Dependencies    : os, time, numpy, scipy, netCDF4, matplotlib, basemap
@@ -52,64 +52,66 @@ sns.set()
 ################################   Input zone  ######################################
 # specify data path
 # OMET
-datapath_OMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/GLORYS2V3/postprocessing'
+datapath_OMET = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/postprocessing'
 # target climatological variables
 datapath_y = "/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/regression"
 # specify output path for figures
-output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/OMET/GLORYS2V3'
+output_path = '/home/yang/NLeSC/Computation_Modeling/BlueAction/OMET/SODA3'
 # the threshold ( index of latitude) of the OMET
+# There is a cut to JRA, too
+# index of latitude for insteret
 # 20N
-lat_GLORYS2V3_20 = 579
+lat_SODA3_20 = 569
 # after a cut to 20-90 N
-lat_GLORYS2V3_20_cut = 0
+lat_SODA3_20_cut = 0
 
 # 30N
-lat_GLORYS2V3_30 = 623
+lat_SODA3_30 = 613
 # after a cut to 20-90 N
-lat_GLORYS2V3_30_cut = 44
+lat_SODA3_30_cut = 44
 
 # 40N
-lat_GLORYS2V3_40 = 672
+lat_SODA3_40 = 662
 # after a cut to 20-90 N
-lat_GLORYS2V3_40_cut = 93
+lat_SODA3_40_cut = 93
 
 # 50N
-lat_GLORYS2V3_50 = 726
+lat_SODA3_50 = 719
 # after a cut to 20-90 N
-lat_GLORYS2V3_50_cut = 147
+lat_SODA3_50_cut = 150
 
 # 60N
-lat_GLORYS2V3_60 = 788
+lat_SODA3_60 = 789
 # after a cut to 20-90 N
-lat_GLORYS2V3_60_cut = 209
+lat_SODA3_60_cut = 220
 
 # 70N
-lat_GLORYS2V3_70 = 857
+lat_SODA3_70 = 880
 # after a cut to 20-90 N
-lat_GLORYS2V3_70_cut = 278
+lat_SODA3_70_cut = 311
 
 # 80N
-lat_GLORYS2V3_80 = 932
+lat_SODA3_80 = 974
 # after a cut to 20-90 N
-lat_GLORYS2V3_80_cut = 353
+lat_SODA3_80_cut = 405
 
 # make a dictionary for instereted sections (for process automation)
 lat_interest = {}
 lat_interest_list = [20,30,40,50,60,70,80]
 # after cut
-lat_interest['GLORYS2V3'] = [lat_GLORYS2V3_20_cut,lat_GLORYS2V3_30_cut,lat_GLORYS2V3_40_cut,lat_GLORYS2V3_50_cut,lat_GLORYS2V3_60_cut,lat_GLORYS2V3_70_cut,lat_GLORYS2V3_80_cut]
+lat_interest['SODA3'] = [lat_SODA3_20_cut,lat_SODA3_30_cut,lat_SODA3_40_cut,lat_SODA3_50_cut,lat_SODA3_60_cut,lat_SODA3_70_cut,lat_SODA3_80_cut]
 # the range ( index of latitude) of the projection field
 lat_y = 94 # 60 N - 90 N
 ####################################################################################
 print '*******************************************************************'
 print '*********************** extract variables *************************'
 print '*******************************************************************'
-# ORCA025_z75 grid infor (Madec and Imbard 1996)
-ji = 1440
-jj = 1021
-level = 75
+# # MOM5_z50 grid info
+# ji_5 = 1440
+# jj_5 = 1070
+# level_5 = 50
 # zonal integral
-dataset_OMET = Dataset(datapath_OMET + os.sep + 'GLORYS2V3_model_monthly_orca025_E_zonal_int.nc')
+dataset_OMET = Dataset(datapath_OMET + os.sep + 'OMET_SODA3_model_5daily_1980_2015_E_zonal_int.nc')
 dataset_y = Dataset(datapath_y + os.sep + 'surface_ERAI_monthly_regress_1979_2016.nc')
 for k in dataset_OMET.variables:
     print dataset_OMET.variables['%s' % (k)]
@@ -119,17 +121,17 @@ for l in dataset_y.variables:
 
 # extract Oceanic meridional energy transport
 # dimension (year,month,latitude)
-OMET = dataset_OMET.variables['E'][:,:,579:]/1000 # from Tera Watt to Peta Watt # start from 1993
-lat_OMET = dataset_OMET.variables['latitude_aux'][579:]
+OMET = dataset_OMET.variables['E'][:,:,569:]/1000 # from Tera Watt to Peta Watt # start from 1980
+lat_OMET = dataset_OMET.variables['latitude_aux'][569:]
 year = dataset_OMET.variables['year'][:]
 # extract variables from 20N to 90 N
 # sea level pressure
-SLP = dataset_y.variables['msl'][168:432,0:lat_y+1,:] # from 1993 - 2014
+SLP = dataset_y.variables['msl'][12:444,0:lat_y+1,:] # from 1980 - 2015
 # sea surface temperature
-SST = dataset_y.variables['sst'][168:432,0:lat_y+1,:]
+SST = dataset_y.variables['sst'][12:444,0:lat_y+1,:]
 mask_SST = np.ma.getmaskarray(SST[0,:,:])
 # sea ice cover
-ci = dataset_y.variables['ci'][168:432,0:lat_y+1,:]
+ci = dataset_y.variables['ci'][12:444,0:lat_y+1,:]
 mask_ci = np.ma.getmaskarray(ci[0,:,:])
 # longitude
 lon = dataset_y.variables['longitude'][:]
@@ -162,7 +164,7 @@ SST_seasonal_mean = np.zeros((12,lat_y+1,len(lon))) # from 20N - 90N
 SST_white = np.zeros(SST.shape,dtype=float)
 for i in month_ind:
     # calculate the monthly mean (seasonal cycling)
-    SST_seasonal_mean[i,:,:] = np.mean(SST[i:-1:12,:,:],axis=0)
+    SST_seasonal_mean[i,:,:] = np.mean(SST[i::12,:,:],axis=0)
     # remove seasonal mean
     SST_white[i::12,:,:] = SST[i::12,:,:] - SST_seasonal_mean[i,:,:]
 
@@ -171,7 +173,7 @@ ci_seasonal_mean = np.zeros((12,lat_y+1,len(lon))) # from 20N - 90N
 ci_white = np.zeros(ci.shape)
 for i in month_ind:
     # calculate the monthly mean (seasonal cycling)
-    ci_seasonal_mean[i,:,:] = np.mean(ci[i:-1:12,:,:],axis=0)
+    ci_seasonal_mean[i,:,:] = np.mean(ci[i::12,:,:],axis=0)
     # remove seasonal mean
     ci_white[i::12,:,:] = ci[i::12,:,:] - ci_seasonal_mean[i,:,:]
 
@@ -223,16 +225,16 @@ print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
 # index and namelist of years for time series and running mean time series
-# index = np.arange(1,265,1)
-# index_year = np.arange(1993,2015,1)
+index = np.arange(1,433,1)
+index_year = np.arange(1980,2016,1)
 #
 # index_running_mean = np.arange(1,265-window+1,1)
-# index_year_running_mean = np.arange(1993+window/12,2015,1)
+# index_year_running_mean = np.arange(1980+window/12,2015,1)
 #
 # # plot the OMET after removing seasonal cycle
 # fig1 = plt.figure()
-# plt.plot(index,OMET_white_series,'b-',label='GLORYS2V3')
-# plt.title('Oceanic Meridional Energy Transport Anomaly at 60N (1993-2014)')
+# plt.plot(index,OMET_white_series,'b-',label='SODA3')
+# plt.title('Oceanic Meridional Energy Transport Anomaly at 60N (1980-2014)')
 # #plt.legend()
 # fig1.set_size_inches(12, 5)
 # plt.xlabel("Time")
@@ -240,12 +242,12 @@ print '*******************************************************************'
 # plt.xticks(rotation=60)
 # plt.ylabel("Meridional Energy Transport (PW)")
 # plt.show()
-# fig1.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_time_series_1993_2014.jpg', dpi = 500)
+# fig1.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_time_series_1980_2014.jpg', dpi = 500)
 #
 # # plot the running mean of OMET after removing seasonal cycle
 # fig0 = plt.figure()
-# plt.plot(index_running_mean,OMET_white_running_mean,'b-',label='GLORYS2V3')
-# plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1993-2014)' % (window))
+# plt.plot(index_running_mean,OMET_white_running_mean,'b-',label='SODA3')
+# plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1980-2014)' % (window))
 # #plt.legend()
 # fig0.set_size_inches(12, 5)
 # plt.xlabel("Time")
@@ -259,7 +261,7 @@ print '*******************************************************************'
 # fig2 = plt.figure()
 # plt.plot(index,OMET_series,'b--',label='time series')
 # plt.plot(index[window-1:],OMET_running_mean,'r-',linewidth=2.0,label='running mean')
-# plt.title('Running Mean of OMET at 60N with a window of %d months (1993-2014)' % (window))
+# plt.title('Running Mean of OMET at 60N with a window of %d months (1980-2014)' % (window))
 # #plt.legend()
 # fig2.set_size_inches(12, 5)
 # plt.xlabel("Time")
@@ -273,7 +275,7 @@ print '*******************************************************************'
 # fig3 = plt.figure()
 # plt.plot(index,OMET_white_series,'b--',label='time series')
 # plt.plot(index[window-1:],OMET_white_running_mean,'r-',linewidth=2.0,label='running mean')
-# plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1993-2014)' % (window))
+# plt.title('Running Mean of OMET Anomalies at 60N with a window of %d months (1980-2014)' % (window))
 # #plt.legend()
 # fig3.set_size_inches(12, 5)
 # plt.xlabel("Time")
@@ -292,8 +294,8 @@ print '*******************************************************************'
 # mag_FFT_OMET = abs(FFT_OMET)
 # # Plot OMET in Frequency domain
 # fig4 = plt.figure()
-# plt.plot(freq_FFT_OMET[0:200],mag_FFT_OMET[0:200],'b-',label='GLORYS2V3')
-# plt.title('Fourier Transform of OMET at 60N (1993-2014)')
+# plt.plot(freq_FFT_OMET[0:200],mag_FFT_OMET[0:200],'b-',label='SODA3')
+# plt.title('Fourier Transform of OMET at 60N (1980-2014)')
 # #plt.legend()
 # fig4.set_size_inches(12, 5)
 # plt.xlabel("Times per month")
@@ -301,7 +303,7 @@ print '*******************************************************************'
 # #plt.xticks(rotation=60)
 # plt.ylabel("Power spectrum density (PW^2/month)")
 # plt.show()
-# fig4.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_60N_FFT_1993_2014.jpg', dpi = 500)
+# fig4.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_60N_FFT_1980_2014.jpg', dpi = 500)
 #
 # # Fast Fourier Transform of OMET anomalies
 # FFT_OMET_white = np.fft.fft(OMET_white_series)
@@ -309,8 +311,8 @@ print '*******************************************************************'
 # mag_FFT_OMET_white = abs(FFT_OMET_white)
 # # Plot the anomaly of OMET in Frequency domain
 # fig5 = plt.figure()
-# plt.plot(freq_FFT_OMET_white[0:200],mag_FFT_OMET_white[0:200],'b-',label='GLORYS2V3')
-# plt.title('Fourier Transform of OMET Anomaly at 60N (1993-2014)')
+# plt.plot(freq_FFT_OMET_white[0:200],mag_FFT_OMET_white[0:200],'b-',label='SODA3')
+# plt.title('Fourier Transform of OMET Anomaly at 60N (1980-2014)')
 # #plt.legend()
 # fig5.set_size_inches(12, 5)
 # plt.xlabel("Times per month")
@@ -318,7 +320,7 @@ print '*******************************************************************'
 # #plt.xticks(rotation=60)
 # plt.ylabel("Power spectrum density (PW^2/month)")
 # plt.show()
-# fig5.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_1993_2014.jpg', dpi = 500)
+# fig5.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_1980_2014.jpg', dpi = 500)
 #
 # # Plot the running mean of OMET anomaly in Frequency domain
 # FFT_OMET_white_running_mean = np.fft.fft(OMET_white_running_mean)
@@ -326,8 +328,8 @@ print '*******************************************************************'
 # mag_FFT_OMET_white_running_mean = abs(FFT_OMET_white_running_mean)
 # # Plot the running mean of OMET in Frequency domain
 # fig6 = plt.figure()
-# plt.plot(freq_FFT_OMET_white_running_mean[0:60],mag_FFT_OMET_white_running_mean[0:60],'b-',label='GLORYS2V3')
-# plt.title('Fourier Transform of Running Mean (%d) of OMET Anomalies at 60N (1993-2014)' % (window))
+# plt.plot(freq_FFT_OMET_white_running_mean[0:60],mag_FFT_OMET_white_running_mean[0:60],'b-',label='SODA3')
+# plt.title('Fourier Transform of Running Mean (%d) of OMET Anomalies at 60N (1980-2014)' % (window))
 # #plt.legend()
 # fig6.set_size_inches(12, 5)
 # plt.xlabel("Times per month")
@@ -335,7 +337,7 @@ print '*******************************************************************'
 # #plt.xticks(rotation=60)
 # plt.ylabel("Power spectrum density (PW^2/month)")
 # plt.show()
-# fig6.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_running_mean_%d_1993_2014.jpg' % (window), dpi = 500)
+# fig6.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_running_mean_%d_1980_2014.jpg' % (window), dpi = 500)
 
 print '*******************************************************************'
 print '**************************** trend ********************************'
@@ -383,7 +385,7 @@ cbar.ax.tick_params(labelsize=8)
 #cbar.set_ticks(np.arange(-1,1.1,0.2))
 #cbar.set_ticklabels(np.arange(-1,1.1,0.2))
 cbar.set_label('Pa/Decade',fontsize = 8)
-plt.title('Trend of Sea Level Pressure Anomalies (1993-2014)',fontsize = 9, y=1.05)
+plt.title('Trend of Sea Level Pressure Anomalies (1980-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig7.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_SLP.jpeg",dpi=400)
 
@@ -414,7 +416,7 @@ cs = m.contourf(XX,YY,np.ma.masked_where(mask_SST,a*12*10),color,cmap='coolwarm'
 cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.1f')
 cbar.ax.tick_params(labelsize=8)
 cbar.set_label('Celsius/Decade',fontsize = 8)
-plt.title('Trend of Sea Surface Temperature Anomalies (1993-2014)',fontsize = 9, y=1.05)
+plt.title('Trend of Sea Surface Temperature Anomalies (1980-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig8.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_SST.jpeg",dpi=400)
 
@@ -448,7 +450,7 @@ cbar.set_ticks(np.arange(-0.18,0.20,0.06))
 cbar_labels = ['-18%','-12%','-6%','0%','6%','12%','18%']
 cbar.ax.set_xticklabels(cbar_labels)
 cbar.set_label('Percentage/Decade',fontsize = 8)
-plt.title('Trend of the Sea Ice Concentration Anomalies (1993-2014)',fontsize = 9, y=1.05)
+plt.title('Trend of the Sea Ice Concentration Anomalies (1980-2014)',fontsize = 9, y=1.05)
 plt.show()
 fig9.savefig(output_path + os.sep + 'regression' + os.sep + "Trend_ERAI_Ice.jpeg",dpi=400)
 
@@ -473,7 +475,7 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],SLP_white[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['SODA3'][c]],SLP_white[:,i,j])
     # visualization through basemap
     fig10 = plt.figure()
     # setup north polar stereographic basemap
@@ -542,7 +544,7 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],SST_white[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['SODA3'][c]],SST_white[:,i,j])
     # visualization through basemap
     fig12 = plt.figure()
     # setup north polar stereographic basemap
@@ -607,7 +609,7 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],ci_white[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['SODA3'][c]],ci_white[:,i,j])
     # visualization through basemap
     fig14 = plt.figure()
     # setup north polar stereographic basemap
@@ -623,9 +625,9 @@ for c in np.arange(len(lat_interest_list)):
     # define color range for the contourf
     color = np.linspace(-0.40,0.40,17)
     # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
-    cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci,r_value),color,cmap='coolwarm',extend='both') # ci_white
+    cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci,r_value),color,cmap='coolwarm') # ci_white
     # add color bar
-    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
+    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f',extend='both')
     cbar.ax.tick_params(labelsize=8)
     cbar.set_label('Correlation Coefficient',fontsize = 8)
     # locate the indices of p_value matrix where p<0.05 (99.5% confident)
