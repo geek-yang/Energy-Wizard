@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET of all reanalysis datasets
 Author          : Yang Liu
 Date            : 2017.11.12
-Last Update     : 2018.03.07
+Last Update     : 2018.04.07
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -20,7 +20,7 @@ Caveat!!        : Spatial and temporal coverage
                   MERRA2      1980 - 2016
                   JRA55       1979 - 2015
                   Ocean
-                  GLORYS2V3   1992 - 2014
+                  GLORYS2V3   1993 - 2014
                   ORAS4       1958 - 2014
                   SODA3       1980 - 2015
                   The full dataset of ORAS4 is from 1958. However, a quality report from
@@ -501,9 +501,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_ERAI_series[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
     plt.plot(index_1980_2016,AMET_MERRA2_series[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
     plt.plot(index_1979_2015,AMET_JRA55_series[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
-    plt.plot(index_1979_2014,OMET_ORAS4_series[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
-    plt.plot(index_1993_2014,OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
-    plt.plot(index_1980_2015,OMET_SODA3_series[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.plot(index_1979_2014,OMET_ORAS4_series[:,lat_interest['ORAS4'][i]],'c--',label='ORAS4')
+    plt.plot(index_1993_2014,OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m--',label='GLORYS2V3')
+    plt.plot(index_1980_2015,OMET_SODA3_series[:,lat_interest['SODA3'][i]],'y--',label='SODA3')
     plt.title('Meridional Energy Transport at %d N' % (lat_interest_list[i]))
     plt.legend()
     fig1.set_size_inches(13, 6)
@@ -520,11 +520,11 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_ERAI_white_series[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
     plt.plot(index_1980_2016,AMET_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
     plt.plot(index_1979_2015,AMET_JRA55_white_series[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
-    plt.plot(index_1979_2014,OMET_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
-    plt.plot(index_1993_2014,OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
-    plt.plot(index_1980_2015,OMET_SODA3_white_series[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.plot(index_1979_2014,OMET_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c--',label='ORAS4')
+    plt.plot(index_1993_2014,OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m--',label='GLORYS2V3')
+    plt.plot(index_1980_2015,OMET_SODA3_white_series[:,lat_interest['SODA3'][i]],'y--',label='SODA3')
     plt.title('Meridional Energy Transport Anomalies at %d N' % (lat_interest_list[i]))
-    plt.legend()
+    plt.legend(loc=2, prop={'size': 12})
     fig2.set_size_inches(13, 6)
     plt.xlabel("Time")
     plt.xticks(np.linspace(0, 456, 39), year_ERAI)
@@ -539,9 +539,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016[window-1:],AMET_ERAI_series_running_mean[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
     plt.plot(index_1980_2016[window-1:],AMET_MERRA2_series_running_mean[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
     plt.plot(index_1979_2015[window-1:],AMET_JRA55_series_running_mean[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
-    plt.plot(index_1979_2014[window-1:],OMET_ORAS4_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
-    plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
-    plt.plot(index_1980_2015[window-1:],OMET_SODA3_series_running_mean[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.plot(index_1979_2014[window-1:],OMET_ORAS4_series_running_mean[:,lat_interest['ORAS4'][i]],'c--',label='ORAS4')
+    plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m--',label='GLORYS2V3')
+    plt.plot(index_1980_2015[window-1:],OMET_SODA3_series_running_mean[:,lat_interest['SODA3'][i]],'y--',label='SODA3')
     plt.title('Meridional Energy Transport Anomalies with running mean of %d months at %d N' % (window,lat_interest_list[i]))
     plt.legend()
     fig3.set_size_inches(13, 6)
@@ -558,11 +558,11 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016[window-1:],AMET_ERAI_white_series_running_mean[:,lat_interest['ERAI'][i]],'b-',label='ERA-Interim')
     plt.plot(index_1980_2016[window-1:],AMET_MERRA2_white_series_running_mean[:,lat_interest['MERRA2'][i]],'r-',label='MERRA2')
     plt.plot(index_1979_2015[window-1:],AMET_JRA55_white_series_running_mean[:,lat_interest['JRA55'][i]],'g-',label='JRA55')
-    plt.plot(index_1979_2014[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][i]],'c-',label='ORAS4')
-    plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m-',label='GLORYS2V3')
-    plt.plot(index_1980_2015[window-1:],OMET_SODA3_white_series_running_mean[:,lat_interest['SODA3'][i]],'y-',label='SODA3')
+    plt.plot(index_1979_2014[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][i]],'c--',label='ORAS4')
+    plt.plot(index_1993_2014[window-1:],OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][i]],'m--',label='GLORYS2V3')
+    plt.plot(index_1980_2015[window-1:],OMET_SODA3_white_series_running_mean[:,lat_interest['SODA3'][i]],'y--',label='SODA3')
     plt.title('Meridional Energy Transport Anomalies with running mean of %d months at %d N' % (window,lat_interest_list[i]))
-    plt.legend()
+    plt.legend(loc=2, prop={'size': 12})
     fig4.set_size_inches(13, 6)
     plt.xlabel("Time")
     plt.xticks(np.linspace(0, 456, 39), year_ERAI)
@@ -574,21 +574,3 @@ for i in np.arange(len(lat_interest_list)):
 print '*******************************************************************'
 print '****************** maps (average of point data) *******************'
 print '*******************************************************************'
-
-#3D
-# fig1=plt.figure()
-# ax=fig1.gca(projection='3d') # change figure into 3D
-# plt.hold(True)
-# for i in Index_i:
-#     ax.plot(aux['Ur_%d_B_0' % (i)][:300],freq_y['Ur_%d_B_0' % (i)][:300],mag_y['Ur_%d_B_0' % (i)][:300],label='Ur=%d' % (i))
-#
-# ax.plot(refer_x_sway,refer_y_sway,refer_z_sway,c='r',linewidth=3,label='Natural freq sway')
-# ax.plot(refer_x_yaw,refer_y_yaw,refer_z_yaw,c='m',linewidth=3,label='Natural freq yaw')
-# #ax.grid()
-# ax.set_xlabel("Reduced velocity Ur")
-# ax.set_ylabel("Frequency (Hz)")
-# ax.set_zlabel("Power spectrum density (m^2/s)")
-# ax.view_init(30,220)
-# plt.title("B=0%")
-# plt.legend()
-# plt.show()
