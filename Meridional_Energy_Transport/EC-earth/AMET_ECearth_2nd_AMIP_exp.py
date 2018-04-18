@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport from EC-earth (Cartesius)
 Author          : Yang Liu
 Date            : 2017.12.07
-Last Update     : 2018.03.14
+Last Update     : 2018.04.16
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on the output from EC-Earth simulation.
                   The complete procedure includes the calculation of the mass budget
@@ -547,7 +547,7 @@ if __name__=="__main__":
             key_gz = ICMSHECE.message(index_SH)
             gz[index_SH-275-i*num_SH_per,:,:] = key_gz.values
             index_SH = index_SH + 1
-        # jump the vertical velocity, now index_SH is 366 + i x 475
+        # jump the vertical velocity, now index_SH is 366 + i x 457
         index_SH = index_SH + 91
         # jump the lograithm of surface pressure (2 records)
         index_SH = index_SH + 2
@@ -558,55 +558,55 @@ if __name__=="__main__":
         ############################################################
         # surface and land variables
         key_surface_runoff = ICMGGECE.message(index_GG) # 1
-        pool_surface_runoff[num_record:,:,:] = key_surface_runoff.values
+        pool_surface_runoff[i,:,:] = key_surface_runoff.values
         index_GG = index_GG + 1
 
         key_subsurface_runoff = ICMGGECE.message(index_GG) # 2
-        pool_subsurface_runoff[num_record:,:,:] = key_subsurface_runoff.values
+        pool_subsurface_runoff[i,:,:] = key_subsurface_runoff.values
         index_GG = index_GG + 1
 
         key_snow_albedo = ICMGGECE.message(index_GG) # 3
-        pool_snow_albedo[num_record:,:,:] = key_snow_albedo.values
+        pool_snow_albedo[i,:,:] = key_snow_albedo.values
         index_GG = index_GG + 1
 
         key_snow_density = ICMGGECE.message(index_GG) # 4
-        pool_snow_density[num_record:,:,:] = key_snow_density.values
+        pool_snow_density[i,:,:] = key_snow_density.values
         index_GG = index_GG + 1
 
         key_soil_water_layer_1 = ICMGGECE.message(index_GG) # 5
-        pool_soil_water_layer_1[num_record:,:,:] = key_soil_water_layer_1.values
+        pool_soil_water_layer_1[i,:,:] = key_soil_water_layer_1.values
         index_GG = index_GG + 1
 
         key_soil_water_layer_2 = ICMGGECE.message(index_GG) # 6
-        pool_soil_water_layer_2[num_record:,:,:] = key_soil_water_layer_2.values
+        pool_soil_water_layer_2[i,:,:] = key_soil_water_layer_2.values
         index_GG = index_GG + 1
 
         key_soil_water_layer_3 = ICMGGECE.message(index_GG) # 7
-        pool_soil_water_layer_3[num_record:,:,:] = key_soil_water_layer_3.values
+        pool_soil_water_layer_3[i,:,:] = key_soil_water_layer_3.values
         index_GG = index_GG + 1
 
         key_soil_water_layer_4 = ICMGGECE.message(index_GG) # 8
-        pool_soil_water_layer_4[num_record:,:,:] = key_soil_water_layer_4.values
+        pool_soil_water_layer_4[i,:,:] = key_soil_water_layer_4.values
         index_GG = index_GG + 1
 
         key_soil_temp_level_1 = ICMGGECE.message(index_GG) # 9
-        pool_soil_temp_level_1[num_record:,:,:] = key_soil_temp_level_1.values
+        pool_soil_temp_level_1[i,:,:] = key_soil_temp_level_1.values
         index_GG = index_GG + 1
 
         key_snow_depth = ICMGGECE.message(index_GG) # 10
-        pool_snow_depth[num_record:,:,:] = key_snow_depth.values
+        pool_snow_depth[i,:,:] = key_snow_depth.values
         index_GG = index_GG + 5
 
         key_soil_temp_level_2 = ICMGGECE.message(index_GG) # 15
-        pool_soil_temp_level_2[num_record:,:,:] = key_soil_temp_level_2.values
+        pool_soil_temp_level_2[i,:,:] = key_soil_temp_level_2.values
         index_GG = index_GG + 9
 
         key_soil_temp_level_3 = ICMGGECE.message(index_GG) # 24
-        pool_soil_temp_level_3[num_record:,:,:] = key_soil_temp_level_3.values
+        pool_soil_temp_level_3[i,:,:] = key_soil_temp_level_3.values
         index_GG = index_GG + 9
 
         key_soil_temp_level_4 = ICMGGECE.message(index_GG) # 33
-        pool_soil_temp_level_4[num_record:,:,:] = key_soil_temp_level_4.values
+        pool_soil_temp_level_4[i,:,:] = key_soil_temp_level_4.values
         index_GG = index_GG + 2
 
         # for the computation of AMET
