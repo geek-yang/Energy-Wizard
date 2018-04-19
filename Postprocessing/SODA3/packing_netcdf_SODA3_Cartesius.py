@@ -5,15 +5,17 @@ Copyright Netherlands eScience Center
 Function        : Packing netCDF files for the monthly output from Cartesius (JRA55)
 Author          : Yang Liu
 Date            : 2018.02.28
-Last Update     : 2018.03.10
+Last Update     : 2018.04.16
 Description     : The code aims to reorganize the output from the Cartesius
                   regarding the computation of oceanic meridional energy
-                  transport based on SODA3 output.
+                  transport based on SODA3 output. It also works with diagnostic
+                  of fields, like OHC.
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, matplotlib, sys
 variables       : Meridional Energy Transport                       E         [Tera-Watt]
                   Meridional Overturning Stream Function (Globe)    Psi       [Sv]
                   Meridional Overturning Stream Function (Atlantic) Psi       [Sv]
+                  Ocean Heat Content                                OHC       [J]
 
 Caveat!!        : The data is from 90 deg north to 90 deg south (Globe).
                   Latitude: North to South(90 to -90)
@@ -40,6 +42,7 @@ start_time = tttt.time()
 # specify data path
 datapath_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int'
 datapath_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point'
+datapath_OHC = '/projects/0/blueactn/reanalysis/SODA3/statistics/'
 # time of the data, which concerns with the name of input
 # starting time (year)
 start_year = 1980
@@ -47,12 +50,14 @@ start_year = 1980
 end_year = 2015
 # specify output path for the netCDF4 file
 output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/postprocessing'
+output_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/'
 # benchmark datasets for basic dimensions
 benchmark_path_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int/SODA3_model_5daily_mom5_E_zonal_int_201509.nc'
 benchmark_path_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point/SODA3_model_5daily_mom5_E_point_201509.nc'
-
+benchmark_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/topog.nc'
 benchmark_int = Dataset(benchmark_path_int)
 benchmark_point = Dataset(benchmark_path_point)
+benchmark_OHC = Dataset(benchmark_path_OHC)
 ####################################################################################
 # dimension
 ji = 1440
@@ -138,8 +143,10 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     # create dimensions from an existing file
     period = np.arange(start_year,end_year+1,1)
     month = np.arange(1,13,1)
-    latitude = benchmark.variables['latitude'][:]
-    longitude = benchmark.variables['longitude'][:]
+    grid_y_C = benchmark.variables['grid_y_C'][:]
+    x_T = benchmark.variables['x_T'][:]              # Geographic Longitude of T-cell center
+    y_T = benchmark.variables['y_T'][:]
+    zt = benchmark.variables['zt'][:]
 
     E = np.zeros((len(period),len(month),jj,ji),dtype=float)
 
@@ -188,9 +195,154 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     # close the file
     data_wrap.close()
 
+# function for packing OHC data
+def pack_netcdf_OHC(datapath,output_path,benchmark):
+    print '*******************************************************************'
+    print '*********************** extract variables *************************'
+    print '*******************************************************************'
+    # create dimensions from an existing file
+    period = np.arange(start_year,end_year+1,1)
+    month = np.arange(1,13,1)
+
+    OHC_pool_glo_zonal = np.zeros((len(period),len(month),level,jj),dtype = float)
+    OHC_pool_atl_zonal = np.zeros((len(period),len(month),level,jj),dtype = float)
+    # vertical integral (horizontal profile)
+    OHC_pool_glo_vert = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_atl_vert = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    # vertical integral (horizontal profile) and OHC for certain layers
+    OHC_pool_glo_vert_0_500 = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_atl_vert_0_500 = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_glo_vert_500_1000 = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_atl_vert_500_1000 = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_glo_vert_1000_2000 = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_atl_vert_1000_2000 = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_glo_vert_2000_inf = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    OHC_pool_atl_vert_2000_inf = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    for i in period:
+        j = i - 1980
+        for ii in np.arange(12):
+            dataset_path = datapath + os.sep + 'SODA3_model_5daily_mom5_OHC_point_%d%s.nc' % (i,namelist_month[ii])
+            dataset = Dataset(dataset_path)
+            OHC_pool_glo_zonal[j,ii,:,:] = dataset.variables['OHC_glo_zonal'][:]
+            OHC_pool_atl_zonal[j,ii,:,:] = dataset.variables['OHC_atl_zonal'][:]
+            OHC_pool_glo_vert[j,ii,:,:] = dataset.variables['OHC_glo_vert'][:]
+            OHC_pool_atl_vert[j,ii,:,:] = dataset.variables['OHC_atl_vert'][:]
+            OHC_pool_glo_vert_0_500[j,ii,:,:] = dataset.variables['OHC_glo_vert_0_500'][:]
+            OHC_pool_atl_vert_0_500[j,ii,:,:] = dataset.variables['OHC_atl_vert_0_500'][:]
+            OHC_pool_glo_vert_500_1000[j,ii,:,:] = dataset.variables['OHC_glo_vert_500_1000'][:]
+            OHC_pool_atl_vert_500_1000[j,ii,:,:] = dataset.variables['OHC_atl_vert_500_1000'][:]
+            OHC_pool_glo_vert_1000_2000[j,ii,:,:] = dataset.variables['OHC_glo_vert_1000_2000'][:]
+            OHC_pool_atl_vert_1000_2000[j,ii,:,:] = dataset.variables['OHC_atl_vert_1000_2000'][:]
+            OHC_pool_glo_vert_2000_inf[j,ii,:,:] = dataset.variables['OHC_glo_vert_2000_inf'][:]
+            OHC_pool_atl_vert_2000_inf[j,ii,:,:] = dataset.variables['OHC_atl_vert_2000_inf'][:]
+
+    print '*******************************************************************'
+    print '*********************** create netcdf file*************************'
+    print '*******************************************************************'
+    # wrap the datasets into netcdf file
+    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_OHC.nc', 'w',format = 'NETCDF3_64BIT')
+    # create dimensions for netcdf data
+    year_wrap_dim = data_wrap.createDimension('year',len(period))
+    month_wrap_dim = data_wrap.createDimension('month',len(month))
+    lat_wrap_dim = data_wrap.createDimension('j',jj)
+    lon_wrap_dim = data_wrap.createDimension('i',ji)
+    lev_wrap_dim = data_wrap.createDimension('lev',level)
+    # create coordinate variables for 3-dimensions
+    year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
+    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    # create coordinate variables for 3-dimensions
+    # 1D
+    lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('j',))
+    lev_wrap_var = data_wrap.createVariable('lev',np.float32,('lev',))
+    # 2D
+    gphit_wrap_var = data_wrap.createVariable('y_T',np.float32,('j','i'))
+    glamt_wrap_var = data_wrap.createVariable('x_T',np.float32,('j','i'))
+    # 2D
+    OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('year','month','lev','j'))
+    OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('year','month','lev','j'))
+
+    OHC_glo_vert_wrap_var = data_wrap.createVariable('OHC_glo_vert',np.float64,('year','month','j','i'))
+    OHC_atl_vert_wrap_var = data_wrap.createVariable('OHC_atl_vert',np.float64,('year','month','j','i'))
+    OHC_glo_vert_0_500_wrap_var = data_wrap.createVariable('OHC_glo_vert_0_500',np.float64,('year','month','j','i'))
+    OHC_atl_vert_0_500_wrap_var = data_wrap.createVariable('OHC_atl_vert_0_500',np.float64,('year','month','j','i'))
+    OHC_glo_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_glo_vert_500_1000',np.float64,('year','month','j','i'))
+    OHC_atl_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_atl_vert_500_1000',np.float64,('year','month','j','i'))
+    OHC_glo_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_glo_vert_1000_2000',np.float64,('year','month','j','i'))
+    OHC_atl_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_atl_vert_1000_2000',np.float64,('year','month','j','i'))
+    OHC_glo_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_glo_vert_2000_inf',np.float64,('year','month','j','i'))
+    OHC_atl_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_atl_vert_2000_inf',np.float64,('year','month','j','i'))
+
+    # global attributes
+    data_wrap.description = 'Monthly mean statistics of fields on MOM grid'
+    # variable attributes
+    lev_wrap_var.units = 'm'
+    gphit_wrap_var.units = 'MOM5_latitude_Tgrid'
+    glamt_wrap_var.units = 'MOM5_longitude_Tgrid'
+
+    OHC_glo_zonal_wrap_var.units = 'tera joule'
+    OHC_atl_zonal_wrap_var.units = 'tera joule'
+
+    OHC_glo_vert_wrap_var.units = 'tera joule'
+    OHC_atl_vert_wrap_var.units = 'tera joule'
+    OHC_glo_vert_0_500_wrap_var.units = 'tera joule'
+    OHC_atl_vert_0_500_wrap_var.units = 'tera joule'
+    OHC_glo_vert_500_1000_wrap_var.units = 'tera joule'
+    OHC_atl_vert_500_1000_wrap_var.units = 'tera joule'
+    OHC_glo_vert_1000_2000_wrap_var.units = 'tera joule'
+    OHC_atl_vert_1000_2000_wrap_var.units = 'tera joule'
+    OHC_glo_vert_2000_inf_wrap_var.units = 'tera joule'
+    OHC_atl_vert_2000_inf_wrap_var.units = 'tera joule'
+
+    lat_wrap_var.long_name = 'auxillary latitude'
+    lev_wrap_var.long_name = 'depth'
+    gphit_wrap_var.long_name = 'MOM5 Tgrid latitude'
+    glamt_wrap_var.long_name = 'MOM5 Tgrid longitude'
+
+    OHC_glo_zonal_wrap_var.long_name = 'Global Ocean Heat Content (zonal integral)'
+    OHC_atl_zonal_wrap_var.long_name = 'Atlantic Ocean Heat Content (zonal integral)'
+
+    OHC_glo_vert_wrap_var.long_name = 'Global Ocean Heat Content (vertical integral)'
+    OHC_atl_vert_wrap_var.long_name = 'Atlantic Ocean Heat Content (vertical integral)'
+    OHC_glo_vert_0_500_wrap_var.long_name = 'Global Ocean Heat Content from surface to 500 m (vertical integral)'
+    OHC_atl_vert_0_500_wrap_var.long_name = 'Atlantic Ocean Heat Content from surface to 500 m (vertical integral)'
+    OHC_glo_vert_500_1000_wrap_var.long_name = 'Global Ocean Heat Content from 500 m to 1000 m (vertical integral)'
+    OHC_atl_vert_500_1000_wrap_var.long_name = 'Atlantic Ocean Heat Content from 500 m to 1000 m (vertical integral)'
+    OHC_glo_vert_1000_2000_wrap_var.long_name = 'Global Ocean Heat Content from 1000 m to 2000 m (vertical integral)'
+    OHC_atl_vert_1000_2000_wrap_var.long_name = 'Atlantic Ocean Heat Content from 1000 m to 2000 m (vertical integral)'
+    OHC_glo_vert_2000_inf_wrap_var.long_name = 'Global Ocean Heat Content from 2000 m to bottom (vertical integral)'
+    OHC_atl_vert_2000_inf_wrap_var.long_name = 'Atlantic Ocean Heat Content from 2000 m to bottom (vertical integral)'
+
+    # writing data
+    year_wrap_var[:] = period
+    month_wrap_var[:] = month
+
+    lat_wrap_var[:] = grid_y_C
+    lev_wrap_var[:] = zt
+    gphit_wrap_var[:] = y_T
+    glamt_wrap_var[:] = x_T
+
+    OHC_glo_zonal_wrap_var[:] = OHC_pool_glo_zonal
+    OHC_atl_zonal_wrap_var[:] = OHC_pool_atl_zonal
+
+    OHC_glo_vert_wrap_var[:] = OHC_pool_glo_vert
+    OHC_atl_vert_wrap_var[:] = OHC_pool_atl_vert
+    OHC_glo_vert_0_500_wrap_var[:] = OHC_pool_glo_vert_0_500
+    OHC_atl_vert_0_500_wrap_var[:] = OHC_pool_atl_vert_0_500
+    OHC_glo_vert_500_1000_wrap_var[:] = OHC_pool_glo_vert_500_1000
+    OHC_atl_vert_500_1000_wrap_var[:] = OHC_pool_atl_vert_500_1000
+    OHC_glo_vert_1000_2000_wrap_var[:] = OHC_pool_glo_vert_1000_2000
+    OHC_atl_vert_1000_2000_wrap_var[:] = OHC_pool_atl_vert_1000_2000
+    OHC_glo_vert_2000_inf_wrap_var[:] = OHC_pool_glo_vert_2000_inf
+    OHC_atl_vert_2000_inf_wrap_var[:] = OHC_pool_atl_vert_2000_inf
+
+    # close the file
+    data_wrap.close()
+
 if __name__=="__main__":
     pack_netcdf_zonal_int(datapath_int,output_path,benchmark_int)
     pack_netcdf_point(datapath_point,output_path,benchmark_point)
+    pack_netcdf_OHC(datapath_OHC,output_path_OHC,benchmark_OHC)
     print 'Packing netcdf files complete!'
 
 print "Create netcdf file successfully"
