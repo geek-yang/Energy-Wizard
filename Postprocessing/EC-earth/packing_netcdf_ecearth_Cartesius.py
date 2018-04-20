@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Postprocessing meridional energy transport from Cartesius (EC-earth)
 Author          : Yang Liu
 Date            : 2017.12.20
-Last Update     : 2018.01.12
+Last Update     : 2018.04.20
 Description     : The code aims to postprocess the output from the Cartesius
                   regarding the computation of atmospheric meridional energy
                   transport based on EC-Earth output (atmosphere only run). The
@@ -92,7 +92,7 @@ def pack_netcdf_zonal_int(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2015_E_zonal_int.nc', 'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2015_E_zonal_int.nc', 'w',format = 'NETCDF4')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -102,11 +102,11 @@ def pack_netcdf_zonal_int(datapath,output_path,benchmark):
     month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
     lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
     # create the actual 3-d variable
-    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude'))
-    E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('year','month','latitude'))
-    E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('year','month','latitude'))
-    E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('year','month','latitude'))
-    E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('year','month','latitude'))
+    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude'),zlib=True)
+    E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('year','month','latitude'),zlib=True)
+    E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('year','month','latitude'),zlib=True)
+    E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('year','month','latitude'),zlib=True)
+    E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('year','month','latitude'),zlib=True)
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of meridional energy transport and each component'
     # variable attributes
@@ -171,7 +171,7 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2015_E_point.nc', 'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'AMET_EC-earth_model_daily_1979_2015_E_point.nc', 'w',format = 'NETCDF4')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -183,13 +183,13 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
     lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
     # create the actual 3-d variable
-    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude','longitude'))
-    E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('year','month','latitude','longitude'))
-    E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('year','month','latitude','longitude'))
-    E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('year','month','latitude','longitude'))
-    E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('year','month','latitude','longitude'))
-    uc_wrap_var = data_wrap.createVariable('uc',np.float32,('year','month','latitude','longitude'))
-    vc_wrap_var = data_wrap.createVariable('vc',np.float32,('year','month','latitude','longitude'))
+    E_total_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude','longitude'),zlib=True)
+    E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('year','month','latitude','longitude'),zlib=True)
+    E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('year','month','latitude','longitude'),zlib=True)
+    E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('year','month','latitude','longitude'),zlib=True)
+    E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('year','month','latitude','longitude'),zlib=True)
+    uc_wrap_var = data_wrap.createVariable('uc',np.float32,('year','month','latitude','longitude'),zlib=True)
+    vc_wrap_var = data_wrap.createVariable('vc',np.float32,('year','month','latitude','longitude'),zlib=True)
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of meridional energy transport and each component'
     # variable attributes
