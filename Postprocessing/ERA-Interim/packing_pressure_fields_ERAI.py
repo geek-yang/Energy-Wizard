@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Packing the climate fields on pressure level 200hPa 500hPa and 850hPa
 Author          : Yang Liu
 Date            : 2018.03.22
-Last Update     : 2018.03.22
+Last Update     : 2018.04.20
 Description     : The code aims to pack the climate fields on pressure level from
                   reanalysis product ERA-Interim. For the purpose of post-processing,
                   we take the variabels on 3 levels, which are 200hPa (tropopause, 10km),
@@ -51,7 +51,7 @@ sns.set()
 start_year = 1979
 end_year = 2016
 # specify data path
-# MERRA2 3D fields on pressure level
+# ERAI 3D fields on pressure level
 datapath = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/regression/pressure'
 # specify output path for figures
 output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/regression'
@@ -73,10 +73,10 @@ def create_netcdf_point (pool_z, pool_q, pool_t, pool_u, pool_v, layer, output_p
     print '*******************************************************************'
     print '*********************** create netcdf file*************************'
     print '*******************************************************************'
-    logging.info("Start creating netcdf file for the 2D fields of MERRA2 at each grid point.")
+    logging.info("Start creating netcdf file for the 2D fields of ERAI at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'pressure_%s_ERAI_monthly_regress_1979_2016.nc' % (layer),'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path + os.sep + 'pressure_%s_ERAI_monthly_regress_1979_2016.nc' % (layer),'w',format = 'NETCDF4')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',Dim_year)
     month_wrap_dim = data_wrap.createDimension('month',Dim_month)
@@ -88,11 +88,11 @@ def create_netcdf_point (pool_z, pool_q, pool_t, pool_u, pool_v, layer, output_p
     lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
     lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
     # create the actual 3-d variable
-    z_wrap_var = data_wrap.createVariable('z',np.float64,('year','month','latitude','longitude'))
-    q_wrap_var = data_wrap.createVariable('q',np.float64,('year','month','latitude','longitude'))
-    t_wrap_var = data_wrap.createVariable('t',np.float64,('year','month','latitude','longitude'))
-    u_wrap_var = data_wrap.createVariable('u',np.float64,('year','month','latitude','longitude'))
-    v_wrap_var = data_wrap.createVariable('v',np.float64,('year','month','latitude','longitude'))
+    z_wrap_var = data_wrap.createVariable('z',np.float64,('year','month','latitude','longitude'),zlib=True)
+    q_wrap_var = data_wrap.createVariable('q',np.float64,('year','month','latitude','longitude'),zlib=True)
+    t_wrap_var = data_wrap.createVariable('t',np.float64,('year','month','latitude','longitude'),zlib=True)
+    u_wrap_var = data_wrap.createVariable('u',np.float64,('year','month','latitude','longitude'),zlib=True)
+    v_wrap_var = data_wrap.createVariable('v',np.float64,('year','month','latitude','longitude'),zlib=True)
     # global attributes
     data_wrap.description = 'Monthly mean 3D fields of ERA-Interim on pressure level %s' % (layer)
     # variable attributes
