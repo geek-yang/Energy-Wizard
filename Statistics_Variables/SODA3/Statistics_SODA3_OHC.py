@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : A statistical look into the temporal and spatial distribution of fields (GLORYS2V3)
 Author          : Yang Liu
 Date            : 2018.04.14
-Last Update     : 2018.04.16
+Last Update     : 2018.04.20
 Description     : The code aims to statistically take a close look into each fields.
                   This could help understand the difference between each datasets, which
                   will explain the deviation in meridional energy transport. Specifically,
@@ -254,7 +254,7 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     logging.info("Start creating netcdf file for the statistics of fields at each grid point.")
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_OHC_point_%d.nc' % (input_year),'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path + os.sep + 'SODA3_model_5daily_mom5_OHC_point_%d.nc' % (input_year),'w',format = 'NETCDF4')
     # create dimensions for netcdf data
     lat_wrap_dim = data_wrap.createDimension('j',jj)
     lon_wrap_dim = data_wrap.createDimension('i',ji)
@@ -267,19 +267,19 @@ def create_netcdf_point (OHC_pool_glo_zonal, OHC_pool_atl_zonal, OHC_pool_glo_ve
     gphit_wrap_var = data_wrap.createVariable('y_T',np.float32,('j','i'))
     glamt_wrap_var = data_wrap.createVariable('x_T',np.float32,('j','i'))
     # 2D
-    OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('lev','j'))
-    OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('lev','j'))
+    OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('lev','j'),zlib=True)
+    OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('lev','j'),zlib=True)
 
-    OHC_glo_vert_wrap_var = data_wrap.createVariable('OHC_glo_vert',np.float64,('j','i'))
-    OHC_atl_vert_wrap_var = data_wrap.createVariable('OHC_atl_vert',np.float64,('j','i'))
-    OHC_glo_vert_0_500_wrap_var = data_wrap.createVariable('OHC_glo_vert_0_500',np.float64,('j','i'))
-    OHC_atl_vert_0_500_wrap_var = data_wrap.createVariable('OHC_atl_vert_0_500',np.float64,('j','i'))
-    OHC_glo_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_glo_vert_500_1000',np.float64,('j','i'))
-    OHC_atl_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_atl_vert_500_1000',np.float64,('j','i'))
-    OHC_glo_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_glo_vert_1000_2000',np.float64,('j','i'))
-    OHC_atl_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_atl_vert_1000_2000',np.float64,('j','i'))
-    OHC_glo_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_glo_vert_2000_inf',np.float64,('j','i'))
-    OHC_atl_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_atl_vert_2000_inf',np.float64,('j','i'))
+    OHC_glo_vert_wrap_var = data_wrap.createVariable('OHC_glo_vert',np.float64,('j','i'),zlib=True)
+    OHC_atl_vert_wrap_var = data_wrap.createVariable('OHC_atl_vert',np.float64,('j','i'),zlib=True)
+    OHC_glo_vert_0_500_wrap_var = data_wrap.createVariable('OHC_glo_vert_0_500',np.float64,('j','i'),zlib=True)
+    OHC_atl_vert_0_500_wrap_var = data_wrap.createVariable('OHC_atl_vert_0_500',np.float64,('j','i'),zlib=True)
+    OHC_glo_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_glo_vert_500_1000',np.float64,('j','i'),zlib=True)
+    OHC_atl_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_atl_vert_500_1000',np.float64,('j','i'),zlib=True)
+    OHC_glo_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_glo_vert_1000_2000',np.float64,('j','i'),zlib=True)
+    OHC_atl_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_atl_vert_1000_2000',np.float64,('j','i'),zlib=True)
+    OHC_glo_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_glo_vert_2000_inf',np.float64,('j','i'),zlib=True)
+    OHC_atl_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_atl_vert_2000_inf',np.float64,('j','i'),zlib=True)
 
     # global attributes
     data_wrap.description = 'Monthly mean statistics of fields on MOM grid'
