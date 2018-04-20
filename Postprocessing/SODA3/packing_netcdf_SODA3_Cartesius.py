@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Packing netCDF files for the monthly output from Cartesius (JRA55)
 Author          : Yang Liu
 Date            : 2018.02.28
-Last Update     : 2018.04.16
+Last Update     : 2018.04.19
 Description     : The code aims to reorganize the output from the Cartesius
                   regarding the computation of oceanic meridional energy
                   transport based on SODA3 output. It also works with diagnostic
@@ -143,10 +143,8 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     # create dimensions from an existing file
     period = np.arange(start_year,end_year+1,1)
     month = np.arange(1,13,1)
-    grid_y_C = benchmark.variables['grid_y_C'][:]
-    x_T = benchmark.variables['x_T'][:]              # Geographic Longitude of T-cell center
-    y_T = benchmark.variables['y_T'][:]
-    zt = benchmark.variables['zt'][:]
+    latitude = benchmark.variables['latitude'][:]
+    longitude = benchmark.variables['longitude'][:]
 
     E = np.zeros((len(period),len(month),jj,ji),dtype=float)
 
@@ -203,6 +201,10 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
     # create dimensions from an existing file
     period = np.arange(start_year,end_year+1,1)
     month = np.arange(1,13,1)
+    grid_y_C = benchmark.variables['grid_y_C'][:]
+    x_T = benchmark.variables['x_T'][:]              # Geographic Longitude of T-cell center
+    y_T = benchmark.variables['y_T'][:]
+    zt = benchmark.variables['zt'][:]
 
     OHC_pool_glo_zonal = np.zeros((len(period),len(month),level,jj),dtype = float)
     OHC_pool_atl_zonal = np.zeros((len(period),len(month),level,jj),dtype = float)
@@ -241,7 +243,7 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_OHC.nc', 'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_OHC.nc', 'w+',format = 'NETCDF3_64BIT')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -251,14 +253,13 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
     # create coordinate variables for 3-dimensions
     year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
     month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
-    # create coordinate variables for 3-dimensions
     # 1D
     lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('j',))
     lev_wrap_var = data_wrap.createVariable('lev',np.float32,('lev',))
     # 2D
     gphit_wrap_var = data_wrap.createVariable('y_T',np.float32,('j','i'))
     glamt_wrap_var = data_wrap.createVariable('x_T',np.float32,('j','i'))
-    # 2D
+    # create target variables 4D
     OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('year','month','lev','j'))
     OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('year','month','lev','j'))
 
