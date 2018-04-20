@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Packing netCDF files for the monthly output from Cartesius (JRA55)
 Author          : Yang Liu
 Date            : 2018.02.28
-Last Update     : 2018.04.19
+Last Update     : 2018.04.20
 Description     : The code aims to reorganize the output from the Cartesius
                   regarding the computation of oceanic meridional energy
                   transport based on SODA3 output. It also works with diagnostic
@@ -42,7 +42,7 @@ start_time = tttt.time()
 # specify data path
 datapath_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int'
 datapath_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point'
-datapath_OHC = '/projects/0/blueactn/reanalysis/SODA3/statistics/'
+#datapath_OHC = '/projects/0/blueactn/reanalysis/SODA3/statistics/'
 # time of the data, which concerns with the name of input
 # starting time (year)
 start_year = 1980
@@ -50,14 +50,14 @@ start_year = 1980
 end_year = 2015
 # specify output path for the netCDF4 file
 output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/postprocessing'
-output_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/'
+#output_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/'
 # benchmark datasets for basic dimensions
 benchmark_path_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int/SODA3_model_5daily_mom5_E_zonal_int_201509.nc'
 benchmark_path_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point/SODA3_model_5daily_mom5_E_point_201509.nc'
-benchmark_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/topog.nc'
+#benchmark_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/topog.nc'
 benchmark_int = Dataset(benchmark_path_int)
 benchmark_point = Dataset(benchmark_path_point)
-benchmark_OHC = Dataset(benchmark_path_OHC)
+#benchmark_OHC = Dataset(benchmark_path_OHC)
 ####################################################################################
 # dimension
 ji = 1440
@@ -95,7 +95,7 @@ def pack_netcdf_zonal_int(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_E_zonal_int.nc', 'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_E_zonal_int.nc', 'w',format = 'NETCDF4')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -107,9 +107,9 @@ def pack_netcdf_zonal_int(datapath,output_path,benchmark):
     lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('latitude_aux',))
     lev_wrap_var = data_wrap.createVariable('lev',np.float32,('lev',))
     # create the actual 3-d variable
-    E_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude_aux'))
-    Psi_glo_wrap_var = data_wrap.createVariable('Psi_glo',np.float64,('year','month','lev','latitude_aux'))
-    Psi_atl_wrap_var = data_wrap.createVariable('Psi_atl',np.float64,('year','month','lev','latitude_aux'))
+    E_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude_aux'),zlib=True)
+    Psi_glo_wrap_var = data_wrap.createVariable('Psi_glo',np.float64,('year','month','lev','latitude_aux'),zlib=True)
+    Psi_atl_wrap_var = data_wrap.createVariable('Psi_atl',np.float64,('year','month','lev','latitude_aux'),zlib=True)
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of meridional energy transport and overturning stream function'
     # variable attributes
@@ -160,7 +160,7 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_E_point.nc', 'w',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_E_point.nc', 'w',format = 'NETCDF4')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -172,7 +172,7 @@ def pack_netcdf_point(datapath,output_path,benchmark):
     lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude','longitude'))
     lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('latitude','longitude'))
     # create the actual 3-d variable
-    E_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude','longitude'))
+    E_wrap_var = data_wrap.createVariable('E',np.float64,('year','month','latitude','longitude'),zlib=True)
 
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of meridional energy transport and each component'
@@ -243,7 +243,7 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_OHC.nc', 'w+',format = 'NETCDF3_64BIT')
+    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_OHC.nc', 'w+',format = 'NETCDF4')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -260,19 +260,19 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
     gphit_wrap_var = data_wrap.createVariable('y_T',np.float32,('j','i'))
     glamt_wrap_var = data_wrap.createVariable('x_T',np.float32,('j','i'))
     # create target variables 4D
-    OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('year','month','lev','j'))
-    OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('year','month','lev','j'))
+    OHC_glo_zonal_wrap_var = data_wrap.createVariable('OHC_glo_zonal',np.float64,('year','month','lev','j'),zlib=True)
+    OHC_atl_zonal_wrap_var = data_wrap.createVariable('OHC_atl_zonal',np.float64,('year','month','lev','j'),zlib=True)
 
-    OHC_glo_vert_wrap_var = data_wrap.createVariable('OHC_glo_vert',np.float64,('year','month','j','i'))
-    OHC_atl_vert_wrap_var = data_wrap.createVariable('OHC_atl_vert',np.float64,('year','month','j','i'))
-    OHC_glo_vert_0_500_wrap_var = data_wrap.createVariable('OHC_glo_vert_0_500',np.float64,('year','month','j','i'))
-    OHC_atl_vert_0_500_wrap_var = data_wrap.createVariable('OHC_atl_vert_0_500',np.float64,('year','month','j','i'))
-    OHC_glo_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_glo_vert_500_1000',np.float64,('year','month','j','i'))
-    OHC_atl_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_atl_vert_500_1000',np.float64,('year','month','j','i'))
-    OHC_glo_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_glo_vert_1000_2000',np.float64,('year','month','j','i'))
-    OHC_atl_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_atl_vert_1000_2000',np.float64,('year','month','j','i'))
-    OHC_glo_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_glo_vert_2000_inf',np.float64,('year','month','j','i'))
-    OHC_atl_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_atl_vert_2000_inf',np.float64,('year','month','j','i'))
+    OHC_glo_vert_wrap_var = data_wrap.createVariable('OHC_glo_vert',np.float64,('year','month','j','i'),zlib=True)
+    OHC_atl_vert_wrap_var = data_wrap.createVariable('OHC_atl_vert',np.float64,('year','month','j','i'),zlib=True)
+    OHC_glo_vert_0_500_wrap_var = data_wrap.createVariable('OHC_glo_vert_0_500',np.float64,('year','month','j','i'),zlib=True)
+    OHC_atl_vert_0_500_wrap_var = data_wrap.createVariable('OHC_atl_vert_0_500',np.float64,('year','month','j','i'),zlib=True)
+    OHC_glo_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_glo_vert_500_1000',np.float64,('year','month','j','i'),zlib=True)
+    OHC_atl_vert_500_1000_wrap_var = data_wrap.createVariable('OHC_atl_vert_500_1000',np.float64,('year','month','j','i'),zlib=True)
+    OHC_glo_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_glo_vert_1000_2000',np.float64,('year','month','j','i'),zlib=True)
+    OHC_atl_vert_1000_2000_wrap_var = data_wrap.createVariable('OHC_atl_vert_1000_2000',np.float64,('year','month','j','i'),zlib=True)
+    OHC_glo_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_glo_vert_2000_inf',np.float64,('year','month','j','i'),zlib=True)
+    OHC_atl_vert_2000_inf_wrap_var = data_wrap.createVariable('OHC_atl_vert_2000_inf',np.float64,('year','month','j','i'),zlib=True)
 
     # global attributes
     data_wrap.description = 'Monthly mean statistics of fields on MOM grid'
@@ -343,7 +343,7 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
 if __name__=="__main__":
     pack_netcdf_zonal_int(datapath_int,output_path,benchmark_int)
     pack_netcdf_point(datapath_point,output_path,benchmark_point)
-    pack_netcdf_OHC(datapath_OHC,output_path_OHC,benchmark_OHC)
+    #pack_netcdf_OHC(datapath_OHC,output_path_OHC,benchmark_OHC)
     print 'Packing netcdf files complete!'
 
 print "Create netcdf file successfully"
