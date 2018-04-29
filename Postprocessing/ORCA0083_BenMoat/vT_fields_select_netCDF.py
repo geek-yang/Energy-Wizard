@@ -77,8 +77,19 @@ def main(start_year, end_year, input_path, output_path, grid_path):
     # target level
     period = np.arange(start_year,end_year+1,1)
     #############################################
+    ###########     land sea mask   #############
+    #############################################
+    mask_input = os.path.join(input_path,'vel_T_ORCA0083-N06_1979m01.nc')
+    dataset_mask = Dataset(mask_input)
+    vT_mask = dataset_mask.variables['vomevt'][0,:,1494:,:]
+    mask = np.ma.getmask(vT_mask)
+    del vT_mask
+    # only for saving netcdf
+    # reverse the mask and change to int in the saving list
+    mask_sav = mask[0,:,:] == False
+    #############################################
     ###########     Extract data    #############
-    ###########     Yield netcdf    #############
+    ###########    produce netcdf   #############
     #############################################
     # create space to store the final results
     pool_vT_vert_int = np.zeros((12,jj_NH,ji),dtype=float)
@@ -103,23 +114,22 @@ def main(start_year, end_year, input_path, output_path, grid_path):
             key_input = os.path.join(input_path,'vel_T_ORCA0083-N06_{}m{}.nc'.format(i,namelist_month[j]))
             dataset = Dataset(key_input)
             vT = dataset.variables['vomevt'][0,:,1494:,:]
-            #np.ma.set_fill_value(vT,0)
-            mask = np.ma.getmask(vT)
+            np.ma.set_fill_value(vT,0)
             # replace wrong value at masked locations with 0
-            vT[mask==True] = 0
+            #vT[mask==True] = 0
             # create space for operation
             vT_operate = np.zeros(vT.shape)
             for k in np.arange(level):
                 vT_operate[k,:,:] = constant['rho'] * constant['cp'] * vT[k,:,:] * e3v_0[k,:,:] * e1v
-                #np.ma.masked_where(mask,vT_operate)
-                # compute zonal integral and vertical integral
-                vT_vert_int = np.sum(vT_operate,0)/1E+12 # change the unit to tera-watt
-                vT_zonal_int = np.sum(vT_operate,2)/1E+12
+            #np.ma.masked_where(mask,vT_operate)
+            vT_operate[mask==True] = 0
+            # compute zonal integral and vertical integral
+            vT_vert_int = np.sum(vT_operate,0)/1E+12 # change the unit to tera-watt
+            vT_zonal_int = np.sum(vT_operate,2)/1E+12
             logging.info('Extract data from the time {} (year) {} (month) successfully!'.format(i,namelist_month[j]))
             pool_vT_vert_int[j,:,:] = vT_vert_int
             pool_vT_zonal_int[j,:,:] = vT_zonal_int
-        # reverse the mask and change to int in the saving list
-        mask_sav = mask[0,:,:] == False
+
         # call the function to output netcdf field
         pack_netcdf(pool_vT_vert_int, pool_vT_zonal_int, gphiv, glamv, nav_lev, mask_sav,
                     i, output_path, ji, jj_NH, level)
