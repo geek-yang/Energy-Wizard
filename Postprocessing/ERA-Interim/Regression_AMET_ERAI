@@ -150,7 +150,6 @@ for i in month_ind:
     # remove seasonal mean
     ci_white[i:-1:12,:,:] = ci[i:-1:12,:,:].filled() - ci_seasonal_mean[i,:,:]
 
-
 # remove the seasonal cycling of AMET at 60N
 # dimension of AMET[year,month]
 AMET_seansonal_cycle = np.mean(AMET,axis=0)
@@ -184,10 +183,10 @@ for i in np.arange(len(time)-window_detrend+1):
 
 # exclude seasonal cycling
 ci_white_detrend = np.zeros((len(time)-window_detrend+1,len(lat),len(lon)),dtype=float)
-ci_white_detrend_running_mean = np.zeros(ci_white_detrend.shape,dtype=float)
+ci_white_detrend_running_mean_inter = np.zeros(ci_white_detrend.shape,dtype=float)
 for i in np.arange(len(time)-window_detrend+1):
-    ci_white_detrend_running_mean[i,:,:] = np.mean(ci_white[i:i+window_detrend,:,:],0)
-    ci_white_detrend[i,:,:] = ci_white[i+window_detrend-1,:,:] - ci_white_detrend_running_mean[i,:,:]
+    ci_white_detrend_running_mean_inter[i,:,:] = np.mean(ci_white[i:i+window_detrend,:,:],0)
+    ci_white_detrend[i,:,:] = ci_white[i+window_detrend-1,:,:] - ci_white_detrend_running_mean_inter[i,:,:]
 
 # length for the detrend signal
 time_shrink = len(time)-window_detrend+1
@@ -421,7 +420,7 @@ fig000 = plt.figure()
 plt.axhline(y=0, color='k',ls='-')
 
 plt.plot(index,np.mean(np.mean(ci_white,2),1),'b--',linewidth = 0.5,label='Anomalies')
-plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_detrend_running_mean,2),1),'r-',linewidth = 2,label='Running mean anomalies')
+plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_detrend_running_mean_inter,2),1),'r-',linewidth = 2,label='Running mean anomalies')
 plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_detrend,2),1),'g-',linewidth = 1,label='Detrend anomalies')
 plt.title('Sea Ice Concentration Anomalies in the Arctic and the detrend SIC anomalies (1979-2016)')
 plt.legend()
