@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
 Copyright Netherlands eScience Center
-Function        : Compare oceanic meridional energy transport (ORAS4,GLORYS2V3)
+Function        : Compare oceanic meridional energy transport (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2017.11.06
-Last Update     : 2018.03.06
+Last Update     : 2018.05.11
 Description     : The code aims to compare the oceanic meridional energy transport
                   calculated from different oceanic reanalysis datasets. In this,
                   case, this includes GLORYS2V3 from Mercator Ocean, ORAS4 from ECMWF,
@@ -434,6 +434,53 @@ plt.legend()
 plt.show()
 fig8.savefig(output_path + os.sep + 'Comp_OMET_annual_mean.jpg', dpi = 500)
 
+print '*******************************************************************'
+print '******************    trend at each latitude    *******************'
+print '*******************************************************************'
+counter_ORAS4 = np.arange(len(year_ORAS4)*len(month_ind))
+counter_GLORYS2V3 = np.arange(len(year_GLORYS2V3)*len(month_ind))
+counter_SODA3 = np.arange(len(year_SODA3)*len(month_ind))
+# the calculation of trend are based on target climatolory after removing seasonal cycles
+# trend of OMET at each lat
+# create an array to store the slope coefficient and residual
+a_ORAS4 = np.zeros((len(latitude_ORAS4)),dtype = float)
+b_ORAS4 = np.zeros((len(latitude_ORAS4)),dtype = float)
+# the least square fit equation is y = ax + b
+# np.lstsq solves the equation ax=b, a & b are the input
+# thus the input file should be reformed for the function
+# we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+A_ORAS4 = np.vstack([counter_ORAS4,np.ones(len(counter_ORAS4))]).T
+# start the least square fitting
+for i in np.arange(len(latitude_ORAS4)):
+        # return value: coefficient matrix a and b, where a is the slope
+        a_ORAS4[i], b_ORAS4[i] = np.linalg.lstsq(A_ORAS4,OMET_ORAS4_white_series[:,i])[0]
+
+a_GLORYS2V3 = np.zeros((len(latitude_GLORYS2V3)),dtype = float)
+b_GLORYS2V3 = np.zeros((len(latitude_GLORYS2V3)),dtype = float)
+A_GLORYS2V3 = np.vstack([counter_GLORYS2V3,np.ones(len(counter_GLORYS2V3))]).T
+for i in np.arange(len(latitude_GLORYS2V3)):
+        a_GLORYS2V3[i], b_GLORYS2V3[i] = np.linalg.lstsq(A_GLORYS2V3,OMET_GLORYS2V3_white_series[:,i])[0]
+
+a_SODA3 = np.zeros((len(latitude_SODA3)),dtype = float)
+b_SODA3 = np.zeros((len(latitude_SODA3)),dtype = float)
+A_SODA3 = np.vstack([counter_SODA3,np.ones(len(counter_SODA3))]).T
+for i in np.arange(len(latitude_SODA3)):
+        a_SODA3[i], b_SODA3[i] = np.linalg.lstsq(A_SODA3,OMET_SODA3_white_series[:,i])[0]
+
+# trend of OMET anomalies at each latitude
+fig9 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(latitude_ORAS4,a_ORAS4*12,'c-',label='ORAS4')
+plt.plot(latitude_GLORYS2V3,a_GLORYS2V3*12,'m-',label='GLORYS2V3')
+plt.plot(latitude_SODA3,a_SODA3*12,'y-',label='SODA3')
+plt.title('Trend of OMET anomalies from 90S to 90N' )
+#plt.legend()
+plt.xlabel("Latitudes")
+#plt.xticks()
+plt.ylabel("Meridional Energy Transport (PW/year)")
+plt.legend()
+plt.show()
+fig9.savefig(output_path + os.sep + 'Comp_OMET_white_trend.jpg', dpi = 400)
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
 print '*******************************************************************'
