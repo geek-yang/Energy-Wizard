@@ -480,7 +480,22 @@ plt.xlabel("Latitudes")
 plt.ylabel("Meridional Energy Transport (PW/year)")
 plt.legend()
 plt.show()
-fig9.savefig(output_path + os.sep + 'Comp_OMET_white_trend.jpg', dpi = 400)
+fig9.savefig(output_path + os.sep + 'Comp_OMET_white_trend_globe.jpg', dpi = 400)
+
+# trend of OMET anomalies from 20N to 90N
+fig10 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(latitude_ORAS4[180:],a_ORAS4[180:]*12,'c-',label='ORAS4')
+plt.plot(latitude_GLORYS2V3[579:],a_GLORYS2V3[579:]*12,'m-',label='GLORYS2V3')
+plt.plot(latitude_SODA3[569:],a_SODA3[569:]*12,'y-',label='SODA3')
+plt.title('Trend of OMET anomalies from 90S to 90N' )
+#plt.legend()
+plt.xlabel("Latitudes")
+#plt.xticks()
+plt.ylabel("Meridional Energy Transport (PW/year)")
+plt.legend()
+plt.show()
+fig10.savefig(output_path + os.sep + 'Comp_OMET_white_trend_.jpg', dpi = 400)
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
 print '*******************************************************************'
