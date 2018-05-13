@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2017.11.06
-Last Update     : 2018.03.12
+Last Update     : 2018.05.11
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF and
@@ -36,6 +36,7 @@ import platform
 import sys
 import logging
 import matplotlib
+from mpl_toolkits.mplot3d import Axes3D
 # generate images without having a window appear
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -528,7 +529,53 @@ plt.legend()
 plt.show()
 fig2.savefig(output_path + os.sep + 'Comp_AMET_annual_mean_full_components.jpg',dpi = 300)
 plt.close(fig2)
+print '*******************************************************************'
+print '******************    trend at each latitude    *******************'
+print '*******************************************************************'
+counter_ERAI = np.arange(len(year_ERAI)*len(month_ind))
+counter_MERRA2 = np.arange(len(year_MERRA2)*len(month_ind))
+counter_JRA55 = np.arange(len(year_JRA55)*len(month_ind))
+# the calculation of trend are based on target climatolory after removing seasonal cycles
+# trend of OMET at each lat
+# create an array to store the slope coefficient and residual
+a_ERAI = np.zeros((len(latitude_ERAI)),dtype = float)
+b_ERAI = np.zeros((len(latitude_ERAI)),dtype = float)
+# the least square fit equation is y = ax + b
+# np.lstsq solves the equation ax=b, a & b are the input
+# thus the input file should be reformed for the function
+# we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+A_ERAI = np.vstack([counter_ERAI,np.ones(len(counter_ERAI))]).T
+# start the least square fitting
+for i in np.arange(len(latitude_ERAI)):
+        # return value: coefficient matrix a and b, where a is the slope
+        a_ERAI[i], b_ERAI[i] = np.linalg.lstsq(A_ERAI,AMET_E_ERAI_white_series[:,i])[0]
 
+a_MERRA2 = np.zeros((len(latitude_MERRA2)),dtype = float)
+b_MERRA2 = np.zeros((len(latitude_MERRA2)),dtype = float)
+A_MERRA2 = np.vstack([counter_MERRA2,np.ones(len(counter_MERRA2))]).T
+for i in np.arange(len(latitude_MERRA2)):
+        a_MERRA2[i], b_MERRA2[i] = np.linalg.lstsq(A_MERRA2,AMET_E_MERRA2_white_series[:,i])[0]
+
+a_JRA55 = np.zeros((len(latitude_JRA55)),dtype = float)
+b_JRA55 = np.zeros((len(latitude_JRA55)),dtype = float)
+A_JRA55 = np.vstack([counter_JRA55,np.ones(len(counter_JRA55))]).T
+for i in np.arange(len(latitude_JRA55)):
+        a_JRA55[i], b_JRA55[i] = np.linalg.lstsq(A_JRA55,AMET_E_JRA55_white_series[:,i])[0]
+
+# trend of AMET anomalies at each latitude
+fig19 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(latitude_ERAI,a_ERAI*12,'b-',label='ERAI')
+plt.plot(latitude_MERRA2,a_MERRA2*12,'r-',label='MERRA2')
+plt.plot(latitude_JRA55,a_JRA55*12,'g-',label='JRA55')
+plt.title('Trend of AMET anomalies from 20N to 90N' )
+#plt.legend()
+plt.xlabel("Latitudes")
+#plt.xticks()
+plt.ylabel("Meridional Energy Transport (PW/year)")
+plt.legend()
+plt.show()
+fig19.savefig(output_path + os.sep + 'Comp_AMET_white_trend.jpg', dpi = 400)
 print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
@@ -544,9 +591,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_ERAI_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_MERRA2_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_JRA55_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig3.set_size_inches(12.5, 6)
@@ -565,9 +612,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_cpT_ERAI_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_cpT_MERRA2_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_cpT_JRA55_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_cpT_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_cpT_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (cpT) at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig4.set_size_inches(12.5, 6)
@@ -586,9 +633,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_Lvq_ERAI_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_Lvq_MERRA2_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_Lvq_JRA55_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_Lvq_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_Lvq_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (Lvq) at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig5.set_size_inches(12.5, 6)
@@ -607,9 +654,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_gz_ERAI_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_gz_MERRA2_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_gz_JRA55_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_gz_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_gz_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (gz) at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig6.set_size_inches(12.5, 6)
@@ -628,9 +675,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_uv2_ERAI_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_uv2_MERRA2_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_uv2_JRA55_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_uv2_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_uv2_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (uv2) at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig7.set_size_inches(12.5, 6)
@@ -649,9 +696,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_ERAI_white_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_JRA55_white_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET Anomalies at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig8.set_size_inches(12.5, 6)
@@ -670,9 +717,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_cpT_ERAI_white_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_cpT_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_cpT_JRA55_white_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_cpT_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_cpT_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_cpT_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_cpT_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (cpT) Anomalies at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig9.set_size_inches(12.5, 6)
@@ -691,9 +738,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_Lvq_ERAI_white_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_Lvq_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_Lvq_JRA55_white_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_Lvq_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_Lvq_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_Lvq_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_Lvq_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (Lvq) Anomalies at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig10.set_size_inches(12.5, 6)
@@ -712,9 +759,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_gz_ERAI_white_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_gz_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_gz_JRA55_white_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_gz_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_gz_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_gz_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_gz_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (gz) Anomalies at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig11.set_size_inches(12.5, 6)
@@ -733,9 +780,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979_2016,AMET_E_uv2_ERAI_white_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series')
     plt.plot(index_1980_2016,AMET_E_uv2_MERRA2_white_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
     plt.plot(index_1979_2015,AMET_E_uv2_JRA55_white_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
-    plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI running mean')
-    plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 running mean')
-    plt.plot(index_1979_2015[window-1:],AMET_E_uv2_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 running mean')
+    plt.plot(index_1979_2016[window-1:],AMET_E_uv2_ERAI_white_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    plt.plot(index_1980_2016[window-1:],AMET_E_uv2_MERRA2_white_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    plt.plot(index_1979_2015[window-1:],AMET_E_uv2_JRA55_white_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
     plt.title('Running Mean of AMET (uv2) Anomalies at %dN with a window of %d months' % (lat_interest_list[i],window))
     plt.legend()
     fig12.set_size_inches(12.5, 6)
@@ -747,6 +794,33 @@ for i in np.arange(len(lat_interest_list)):
     plt.show()
     fig12.savefig(output_path + os.sep + 'anomaly_series_lowpass' + os.sep +'Comp_AMET_E_uv2_anomaly_%dN_running_mean_window_%d_comp.jpg' % (lat_interest_list[i],window), dpi = 300)
     plt.close(fig12)
+
+print '*******************************************************************'
+print '*************   3D time series of AMET at key lats   **************'
+print '*******************************************************************'
+
+fig33=plt.figure()
+#fig33.set_size_inches(12.5, 6)
+ax=fig33.gca(projection='3d') # change figure into 3D
+plt.hold(True)
+for i in np.arange(len(lat_interest_list)):
+    #ax.plot(index_1979_2016,np.ones(index_1979_2016.shape,dtype=int)*i,AMET_E_ERAI_series[:,lat_interest['ERAI'][i]],'b--',linewidth=1.0,label='ERAI time series at %d N' % (i))
+    #ax.plot(index_1980_2016,np.ones(index_1980_2016.shape,dtype=int)*i,AMET_E_MERRA2_series[:,lat_interest['MERRA2'][i]],'r--',linewidth=1.0,label='MERRA2 time series')
+    #ax.plot(index_1979_2015,np.ones(index_1979_2015.shape,dtype=int)*i,AMET_E_JRA55_series[:,lat_interest['JRA55'][i]],'g--',linewidth=1.0,label='JRA55 time series')
+    ax.plot(index_1979_2016[window-1:],np.ones(index_1979_2016[window-1:].shape,dtype=int)*i,AMET_E_ERAI_running_mean[:,lat_interest['ERAI'][i]],'b-',linewidth=2.0,label='ERAI low pass')
+    ax.plot(index_1980_2016[window-1:],np.ones(index_1980_2016[window-1:].shape,dtype=int)*i,AMET_E_MERRA2_running_mean[:,lat_interest['MERRA2'][i]],'r-',linewidth=2.0,label='MERRA2 low pass')
+    ax.plot(index_1979_2015[window-1:],np.ones(index_1979_2015[window-1:].shape,dtype=int)*i,AMET_E_JRA55_running_mean[:,lat_interest['JRA55'][i]],'g-',linewidth=2.0,label='JRA55 low pass')
+#ax.grid()
+ax.set_xlabel("Time")
+ax.set_xticks(np.linspace(0, 456, 39), year_ERAI.all)
+ax.set_ylabel("Latitude (N)")
+ax.set_zlabel("Meridional Energy Transport (PW)")
+ax.view_init(30,220)
+plt.title("AMET at key latitudes")
+plt.legend()
+plt.show()
+fig33.savefig(output_path + os.sep + 'Comp_AMET_E_3D.jpg', dpi = 300)
+#plt.close(fig33)
 print '*******************************************************************'
 print '******************   highlight the difference   *******************'
 print '*******************************************************************'

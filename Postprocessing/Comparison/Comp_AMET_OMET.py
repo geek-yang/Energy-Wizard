@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET of all reanalysis datasets
 Author          : Yang Liu
 Date            : 2017.11.12
-Last Update     : 2018.04.07
+Last Update     : 2018.05.12
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -483,6 +483,79 @@ plt.xticks(np.linspace(20, 90, 8),labels)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.show()
 fig0.savefig(output_path + os.sep + 'AMET_OMET_annual_mean_stdBar.jpg', dpi = 500)
+print '*******************************************************************'
+print '******************    trend at each latitude    *******************'
+print '*******************************************************************'
+counter_ERAI = np.arange(len(year_ERAI)*len(month_ind))
+counter_MERRA2 = np.arange(len(year_MERRA2)*len(month_ind))
+counter_JRA55 = np.arange(len(year_JRA55)*len(month_ind))
+
+counter_ORAS4 = np.arange(len(year_ORAS4)*len(month_ind))
+counter_GLORYS2V3 = np.arange(len(year_GLORYS2V3)*len(month_ind))
+counter_SODA3 = np.arange(len(year_SODA3)*len(month_ind))
+
+# the calculation of trend are based on target climatolory after removing seasonal cycles
+# trend of OMET at each lat
+# create an array to store the slope coefficient and residual
+a_ERAI = np.zeros((len(latitude_ERAI)),dtype = float)
+b_ERAI = np.zeros((len(latitude_ERAI)),dtype = float)
+# the least square fit equation is y = ax + b
+# np.lstsq solves the equation ax=b, a & b are the input
+# thus the input file should be reformed for the function
+# we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+A_ERAI = np.vstack([counter_ERAI,np.ones(len(counter_ERAI))]).T
+# start the least square fitting
+for i in np.arange(len(latitude_ERAI)):
+        # return value: coefficient matrix a and b, where a is the slope
+        a_ERAI[i], b_ERAI[i] = np.linalg.lstsq(A_ERAI,AMET_ERAI_white_series[:,i])[0]
+
+a_MERRA2 = np.zeros((len(latitude_MERRA2)),dtype = float)
+b_MERRA2 = np.zeros((len(latitude_MERRA2)),dtype = float)
+A_MERRA2 = np.vstack([counter_MERRA2,np.ones(len(counter_MERRA2))]).T
+for i in np.arange(len(latitude_MERRA2)):
+        a_MERRA2[i], b_MERRA2[i] = np.linalg.lstsq(A_MERRA2,AMET_MERRA2_white_series[:,i])[0]
+
+a_JRA55 = np.zeros((len(latitude_JRA55)),dtype = float)
+b_JRA55 = np.zeros((len(latitude_JRA55)),dtype = float)
+A_JRA55 = np.vstack([counter_JRA55,np.ones(len(counter_JRA55))]).T
+for i in np.arange(len(latitude_JRA55)):
+        a_JRA55[i], b_JRA55[i] = np.linalg.lstsq(A_JRA55,AMET_JRA55_white_series[:,i])[0]
+
+a_ORAS4 = np.zeros((len(latitude_ORAS4)),dtype = float)
+b_ORAS4 = np.zeros((len(latitude_ORAS4)),dtype = float)
+A_ORAS4 = np.vstack([counter_ORAS4,np.ones(len(counter_ORAS4))]).T
+for i in np.arange(len(latitude_ORAS4)):
+        a_ORAS4[i], b_ORAS4[i] = np.linalg.lstsq(A_ORAS4,OMET_ORAS4_white_series[:,i])[0]
+
+a_GLORYS2V3 = np.zeros((len(latitude_GLORYS2V3)),dtype = float)
+b_GLORYS2V3 = np.zeros((len(latitude_GLORYS2V3)),dtype = float)
+A_GLORYS2V3 = np.vstack([counter_GLORYS2V3,np.ones(len(counter_GLORYS2V3))]).T
+for i in np.arange(len(latitude_GLORYS2V3)):
+        a_GLORYS2V3[i], b_GLORYS2V3[i] = np.linalg.lstsq(A_GLORYS2V3,OMET_GLORYS2V3_white_series[:,i])[0]
+
+a_SODA3 = np.zeros((len(latitude_SODA3)),dtype = float)
+b_SODA3 = np.zeros((len(latitude_SODA3)),dtype = float)
+A_SODA3 = np.vstack([counter_SODA3,np.ones(len(counter_SODA3))]).T
+for i in np.arange(len(latitude_SODA3)):
+        a_SODA3[i], b_SODA3[i] = np.linalg.lstsq(A_SODA3,OMET_SODA3_white_series[:,i])[0]
+
+# trend of OMET anomalies at each latitude
+fig5 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(latitude_ERAI,a_ERAI*12,'b-',label='ERAI')
+plt.plot(latitude_MERRA2,a_MERRA2*12,'r-',label='MERRA2')
+plt.plot(latitude_JRA55,a_JRA55*12,'g-',label='JRA55')
+plt.plot(latitude_ORAS4,a_ORAS4*12,'c-',label='ORAS4')
+plt.plot(latitude_GLORYS2V3,a_GLORYS2V3*12,'m-',label='GLORYS2V3')
+plt.plot(latitude_SODA3,a_SODA3*12,'y-',label='SODA3')
+plt.title('Trend of AMET and OMET anomalies from 20N to 90N' )
+#plt.legend()
+plt.xlabel("Latitudes")
+#plt.xticks()
+plt.ylabel("Meridional Energy Transport (PW/year)")
+plt.legend()
+plt.show()
+fig5.savefig(output_path + os.sep + 'AMET_OMET_white_trend.jpg', dpi = 400)
 
 print '*******************************************************************'
 print '*********************** time series plots *************************'
