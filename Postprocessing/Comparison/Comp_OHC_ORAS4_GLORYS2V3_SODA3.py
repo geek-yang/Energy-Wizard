@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare Ocean Heat Content (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2018.04.21
-Last Update     : 2018.04.21
+Last Update     : 2018.05.13
 Description     : The code aims to compare OHC computed from different reanalysis
                   products. The OHC are calculated from reanalysis datasets. In this case,
                   it includes GLORYS2V3 from Mercator Ocean, ORAS4 from ECMWF, and SODA3
@@ -383,3 +383,69 @@ if __name__ == '__main__':
     time_series(OHC_glo_vert_0_500_ORAS4_white_series, OHC_glo_vert_0_500_GLORYS2V3_white_series, OHC_glo_vert_0_500_SODA3_white_series,\
                 OHC_glo_vert_0_500_ORAS4_white_series_running_mean,OHC_glo_vert_0_500_GLORYS2V3_white_series_running_mean,\
                 OHC_glo_vert_0_500_SODA3_white_series_running_mean, part_name, title_depth, output_path, window)
+    #*****************     OHC from 500 m to 1000 m     ******************#
+    # get all the variables and prepare those variables for plot
+    OHC_glo_vert_500_1000_ORAS4_series, OHC_glo_vert_500_1000_GLORYS2V3_series, OHC_glo_vert_500_1000_SODA3_series,\
+    OHC_glo_vert_500_1000_ORAS4_white_series, OHC_glo_vert_500_1000_GLORYS2V3_white_series,\
+    OHC_glo_vert_500_1000_SODA3_white_series, OHC_glo_vert_500_1000_ORAS4_series_running_mean,\
+    OHC_glo_vert_500_1000_GLORYS2V3_series_running_mean, OHC_glo_vert_500_1000_SODA3_series_running_mean,\
+    OHC_glo_vert_500_1000_ORAS4_white_series_running_mean, OHC_glo_vert_500_1000_GLORYS2V3_white_series_running_mean,\
+    OHC_glo_vert_500_1000_SODA3_white_series_running_mean = data_extract(option['globe'][2], window)
+    #*****************         original  globe        ******************#
+    part_name = 'OHC'
+    title_depth = '500-1000m'
+    output_path = os.path.join(output_path_comp,'original_series_lowpass','glo_vert_500_1000')
+    time_series(OHC_glo_vert_500_1000_ORAS4_series, OHC_glo_vert_500_1000_GLORYS2V3_series, OHC_glo_vert_500_1000_SODA3_series,\
+                OHC_glo_vert_500_1000_ORAS4_series_running_mean,OHC_glo_vert_500_1000_GLORYS2V3_series_running_mean,\
+                OHC_glo_vert_500_1000_SODA3_series_running_mean, part_name, title_depth, output_path, window)
+    #*****************        anomalies  globe        ******************#
+    part_name = 'OHC anomalies'
+    title_depth = '500-1000m'
+    output_path = os.path.join(output_path_comp,'anomaly_series_lowpass','glo_vert_500_1000')
+    time_series(OHC_glo_vert_500_1000_ORAS4_white_series, OHC_glo_vert_500_1000_GLORYS2V3_white_series, OHC_glo_vert_500_1000_SODA3_white_series,\
+                OHC_glo_vert_500_1000_ORAS4_white_series_running_mean,OHC_glo_vert_500_1000_GLORYS2V3_white_series_running_mean,\
+                OHC_glo_vert_500_1000_SODA3_white_series_running_mean, part_name, title_depth, output_path, window)
+    #*****************     OHC from 1000 m to 2000 m     ******************#
+    # get all the variables and prepare those variables for plot
+    OHC_glo_vert_1000_2000_ORAS4_series, OHC_glo_vert_1000_2000_GLORYS2V3_series, OHC_glo_vert_1000_2000_SODA3_series,\
+    OHC_glo_vert_1000_2000_ORAS4_white_series, OHC_glo_vert_1000_2000_GLORYS2V3_white_series,\
+    OHC_glo_vert_1000_2000_SODA3_white_series, OHC_glo_vert_1000_2000_ORAS4_series_running_mean,\
+    OHC_glo_vert_1000_2000_GLORYS2V3_series_running_mean, OHC_glo_vert_1000_2000_SODA3_series_running_mean,\
+    OHC_glo_vert_1000_2000_ORAS4_white_series_running_mean, OHC_glo_vert_1000_2000_GLORYS2V3_white_series_running_mean,\
+    OHC_glo_vert_1000_2000_SODA3_white_series_running_mean = data_extract(option['globe'][3], window)
+    #*****************         original  globe        ******************#
+    part_name = 'OHC'
+    title_depth = '1000-2000m'
+    output_path = os.path.join(output_path_comp,'original_series_lowpass','glo_vert_1000_2000')
+    time_series(OHC_glo_vert_1000_2000_ORAS4_series, OHC_glo_vert_1000_2000_GLORYS2V3_series, OHC_glo_vert_1000_2000_SODA3_series,\
+                OHC_glo_vert_1000_2000_ORAS4_series_running_mean,OHC_glo_vert_1000_2000_GLORYS2V3_series_running_mean,\
+                OHC_glo_vert_1000_2000_SODA3_series_running_mean, part_name, title_depth, output_path, window)
+    #*****************        anomalies  globe        ******************#
+    part_name = 'OHC anomalies'
+    title_depth = '1000_2000m'
+    output_path = os.path.join(output_path_comp,'anomaly_series_lowpass','glo_vert_1000_2000')
+    time_series(OHC_glo_vert_1000_2000_ORAS4_white_series, OHC_glo_vert_1000_2000_GLORYS2V3_white_series, OHC_glo_vert_1000_2000_SODA3_white_series,\
+                OHC_glo_vert_1000_2000_ORAS4_white_series_running_mean,OHC_glo_vert_1000_2000_GLORYS2V3_white_series_running_mean,\
+                OHC_glo_vert_1000_2000_SODA3_white_series_running_mean, part_name, title_depth, output_path, window)
+    #*****************     OHC from 2000 m to bottom m     ******************#
+    # get all the variables and prepare those variables for plot
+    OHC_glo_vert_2000_inf_ORAS4_series, OHC_glo_vert_2000_inf_GLORYS2V3_series, OHC_glo_vert_2000_inf_SODA3_series,\
+    OHC_glo_vert_2000_inf_ORAS4_white_series, OHC_glo_vert_2000_inf_GLORYS2V3_white_series,\
+    OHC_glo_vert_2000_inf_SODA3_white_series, OHC_glo_vert_2000_inf_ORAS4_series_running_mean,\
+    OHC_glo_vert_2000_inf_GLORYS2V3_series_running_mean, OHC_glo_vert_2000_inf_SODA3_series_running_mean,\
+    OHC_glo_vert_2000_inf_ORAS4_white_series_running_mean, OHC_glo_vert_2000_inf_GLORYS2V3_white_series_running_mean,\
+    OHC_glo_vert_2000_inf_SODA3_white_series_running_mean = data_extract(option['globe'][4], window)
+    #*****************         original  globe        ******************#
+    part_name = 'OHC'
+    title_depth = '2000-bottom'
+    output_path = os.path.join(output_path_comp,'original_series_lowpass','glo_vert_2000_inf')
+    time_series(OHC_glo_vert_2000_inf_ORAS4_series, OHC_glo_vert_2000_inf_GLORYS2V3_series, OHC_glo_vert_2000_inf_SODA3_series,\
+                OHC_glo_vert_2000_inf_ORAS4_series_running_mean,OHC_glo_vert_2000_inf_GLORYS2V3_series_running_mean,\
+                OHC_glo_vert_2000_inf_SODA3_series_running_mean, part_name, title_depth, output_path, window)
+    #*****************        anomalies  globe        ******************#
+    part_name = 'OHC anomalies'
+    title_depth = '2000-bottom'
+    output_path = os.path.join(output_path_comp,'anomaly_series_lowpass','glo_vert_2000_inf')
+    time_series(OHC_glo_vert_2000_inf_ORAS4_white_series, OHC_glo_vert_2000_inf_GLORYS2V3_white_series, OHC_glo_vert_2000_inf_SODA3_white_series,\
+                OHC_glo_vert_2000_inf_ORAS4_white_series_running_mean,OHC_glo_vert_2000_inf_GLORYS2V3_white_series_running_mean,\
+                OHC_glo_vert_2000_inf_SODA3_white_series_running_mean, part_name, title_depth, output_path, window)
