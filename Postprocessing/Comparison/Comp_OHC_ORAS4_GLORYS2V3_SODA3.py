@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare Ocean Heat Content (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2018.04.21
-Last Update     : 2018.05.13
+Last Update     : 2018.05.14
 Description     : The code aims to compare OHC computed from different reanalysis
                   products. The OHC are calculated from reanalysis datasets. In this case,
                   it includes GLORYS2V3 from Mercator Ocean, ORAS4 from ECMWF, and SODA3
@@ -290,6 +290,53 @@ def data_extract(var_name, window):
             OHC_glo_vert_SODA3_white_series_running_mean[i,j] = np.mean(OHC_glo_vert_SODA3_white_series[i:i+window,j])
 
     print '*******************************************************************'
+    print '******************    trend at each latitude    *******************'
+    print '*******************************************************************'
+    counter_ORAS4 = np.arange(len(year_ORAS4)*len(month_ind))
+    counter_GLORYS2V3 = np.arange(len(year_GLORYS2V3)*len(month_ind))
+    counter_SODA3 = np.arange(len(year_SODA3)*len(month_ind))
+
+    # ORAS4
+    # the calculation of trend are based on target climatolory after removing seasonal cycles
+    # trend of OMET at each lat
+    # create an array to store the slope coefficient and residual
+    a_ORAS4 = np.zeros((len(latitude_ORAS4)),dtype = float)
+    b_ORAS4 = np.zeros((len(latitude_ORAS4)),dtype = float)
+    # the least square fit equation is y = ax + b
+    # np.lstsq solves the equation ax=b, a & b are the input
+    # thus the input file should be reformed for the function
+    # we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+    A_ORAS4 = np.vstack([counter_ORAS4,np.ones(len(counter_ORAS4))]).T
+    # start the least square fitting
+    for i in np.arange(len(latitude_ORAS4)):
+            # return value: coefficient matrix a and b, where a is the slope
+            a_ORAS4[i], b_ORAS4[i] = np.linalg.lstsq(A_ORAS4,OHC_glo_vert_ORAS4_white_series[:,i])[0]
+    # GLORYS2V3
+    a_GLORYS2V3 = np.zeros((len(latitude_GLORYS2V3)),dtype = float)
+    b_GLORYS2V3 = np.zeros((len(latitude_GLORYS2V3)),dtype = float)
+    A_GLORYS2V3 = np.vstack([counter_GLORYS2V3,np.ones(len(counter_GLORYS2V3))]).T
+    for i in np.arange(len(latitude_GLORYS2V3)):
+            a_GLORYS2V3[i], b_GLORYS2V3[i] = np.linalg.lstsq(A_GLORYS2V3,OHC_glo_vert_GLORYS2V3_white_series[:,i])[0]
+    # SODA3
+    a_SODA3 = np.zeros((len(latitude_SODA3)),dtype = float)
+    b_SODA3 = np.zeros((len(latitude_SODA3)),dtype = float)
+    A_SODA3 = np.vstack([counter_SODA3,np.ones(len(counter_SODA3))]).T
+    for i in np.arange(len(latitude_SODA3)):
+            a_SODA3[i], b_SODA3[i] = np.linalg.lstsq(A_SODA3,OHC_glo_vert_SODA3_white_series[:,i])[0]
+
+    fig00 = plt.figure()
+    plt.plot(latitude_ORAS4,a_ORAS4*12/1E+8,'c-',linewidth=1.0,label='ORAS4')
+    plt.plot(latitude_GLORYS2V3,a_GLORYS2V3*12/1E+8,'m-',linewidth=1.0,label='GLORYS2V3')
+    plt.plot(latitude_SODA3,a_SODA3*12/1E+8,'y-',linewidth=1.0,label='SODA3')
+    plt.title('Trend of OHC')
+    #fig4.set_size_inches(12.5, 6)
+    plt.xlabel("Latitude")
+    plt.ylabel("Trend (1E+20 Joule/year)")
+    plt.legend()
+    plt.show()
+    fig00.savefig(output_path_comp + os.sep + 'Trend_OHC_{}.jpg'.format(var_name), dpi = 400)
+
+    print '*******************************************************************'
     print '**********************   Return values  ***************************'
     print '*******************************************************************'
     return (OHC_glo_vert_ORAS4_series, OHC_glo_vert_GLORYS2V3_series, OHC_glo_vert_SODA3_series,
@@ -361,6 +408,7 @@ if __name__ == '__main__':
     time_series(OHC_glo_vert_ORAS4_white_series, OHC_glo_vert_GLORYS2V3_white_series, OHC_glo_vert_SODA3_white_series,\
                 OHC_glo_vert_ORAS4_white_series_running_mean,OHC_glo_vert_GLORYS2V3_white_series_running_mean,\
                 OHC_glo_vert_SODA3_white_series_running_mean, part_name, title_depth, output_path, window)
+
     #*****************     OHC from 0 m to 500 m     ******************#
     # get all the variables and prepare those variables for plot
     OHC_glo_vert_0_500_ORAS4_series, OHC_glo_vert_0_500_GLORYS2V3_series, OHC_glo_vert_0_500_SODA3_series,\
