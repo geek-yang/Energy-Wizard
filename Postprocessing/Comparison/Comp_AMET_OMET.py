@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET of all reanalysis datasets
 Author          : Yang Liu
 Date            : 2017.11.12
-Last Update     : 2018.05.12
+Last Update     : 2018.05.14
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -226,6 +226,10 @@ AMET_ERAI = dataset_ERAI.variables['E'][:]/1000 # from Tera Watt to Peta Watt
 AMET_MERRA2 = dataset_MERRA2.variables['E'][:]/1000 # from Tera Watt to Peta Watt
 AMET_JRA55 = dataset_JRA55.variables['E'][:,:,0:125]/1000 # from Tera Watt to Peta Watt
 
+AMET_Lvq_ERAI = dataset_ERAI.variables['E_Lvq'][:]/1000 # from Tera Watt to Peta Watt
+AMET_Lvq_MERRA2 = dataset_MERRA2.variables['E_Lvq'][:]/1000 # from Tera Watt to Peta Watt
+AMET_Lvq_JRA55 = dataset_JRA55.variables['E_Lvq'][:,:,0:125]/1000 # from Tera Watt to Peta Watt
+
 OMET_ORAS4 = dataset_ORAS4.variables['E'][21:,:,180:]/1000 # start from 1979
 OMET_GLORYS2V3 = dataset_GLORYS2V3.variables['E'][:,:,579:]/1000 # start from 1993
 OMET_SODA3 = dataset_SODA3.variables['E'][:,:,569:]/1000 # start from 1980
@@ -254,6 +258,10 @@ seansonal_cycle_AMET_ERAI = np.mean(AMET_ERAI,axis=0)
 seansonal_cycle_AMET_MERRA2 = np.mean(AMET_MERRA2,axis=0)
 seansonal_cycle_AMET_JRA55 = np.mean(AMET_JRA55,axis=0)
 
+seansonal_cycle_AMET_Lvq_ERAI = np.mean(AMET_ERAI,axis=0)
+seansonal_cycle_AMET_Lvq_MERRA2 = np.mean(AMET_MERRA2,axis=0)
+seansonal_cycle_AMET_Lvq_JRA55 = np.mean(AMET_JRA55,axis=0)
+
 seansonal_cycle_OMET_ORAS4 = np.mean(OMET_ORAS4,axis=0)
 seansonal_cycle_OMET_GLORYS2V3 = np.mean(OMET_GLORYS2V3,axis=0)
 seansonal_cycle_OMET_SODA3 = np.mean(OMET_SODA3,axis=0)
@@ -262,6 +270,10 @@ AMET_ERAI_white = np.zeros(AMET_ERAI.shape,dtype=float)
 AMET_MERRA2_white = np.zeros(AMET_MERRA2.shape,dtype=float)
 AMET_JRA55_white = np.zeros(AMET_JRA55.shape,dtype=float)
 
+AMET_Lvq_ERAI_white = np.zeros(AMET_ERAI.shape,dtype=float)
+AMET_Lvq_MERRA2_white = np.zeros(AMET_MERRA2.shape,dtype=float)
+AMET_Lvq_JRA55_white = np.zeros(AMET_JRA55.shape,dtype=float)
+
 OMET_ORAS4_white = np.zeros(OMET_ORAS4.shape,dtype=float)
 OMET_GLORYS2V3_white = np.zeros(OMET_GLORYS2V3.shape,dtype=float)
 OMET_SODA3_white = np.zeros(OMET_SODA3.shape,dtype=float)
@@ -269,14 +281,17 @@ OMET_SODA3_white = np.zeros(OMET_SODA3.shape,dtype=float)
 for i in np.arange(len(year_ERAI)):
     for j in month_ind:
         AMET_ERAI_white[i,j,:] = AMET_ERAI[i,j,:] - seansonal_cycle_AMET_ERAI[j,:]
+        AMET_Lvq_ERAI_white[i,j,:] = AMET_Lvq_ERAI[i,j,:] - seansonal_cycle_AMET_Lvq_ERAI[j,:]
 
 for i in np.arange(len(year_MERRA2)):
     for j in month_ind:
         AMET_MERRA2_white[i,j,:] = AMET_MERRA2[i,j,:] - seansonal_cycle_AMET_MERRA2[j,:]
+        AMET_Lvq_MERRA2_white[i,j,:] = AMET_Lvq_MERRA2[i,j,:] - seansonal_cycle_AMET_Lvq_MERRA2[j,:]
 
 for i in np.arange(len(year_JRA55)):
     for j in month_ind:
         AMET_JRA55_white[i,j,:] = AMET_JRA55[i,j,:] - seansonal_cycle_AMET_JRA55[j,:]
+        AMET_Lvq_JRA55_white[i,j,:] = AMET_Lvq_JRA55[i,j,:] - seansonal_cycle_AMET_Lvq_JRA55[j,:]
 
 for i in np.arange(len(year_ORAS4)):
     for j in month_ind:
@@ -315,6 +330,10 @@ OMET_SODA3_series = OMET_SODA3.reshape(len(year_SODA3)*len(month_ind),len(latitu
 AMET_ERAI_white_series = AMET_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
 AMET_MERRA2_white_series = AMET_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
 AMET_JRA55_white_series = AMET_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+
+AMET_Lvq_ERAI_white_series = AMET_Lvq_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_Lvq_MERRA2_white_series = AMET_Lvq_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_Lvq_JRA55_white_series = AMET_Lvq_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
 
 OMET_ORAS4_white_series = OMET_ORAS4_white.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
 OMET_GLORYS2V3_white_series = OMET_GLORYS2V3_white.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
@@ -539,7 +558,7 @@ A_SODA3 = np.vstack([counter_SODA3,np.ones(len(counter_SODA3))]).T
 for i in np.arange(len(latitude_SODA3)):
         a_SODA3[i], b_SODA3[i] = np.linalg.lstsq(A_SODA3,OMET_SODA3_white_series[:,i])[0]
 
-# trend of OMET anomalies at each latitude
+# trend of AMET and OMET anomalies at each latitude
 fig5 = plt.figure()
 plt.axhline(y=0, color='k',ls='-')
 plt.plot(latitude_ERAI,a_ERAI*12,'b-',label='ERAI')
@@ -556,6 +575,43 @@ plt.ylabel("Meridional Energy Transport (PW/year)")
 plt.legend()
 plt.show()
 fig5.savefig(output_path + os.sep + 'AMET_OMET_white_trend.jpg', dpi = 400)
+
+# considering the latent heat
+a_ERAI = np.zeros((len(latitude_ERAI)),dtype = float)
+b_ERAI = np.zeros((len(latitude_ERAI)),dtype = float)
+A_ERAI = np.vstack([counter_ERAI,np.ones(len(counter_ERAI))]).T
+for i in np.arange(len(latitude_ERAI)):
+        a_ERAI[i], b_ERAI[i] = np.linalg.lstsq(A_ERAI,AMET_Lvq_ERAI_white_series[:,i])[0]
+
+a_MERRA2 = np.zeros((len(latitude_MERRA2)),dtype = float)
+b_MERRA2 = np.zeros((len(latitude_MERRA2)),dtype = float)
+A_MERRA2 = np.vstack([counter_MERRA2,np.ones(len(counter_MERRA2))]).T
+for i in np.arange(len(latitude_MERRA2)):
+        a_MERRA2[i], b_MERRA2[i] = np.linalg.lstsq(A_MERRA2,AMET_Lvq_MERRA2_white_series[:,i])[0]
+
+a_JRA55 = np.zeros((len(latitude_JRA55)),dtype = float)
+b_JRA55 = np.zeros((len(latitude_JRA55)),dtype = float)
+A_JRA55 = np.vstack([counter_JRA55,np.ones(len(counter_JRA55))]).T
+for i in np.arange(len(latitude_JRA55)):
+        a_JRA55[i], b_JRA55[i] = np.linalg.lstsq(A_JRA55,AMET_Lvq_JRA55_white_series[:,i])[0]
+
+# trend of Lvq and OMET anomalies at each latitude
+fig6 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(latitude_ERAI,a_ERAI*12,'b-',label='ERAI')
+plt.plot(latitude_MERRA2,a_MERRA2*12,'r-',label='MERRA2')
+plt.plot(latitude_JRA55,a_JRA55*12,'g-',label='JRA55')
+plt.plot(latitude_ORAS4,a_ORAS4*12,'c-',label='ORAS4')
+plt.plot(latitude_GLORYS2V3,a_GLORYS2V3*12,'m-',label='GLORYS2V3')
+plt.plot(latitude_SODA3,a_SODA3*12,'y-',label='SODA3')
+plt.title('Trend of Latent Heat Transport and OMET anomalies from 20N to 90N' )
+#plt.legend()
+plt.xlabel("Latitudes")
+#plt.xticks()
+plt.ylabel("Meridional Energy Transport (PW/year)")
+plt.legend()
+plt.show()
+fig6.savefig(output_path + os.sep + 'AMET_Lvq_OMET_white_trend.jpg', dpi = 400)
 
 print '*******************************************************************'
 print '*********************** time series plots *************************'
