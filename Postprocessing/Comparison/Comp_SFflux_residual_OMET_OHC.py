@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compute Turbulent Flux at surface as residuals from OMET and OHC' (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2018.05.13
-Last Update     : 2018.05.13
+Last Update     : 2018.05.16
 Description     : The code aims to compute the surface heat flux (turbulent flux)
                   as the residuals from the trend of ocean heat content and the oceanic
                   meridional energy transport. All the quantities are calculated from
@@ -26,7 +26,6 @@ Description     : The code aims to compute the surface heat flux (turbulent flux
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
 variables       : Meridional Energy Transport               OMET      [Tera-Watt]
-                  Meridional Overturning Circulation        Psi       [Sv]
                   Ocean Heat Content                        OHC       [Joule]
 Caveat!!        : Resolution
                   Time range
@@ -204,6 +203,7 @@ OHC_SODA3_series = OHC_SODA3.reshape(len(year_SODA3)*12,len(latitude_SODA3))
 
 print '*******************************************************************'
 print '********************  Compute Turbulent Flux  *********************'
+print '********************        point wise        *********************'
 print '*******************************************************************'
 # Compute D(OHC)/dt
 OHC_dt_ORAS4_series = np.zeros((len(year_ORAS4)*12,len(latitude_ORAS4)),dtype=float)
@@ -287,6 +287,7 @@ for i in month_ind:
     SFflux_ORAS4_white_series[i::12,:] = SFflux_ORAS4_series[i::12,:] - seasonal_cycle_SFflux_ORAS4[i,:]
     SFflux_GLORYS2V3_white_series[i::12,:] = SFflux_GLORYS2V3_series[i::12,:] - seasonal_cycle_SFflux_GLORYS2V3[i,:]
     SFflux_SODA3_white_series[i::12,:] = SFflux_SODA3_series[i::12,:] - seasonal_cycle_SFflux_SODA3[i,:]
+
 print '*******************************************************************'
 print '***************************   plots   *****************************'
 print '*******************************************************************'
@@ -316,7 +317,7 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Turbulent Flux (PW)")
     plt.legend()
     plt.show()
-    fig1.savefig(output_path + os.sep + 'SFflux' + os.sep + 'Comp_SFflux_%dN.jpg' % (lat_interest_list[i]), dpi = 400)
+    fig1.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'SFflux' + os.sep + 'Comp_SFflux_%dN.jpg' % (lat_interest_list[i]), dpi = 400)
 
 # surface flux, OMET and OHC
 for i in np.arange(len(lat_interest_list)):
@@ -327,9 +328,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979,OMET_converge_ORAS4_series[:,lat_interest['ORAS4'][i]],'c--',linewidth=1.0,label='ORAS4 OMET')
     plt.plot(index_1993,OMET_converge_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m--',linewidth=1.0,label='GLORYS2V3 OMET')
     plt.plot(index_1980,OMET_converge_SODA3_series[:,lat_interest['SODA3'][i]],'y--',linewidth=1.0,label='SODA3 OMET')
-    plt.plot(index_1979,OHC_dt_ORAS4_series[:,lat_interest['ORAS4'][i]],'c:',linewidth=1.0,label='ORAS4 OHC')
-    plt.plot(index_1993,OHC_dt_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m:',linewidth=1.0,label='GLORYS2V3 OHC')
-    plt.plot(index_1980,OHC_dt_SODA3_series[:,lat_interest['SODA3'][i]],'y:',linewidth=1.0,label='SODA3 OHC')
+    plt.plot(index_1979,OHC_dt_ORAS4_series[:,lat_interest['ORAS4'][i]],'c:',linewidth=2.0,label='ORAS4 OHC')
+    plt.plot(index_1993,OHC_dt_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]],'m:',linewidth=2.0,label='GLORYS2V3 OHC')
+    plt.plot(index_1980,OHC_dt_SODA3_series[:,lat_interest['SODA3'][i]],'y:',linewidth=2.0,label='SODA3 OHC')
     plt.title('Turbulent flux, OHC tendency and OMET convergence at %dN (1979-2015)' % (lat_interest_list[i]))
     fig2.set_size_inches(12.5, 6)
     plt.xlabel("Time")
@@ -338,7 +339,7 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig2.savefig(output_path + os.sep + 'comp' + os.sep + 'Comp_SFflux_OMET_OHC_%dN.jpg' % (lat_interest_list[i]), dpi = 400)
+    fig2.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'comp' + os.sep + 'Comp_SFflux_OMET_OHC_%dN.jpg' % (lat_interest_list[i]), dpi = 400)
 
 # surface flux, OMET and OHC
 for i in np.arange(len(lat_interest_list)):
@@ -349,9 +350,9 @@ for i in np.arange(len(lat_interest_list)):
     plt.plot(index_1979,OMET_converge_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c--',linewidth=1.0,label='ORAS4 OMET')
     plt.plot(index_1993,OMET_converge_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m--',linewidth=1.0,label='GLORYS2V3 OMET')
     plt.plot(index_1980,OMET_converge_SODA3_white_series[:,lat_interest['SODA3'][i]],'y--',linewidth=1.0,label='SODA3 OMET')
-    plt.plot(index_1979,OHC_dt_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c:',linewidth=1.0,label='ORAS4 OHC')
-    plt.plot(index_1993,OHC_dt_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m:',linewidth=1.0,label='GLORYS2V3 OHC')
-    plt.plot(index_1980,OHC_dt_SODA3_white_series[:,lat_interest['SODA3'][i]],'y:',linewidth=1.0,label='SODA3 OHC')
+    plt.plot(index_1979,OHC_dt_ORAS4_white_series[:,lat_interest['ORAS4'][i]],'c:',linewidth=2.0,label='ORAS4 OHC')
+    plt.plot(index_1993,OHC_dt_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][i]],'m:',linewidth=2.0,label='GLORYS2V3 OHC')
+    plt.plot(index_1980,OHC_dt_SODA3_white_series[:,lat_interest['SODA3'][i]],'y:',linewidth=2.0,label='SODA3 OHC')
     plt.title('Anomalies of Turbulent Flux, OHC tendency and OMET convergence at %dN (1979-2015)' % (lat_interest_list[i]))
     fig3.set_size_inches(12.5, 6)
     plt.xlabel("Time")
@@ -360,7 +361,7 @@ for i in np.arange(len(lat_interest_list)):
     plt.ylabel("Energy Transport (PW)")
     plt.legend()
     plt.show()
-    fig3.savefig(output_path + os.sep + 'comp' + os.sep + 'Comp_SFflux_OMET_OHC_%dN_lowpass.jpg' % (lat_interest_list[i]), dpi = 400)
+    fig3.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'comp' + os.sep + 'Comp_SFflux_OMET_OHC_%dN_lowpass.jpg' % (lat_interest_list[i]), dpi = 400)
 
 print '*******************************************************************'
 print '******************    trend at each latitude    *******************'
@@ -441,51 +442,535 @@ plt.plot(latitude_SODA3,a_SFflux_SODA3*12,'y-',linewidth=1.0,label='SODA3 SFflux
 plt.plot(latitude_ORAS4,a_OMET_converge_ORAS4*12,'c--',linewidth=1.0,label='ORAS4 OMET')
 plt.plot(latitude_GLORYS2V3,a_OMET_converge_GLORYS2V3*12,'m--',linewidth=1.0,label='GLORYS2V3 OMET')
 plt.plot(latitude_SODA3,a_OMET_converge_SODA3*12,'y--',linewidth=1.0,label='SODA3 OMET')
-plt.plot(latitude_ORAS4,a_OHC_dt_ORAS4*12,'c:',linewidth=1.0,label='ORAS4 OHC')
-plt.plot(latitude_GLORYS2V3,a_OHC_dt_GLORYS2V3*12,'m:',linewidth=1.0,label='GLORYS2V3 OHC')
-plt.plot(latitude_SODA3,a_OHC_dt_SODA3*12,'y:',linewidth=1.0,label='SODA3 OHC')
+plt.plot(latitude_ORAS4,a_OHC_dt_ORAS4*12,'c:',linewidth=2.0,label='ORAS4 OHC')
+plt.plot(latitude_GLORYS2V3,a_OHC_dt_GLORYS2V3*12,'m:',linewidth=2.0,label='GLORYS2V3 OHC')
+plt.plot(latitude_SODA3,a_OHC_dt_SODA3*12,'y:',linewidth=2.0,label='SODA3 OHC')
 plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
 #fig4.set_size_inches(12.5, 6)
 plt.xlabel("Latitude")
 plt.ylabel("Trend (PW/year)")
 plt.legend()
 plt.show()
-fig4.savefig(output_path + os.sep + 'Trend_SFflux_OMET_OHC.jpg', dpi = 400)
+fig4.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC.jpg', dpi = 400)
 
-fig5 = plt.figure()
-plt.plot(latitude_ORAS4,a_SFflux_ORAS4*12,'c-',linewidth=1.0,label='ORAS4 SFflux')
-plt.plot(latitude_ORAS4,a_OMET_converge_ORAS4*12,'c--',linewidth=1.0,label='ORAS4 OMET')
-plt.plot(latitude_ORAS4,a_OHC_dt_ORAS4*12,'c:',linewidth=1.0,label='ORAS4 OHC')
-plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
-#fig4.set_size_inches(12.5, 6)
-plt.xlabel("Latitude")
-plt.ylabel("Trend (PW/year)")
-plt.legend()
-plt.show()
-fig5.savefig(output_path + os.sep + 'Trend_SFflux_OMET_OHC_ORAS4.jpg', dpi = 400)
+# fig5 = plt.figure()
+# plt.plot(latitude_ORAS4,a_SFflux_ORAS4*12,'b-',linewidth=1.0,label='ORAS4 SFflux')
+# plt.plot(latitude_ORAS4,a_OMET_converge_ORAS4*12,'r--',linewidth=1.0,label='ORAS4 OMET')
+# plt.plot(latitude_ORAS4,a_OHC_dt_ORAS4*12,'g:',linewidth=1.0,label='ORAS4 OHC')
+# plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+# #fig4.set_size_inches(12.5, 6)
+# plt.xlabel("Latitude")
+# plt.ylabel("Trend (PW/year)")
+# plt.legend()
+# plt.show()
+# fig5.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_ORAS4.jpg', dpi = 400)
+#
+# fig6 = plt.figure()
+# plt.plot(latitude_GLORYS2V3,a_SFflux_GLORYS2V3*12,'b-',linewidth=1.0,label='GLORYS2V3 SFflux')
+# plt.plot(latitude_GLORYS2V3,a_OMET_converge_GLORYS2V3*12,'r--',linewidth=1.0,label='GLORYS2V3 OMET')
+# plt.plot(latitude_GLORYS2V3,a_OHC_dt_GLORYS2V3*12,'g:',linewidth=1.0,label='GLORYS2V3 OHC')
+# plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+# #fig4.set_size_inches(12.5, 6)
+# plt.xlabel("Latitude")
+# plt.ylabel("Trend (PW/year)")
+# plt.legend()
+# plt.show()
+# fig6.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_GLORYS2V3.jpg', dpi = 400)
+#
+# fig7 = plt.figure()
+# plt.plot(latitude_SODA3,a_SFflux_SODA3*12,'b-',linewidth=1.0,label='SODA3 SFflux')
+# plt.plot(latitude_SODA3,a_OMET_converge_SODA3*12,'r--',linewidth=1.0,label='SODA3 OMET')
+# plt.plot(latitude_SODA3,a_OHC_dt_SODA3*12,'g:',linewidth=1.0,label='SODA3 OHC')
+# plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+# #fig4.set_size_inches(12.5, 6)
+# plt.xlabel("Latitude")
+# plt.ylabel("Trend (PW/year)")
+# plt.legend()
+# plt.show()
+# fig7.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_SODA3.jpg', dpi = 400)
 
-fig6 = plt.figure()
-plt.plot(latitude_GLORYS2V3,a_SFflux_GLORYS2V3*12,'m-',linewidth=1.0,label='GLORYS2V3 SFflux')
-plt.plot(latitude_GLORYS2V3,a_OMET_converge_GLORYS2V3*12,'m--',linewidth=1.0,label='GLORYS2V3 OMET')
-plt.plot(latitude_GLORYS2V3,a_OHC_dt_GLORYS2V3*12,'m:',linewidth=1.0,label='GLORYS2V3 OHC')
+fig8 = plt.figure()
+plt.plot(latitude_ORAS4[204:],a_SFflux_ORAS4[204:]*12,'b-',linewidth=1.0,label='ORAS4 SFflux')
+plt.plot(latitude_ORAS4[204:],a_OMET_converge_ORAS4[204:]*12,'r--',linewidth=1.0,label='ORAS4 OMET')
+plt.plot(latitude_ORAS4[204:],a_OHC_dt_ORAS4[204:]*12,'g:',linewidth=2.0,label='ORAS4 OHC')
 plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
 #fig4.set_size_inches(12.5, 6)
 plt.xlabel("Latitude")
 plt.ylabel("Trend (PW/year)")
 plt.legend()
 plt.show()
-fig6.savefig(output_path + os.sep + 'Trend_SFflux_OMET_OHC_GLORYS2V3.jpg', dpi = 400)
+fig8.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_ORAS4_40N_90N.jpg', dpi = 400)
 
-fig7 = plt.figure()
-plt.plot(latitude_SODA3,a_SFflux_SODA3*12,'y-',linewidth=1.0,label='SODA3 SFflux')
-plt.plot(latitude_SODA3,a_OMET_converge_SODA3*12,'y--',linewidth=1.0,label='SODA3 OMET')
-plt.plot(latitude_SODA3,a_OHC_dt_SODA3*12,'y:',linewidth=1.0,label='SODA3 OHC')
+fig9 = plt.figure()
+plt.plot(latitude_GLORYS2V3[672:],a_SFflux_GLORYS2V3[672:]*12,'b-',linewidth=1.0,label='GLORYS2V3 SFflux')
+plt.plot(latitude_GLORYS2V3[672:],a_OMET_converge_GLORYS2V3[672:]*12,'r--',linewidth=1.0,label='GLORYS2V3 OMET')
+plt.plot(latitude_GLORYS2V3[672:],a_OHC_dt_GLORYS2V3[672:]*12,'g:',linewidth=2.0,label='GLORYS2V3 OHC')
 plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
 #fig4.set_size_inches(12.5, 6)
 plt.xlabel("Latitude")
 plt.ylabel("Trend (PW/year)")
 plt.legend()
 plt.show()
-fig7.savefig(output_path + os.sep + 'Trend_SFflux_OMET_OHC_SODA3.jpg', dpi = 400)
+fig9.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_GLORYS2V3_40N_90N.jpg', dpi = 400)
+
+fig10 = plt.figure()
+plt.plot(latitude_SODA3[662:],a_SFflux_SODA3[662:]*12,'b-',linewidth=1.0,label='SODA3 SFflux')
+plt.plot(latitude_SODA3[662:],a_OMET_converge_SODA3[662:]*12,'r--',linewidth=1.0,label='SODA3 OMET')
+plt.plot(latitude_SODA3[662:],a_OHC_dt_SODA3[662:]*12,'g:',linewidth=2.0,label='SODA3 OHC')
+plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+#fig4.set_size_inches(12.5, 6)
+plt.xlabel("Latitude")
+plt.ylabel("Trend (PW/year)")
+plt.legend()
+plt.show()
+fig10.savefig(output_path + os.sep + 'point' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_SODA3_40N_90N.jpg', dpi = 400)
+
+print '*******************************************************************'
+print '**************    time series for certain blocks    ***************'
+print '*******************************************************************'
+
+for i in np.arange(len(lat_interest_list)-1):
+    # take the summation over a section of OHC
+    OHC_dt_ORAS4_block_series = np.zeros((len(year_ORAS4)*len(month_ind)),dtype=float)
+    OHC_dt_ORAS4_block_series[1:-1] = (np.sum(OHC_ORAS4_series[2:,lat_interest['ORAS4'][i]:lat_interest['ORAS4'][i+1]+1],1) -
+                                       np.sum(OHC_ORAS4_series[0:-2,lat_interest['ORAS4'][i]:lat_interest['ORAS4'][i+1]+1],1)) / (30*86400) / 2
+    OHC_dt_GLORYS2V3_block_series = np.zeros((len(year_GLORYS2V3)*len(month_ind)),dtype=float)
+    OHC_dt_GLORYS2V3_block_series[1:-1] = (np.sum(OHC_GLORYS2V3_series[2:,lat_interest['GLORYS2V3'][i]:lat_interest['GLORYS2V3'][i+1]+1],1) -
+                                           np.sum(OHC_GLORYS2V3_series[0:-2,lat_interest['GLORYS2V3'][i]:lat_interest['GLORYS2V3'][i+1]+1],1)) / (30*86400) / 2
+    OHC_dt_SODA3_block_series = np.zeros((len(year_SODA3)*len(month_ind)),dtype=float)
+    OHC_dt_SODA3_block_series[1:-1] = (np.sum(OHC_SODA3_series[2:,lat_interest['SODA3'][i]:lat_interest['SODA3'][i+1]+1],1) -
+                                       np.sum(OHC_SODA3_series[0:-2,lat_interest['SODA3'][i]:lat_interest['SODA3'][i+1]+1],1)) / (30*86400) / 2
+    # calculate the energy convergence
+    OMET_converge_ORAS4_block_series = np.zeros((len(year_ORAS4)*len(month_ind)),dtype=float)
+    OMET_converge_ORAS4_block_series = OMET_ORAS4_series[:,lat_interest['ORAS4'][i]] - OMET_ORAS4_series[:,lat_interest['ORAS4'][i+1]]
+    OMET_converge_GLORYS2V3_block_series = np.zeros((len(year_GLORYS2V3)*len(month_ind)),dtype=float)
+    OMET_converge_GLORYS2V3_block_series = OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i]] - OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][i+1]]
+    OMET_converge_SODA3_block_series = np.zeros((len(year_SODA3)*len(month_ind)),dtype=float)
+    OMET_converge_SODA3_block_series = OMET_SODA3_series[:,lat_interest['SODA3'][i]] - OMET_SODA3_series[:,lat_interest['SODA3'][i+1]]
+    # calculate the surface heat flux
+    SFflux_ORAS4_block_series = OHC_dt_ORAS4_block_series - OMET_converge_ORAS4_block_series
+    SFflux_GLORYS2V3_block_series = OHC_dt_GLORYS2V3_block_series - OMET_converge_GLORYS2V3_block_series
+    SFflux_SODA3_block_series = OHC_dt_SODA3_block_series - OMET_converge_SODA3_block_series
+    # make plots
+    fig11 = plt.figure()
+    plt.plot(index_full[:-12],OHC_dt_ORAS4_block_series,'c--',linewidth=2.0,label='ORAS4 OHC')
+    plt.plot(index_full[168:-12],OHC_dt_GLORYS2V3_block_series,'m--',linewidth=2.0,label='GLORYS2V3 OHC')
+    plt.plot(index_full[12:],OHC_dt_SODA3_block_series,'y--',linewidth=2.0,label='SODA3 OHC')
+    plt.plot(index_full[:-12],OMET_converge_ORAS4_block_series,'c:',linewidth=1.0,label='ORAS4 OMET')
+    plt.plot(index_full[168:-12],OMET_converge_GLORYS2V3_block_series,'m:',linewidth=1.0,label='GLORYS2V3 OMET')
+    plt.plot(index_full[12:],OMET_converge_SODA3_block_series,'y:',linewidth=1.0,label='SODA3 OMET')
+    plt.plot(index_full[:-12],SFflux_ORAS4_block_series,'c-',linewidth=1.0,label='ORAS4 SFflux')
+    plt.plot(index_full[168:-12],SFflux_GLORYS2V3_block_series,'m-',linewidth=1.0,label='GLORYS2V3 SFflux')
+    plt.plot(index_full[12:],SFflux_SODA3_block_series,'y-',linewidth=1.0,label='SODA3 SFflux')
+    plt.title('Turbulent Flux, OHC tendency and OMET convergence from {}N to {}N'.format(lat_interest_list[i],lat_interest_list[i+1]))
+    fig11.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig11.savefig(os.path.join(output_path,'point','globe','block','original_series','Comp_SFflux_OMET_OHC_block_{}N_{}N'.format(lat_interest_list[i],lat_interest_list[i+1])), dpi = 400)
+    # whitening
+    # seasonal cycling
+    seasonal_cycle_OHC_dt_ORAS4_block = np.zeros(12,dtype=float)
+    seasonal_cycle_OHC_dt_GLORYS2V3_block = np.zeros(12,dtype=float)
+    seasonal_cycle_OHC_dt_SODA3_block = np.zeros(12,dtype=float)
+
+    seasonal_cycle_OMET_converge_ORAS4_block = np.zeros(12,dtype=float)
+    seasonal_cycle_OMET_converge_GLORYS2V3_block = np.zeros(12,dtype=float)
+    seasonal_cycle_OMET_converge_SODA3_block = np.zeros(12,dtype=float)
+
+    seasonal_cycle_SFflux_ORAS4_block = np.zeros(12,dtype=float)
+    seasonal_cycle_SFflux_GLORYS2V3_block = np.zeros(12,dtype=float)
+    seasonal_cycle_SFflux_SODA3_block = np.zeros(12,dtype=float)
+
+    # white signal
+    OHC_dt_ORAS4_white_block_series = np.zeros(OHC_dt_ORAS4_block_series.shape,dtype=float)
+    OHC_dt_GLORYS2V3_white_block_series = np.zeros(OHC_dt_GLORYS2V3_block_series.shape,dtype=float)
+    OHC_dt_SODA3_white_block_series = np.zeros(OHC_dt_SODA3_block_series.shape,dtype=float)
+
+    OMET_converge_ORAS4_white_block_series = np.zeros(OMET_converge_ORAS4_block_series.shape,dtype=float)
+    OMET_converge_GLORYS2V3_white_block_series = np.zeros(OMET_converge_GLORYS2V3_block_series.shape,dtype=float)
+    OMET_converge_SODA3_white_block_series = np.zeros(OMET_converge_SODA3_block_series.shape,dtype=float)
+
+    SFflux_ORAS4_white_block_series = np.zeros(SFflux_ORAS4_block_series.shape,dtype=float)
+    SFflux_GLORYS2V3_white_block_series = np.zeros(SFflux_GLORYS2V3_block_series.shape,dtype=float)
+    SFflux_SODA3_white_block_series = np.zeros(SFflux_SODA3_block_series.shape,dtype=float)
+
+    for j in month_ind:
+        # calculate the monthly mean (seasonal cycling)
+        seasonal_cycle_OHC_dt_ORAS4_block[j] = np.mean(OHC_dt_ORAS4_block_series[j::12],axis=0)
+        seasonal_cycle_OHC_dt_GLORYS2V3_block[j] = np.mean(OHC_dt_GLORYS2V3_block_series[j::12],axis=0)
+        seasonal_cycle_OHC_dt_SODA3_block[j] = np.mean(OHC_dt_SODA3_block_series[j::12],axis=0)
+        seasonal_cycle_OMET_converge_ORAS4_block[j] = np.mean(OMET_converge_ORAS4_block_series[j::12],axis=0)
+        seasonal_cycle_OMET_converge_GLORYS2V3_block[j] = np.mean(OMET_converge_GLORYS2V3_block_series[j::12],axis=0)
+        seasonal_cycle_OMET_converge_SODA3_block[j] = np.mean(OMET_converge_SODA3_block_series[j::12],axis=0)
+        seasonal_cycle_SFflux_ORAS4_block[j] = np.mean(SFflux_ORAS4_block_series[j::12],axis=0)
+        seasonal_cycle_SFflux_GLORYS2V3_block[j] = np.mean(SFflux_GLORYS2V3_block_series[j::12],axis=0)
+        seasonal_cycle_SFflux_SODA3_block[j] = np.mean(SFflux_SODA3_block_series[j::12],axis=0)
+        OHC_dt_ORAS4_white_block_series[j::12] = OHC_dt_ORAS4_block_series[j::12] - seasonal_cycle_OHC_dt_ORAS4_block[j]
+        OHC_dt_GLORYS2V3_white_block_series[j::12] = OHC_dt_GLORYS2V3_block_series[j::12] - seasonal_cycle_OHC_dt_GLORYS2V3_block[j]
+        OHC_dt_SODA3_white_block_series[j::12] = OHC_dt_SODA3_block_series[j::12] - seasonal_cycle_OHC_dt_SODA3_block[j]
+        OMET_converge_ORAS4_white_block_series[j::12] = OMET_converge_ORAS4_block_series[j::12] - seasonal_cycle_OMET_converge_ORAS4_block[j]
+        OMET_converge_GLORYS2V3_white_block_series[j::12] = OMET_converge_GLORYS2V3_block_series[j::12] - seasonal_cycle_OMET_converge_GLORYS2V3_block[j]
+        OMET_converge_SODA3_white_block_series[j::12] = OMET_converge_SODA3_block_series[j::12] - seasonal_cycle_OMET_converge_SODA3_block[j]
+        SFflux_ORAS4_white_block_series[j::12] = SFflux_ORAS4_block_series[j::12] - seasonal_cycle_SFflux_ORAS4_block[j]
+        SFflux_GLORYS2V3_white_block_series[j::12] = SFflux_GLORYS2V3_block_series[j::12] - seasonal_cycle_SFflux_GLORYS2V3_block[j]
+        SFflux_SODA3_white_block_series[j::12] = SFflux_SODA3_block_series[j::12] - seasonal_cycle_SFflux_SODA3_block[j]
+
+    # make plots
+    fig12 = plt.figure()
+    plt.plot(index_full[:-12],OHC_dt_ORAS4_white_block_series,'c--',linewidth=2.0,label='ORAS4 OHC')
+    plt.plot(index_full[168:-12],OHC_dt_GLORYS2V3_white_block_series,'m--',linewidth=2.0,label='GLORYS2V3 OHC')
+    plt.plot(index_full[12:],OHC_dt_SODA3_white_block_series,'y--',linewidth=2.0,label='SODA3 OHC')
+    plt.plot(index_full[:-12],OMET_converge_ORAS4_white_block_series,'c:',linewidth=1.0,label='ORAS4 OMET')
+    plt.plot(index_full[168:-12],OMET_converge_GLORYS2V3_white_block_series,'m:',linewidth=1.0,label='GLORYS2V3 OMET')
+    plt.plot(index_full[12:],OMET_converge_SODA3_white_block_series,'y:',linewidth=1.0,label='SODA3 OMET')
+    plt.plot(index_full[:-12],SFflux_ORAS4_white_block_series,'c-',linewidth=1.0,label='ORAS4 SFflux')
+    plt.plot(index_full[168:-12],SFflux_GLORYS2V3_white_block_series,'m-',linewidth=1.0,label='GLORYS2V3 SFflux')
+    plt.plot(index_full[12:],SFflux_SODA3_white_block_series,'y-',linewidth=1.0,label='SODA3 SFflux')
+    plt.title('Turbulent Flux, OHC tendency and OMET convergence anomalies from {}N to {}N'.format(lat_interest_list[i],lat_interest_list[i+1]))
+    fig12.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig12.savefig(os.path.join(output_path,'point','globe','block','anomaly_series','Comp_SFflux_OMET_OHC_white_block_{}N_{}N'.format(lat_interest_list[i],lat_interest_list[i+1])), dpi = 400)
+
+    print '*******************************************************************'
+    print '********************** Running mean/sum ***************************'
+    print '*******************************************************************'
+    window = 60
+    # calculate the running mean of OHC
+    # white time series
+    OHC_dt_ORAS4_white_block_series_running_mean = np.zeros(len(year_ORAS4)*len(month_ind)-window+1,dtype=float)
+    OHC_dt_GLORYS2V3_white_block_series_running_mean = np.zeros(len(year_GLORYS2V3)*len(month_ind)-window+1,dtype=float)
+    OHC_dt_SODA3_white_block_series_running_mean = np.zeros(len(year_SODA3)*len(month_ind)-window+1,dtype=float)
+
+    OMET_converge_ORAS4_white_block_series_running_mean = np.zeros(len(year_ORAS4)*len(month_ind)-window+1,dtype=float)
+    OMET_converge_GLORYS2V3_white_block_series_running_mean = np.zeros(len(year_GLORYS2V3)*len(month_ind)-window+1,dtype=float)
+    OMET_converge_SODA3_white_block_series_running_mean = np.zeros(len(year_SODA3)*len(month_ind)-window+1,dtype=float)
+
+    SFflux_ORAS4_white_block_series_running_mean = np.zeros(len(year_ORAS4)*len(month_ind)-window+1,dtype=float)
+    SFflux_GLORYS2V3_white_block_series_running_mean = np.zeros(len(year_GLORYS2V3)*len(month_ind)-window+1,dtype=float)
+    SFflux_SODA3_white_block_series_running_mean = np.zeros(len(year_SODA3)*len(month_ind)-window+1,dtype=float)
+
+    for j in np.arange(len(year_ORAS4)*len(month_ind)-window+1):
+            OHC_dt_ORAS4_white_block_series_running_mean[j] = np.mean(OHC_dt_ORAS4_white_block_series[j:j+window])
+            OMET_converge_ORAS4_white_block_series_running_mean[j] = np.mean(OMET_converge_ORAS4_white_block_series[j:j+window])
+            SFflux_ORAS4_white_block_series_running_mean[j] = np.mean(SFflux_ORAS4_white_block_series[j:j+window])
+
+    for j in np.arange(len(year_GLORYS2V3)*len(month_ind)-window+1):
+            OHC_dt_GLORYS2V3_white_block_series_running_mean[j] = np.mean(OHC_dt_GLORYS2V3_white_block_series[j:j+window])
+            OMET_converge_GLORYS2V3_white_block_series_running_mean[j] = np.mean(OMET_converge_GLORYS2V3_white_block_series[j:j+window])
+            SFflux_GLORYS2V3_white_block_series_running_mean[j] = np.mean(SFflux_GLORYS2V3_white_block_series[j:j+window])
+
+    for j in np.arange(len(year_SODA3)*len(month_ind)-window+1):
+            OHC_dt_SODA3_white_block_series_running_mean[j] = np.mean(OHC_dt_SODA3_white_block_series[j:j+window])
+            OMET_converge_SODA3_white_block_series_running_mean[j] = np.mean(OMET_converge_SODA3_white_block_series[j:j+window])
+            SFflux_SODA3_white_block_series_running_mean[j] = np.mean(SFflux_SODA3_white_block_series[j:j+window])
+
+    fig13 = plt.figure()
+    plt.plot(index_full[window-1:-12],OHC_dt_ORAS4_white_block_series_running_mean,'c--',linewidth=1.0,label='ORAS4 OHC')
+    plt.plot(index_full[168+window-1:-12],OHC_dt_GLORYS2V3_white_block_series_running_mean,'m--',linewidth=1.0,label='GLORYS2V3 OHC')
+    plt.plot(index_full[12+window-1:],OHC_dt_SODA3_white_block_series_running_mean,'y--',linewidth=1.0,label='SODA3 OHC')
+    plt.plot(index_full[window-1:-12],OMET_converge_ORAS4_white_block_series_running_mean,'c:',linewidth=1.0,label='ORAS4 OMET')
+    plt.plot(index_full[168+window-1:-12],OMET_converge_GLORYS2V3_white_block_series_running_mean,'m:',linewidth=1.0,label='GLORYS2V3 OMET')
+    plt.plot(index_full[12+window-1:],OMET_converge_SODA3_white_block_series_running_mean,'y:',linewidth=1.0,label='SODA3 OMET')
+    plt.plot(index_full[window-1:-12],SFflux_ORAS4_white_block_series_running_mean,'c-',linewidth=2.0,label='ORAS4 SFflux')
+    plt.plot(index_full[168+window-1:-12],SFflux_GLORYS2V3_white_block_series_running_mean,'m-',linewidth=2.0,label='GLORYS2V3 SFflux')
+    plt.plot(index_full[12+window-1:],SFflux_SODA3_white_block_series_running_mean,'y-',linewidth=2.0,label='SODA3 SFflux')
+    plt.title('Turbulent Flux, OHC tendency and OMET convergence anomalies from {}N to {}N with a running mean of {} months'.format(lat_interest_list[i],lat_interest_list[i+1],window))
+    fig13.set_size_inches(12.5, 6)
+    plt.xlabel("Time")
+    plt.xticks(np.linspace(0, 444, 38), index_year_full)
+    plt.xticks(rotation=60)
+    plt.ylabel("Energy Transport (PW)")
+    plt.legend()
+    plt.show()
+    fig13.savefig(os.path.join(output_path,'point','globe','block','anomaly_lowpass','Comp_SFflux_OMET_OHC_white_block_window_{}m_{}N_{}N'.format(window,lat_interest_list[i],lat_interest_list[i+1])), dpi = 400)
+
+print '*******************************************************************'
+print '********************  Compute Turbulent Flux  *********************'
+print '********************     band wise 1 deg      *********************'
+print '*******************************************************************'
+# We take approximately 1.5 deg as band width
+# ORAS4 cut into 97 pieces (5 points / band)
+# GLORYS2V3 cut into 97 pieces (9 points / band)
+# SODA3 cut into 97 pieces (9 points / band)
+
+# make bands based on the point data
+OHC_band_ORAS4_series = np.zeros((len(year_ORAS4)*12,97),dtype=float)
+OHC_band_GLORYS2V3_series = np.zeros((len(year_GLORYS2V3)*12,114),dtype=float)
+OHC_band_SODA3_series = np.zeros((len(year_SODA3)*12,119),dtype=float)
+
+latitude_band_ORAS4 = np.zeros(97,dtype=float)
+latitude_band_GLORYS2V3 = np.zeros(114,dtype=float)
+latitude_band_SODA3 = np.zeros(119,dtype=float)
+
+OHC_band_ORAS4_series[:,0] = np.sum(OHC_ORAS4_series[:,0:4],1)
+latitude_band_ORAS4[0] = latitude_ORAS4[2]
+
+for i in np.arange(96):
+    OHC_band_ORAS4_series[:,i+1] = np.sum(OHC_ORAS4_series[:,4+i*3:4+i*3+3],1)
+    latitude_band_ORAS4[i+1] = latitude_ORAS4[4+i*3+1]
+
+OHC_band_GLORYS2V3_series[:,0] = np.sum(OHC_GLORYS2V3_series[:,0:4],1)
+latitude_band_GLORYS2V3[0] = latitude_GLORYS2V3[1]
+
+for i in np.arange(113):
+    OHC_band_GLORYS2V3_series[:,i+1] = np.sum(OHC_GLORYS2V3_series[:,4+i*9:4+i*9+9],1)
+    latitude_band_GLORYS2V3[i+1] = latitude_GLORYS2V3[4+i*9+4]
+
+OHC_band_SODA3_series[:,0] = np.sum(OHC_SODA3_series[:,0:8],1)
+latitude_band_SODA3[0] = latitude_SODA3[3]
+
+for i in np.arange(118):
+    OHC_band_SODA3_series[:,i+1] = np.sum(OHC_SODA3_series[:,8+i*9:6+i*9+9],1)
+    latitude_band_SODA3[i+1] = latitude_SODA3[8+i*9+4]
+
+# Compute D(OHC)/dt
+OHC_dt_band_ORAS4_series = np.zeros(OHC_band_ORAS4_series.shape,dtype=float)
+OHC_dt_band_GLORYS2V3_series =np.zeros(OHC_band_GLORYS2V3_series.shape,dtype=float)
+OHC_dt_band_SODA3_series = np.zeros(OHC_band_SODA3_series.shape,dtype=float)
+
+OHC_dt_band_ORAS4_series[1:-1,:] = (OHC_band_ORAS4_series[2:,:] - OHC_band_ORAS4_series[0:-2,:]) / (30*86400)
+OHC_dt_band_GLORYS2V3_series[1:-1,:] = (OHC_band_GLORYS2V3_series[2:,:] - OHC_band_GLORYS2V3_series[0:-2,:]) / (30*86400)
+OHC_dt_band_SODA3_series[1:-1,:] = (OHC_band_SODA3_series[2:,:] - OHC_band_SODA3_series[0:-2,:]) / (30*86400)
+# compute the OMET convergence
+OMET_converge_band_ORAS4_series = np.zeros(OHC_band_ORAS4_series.shape,dtype=float)
+OMET_converge_band_GLORYS2V3_series = np.zeros(OHC_band_GLORYS2V3_series.shape,dtype=float)
+OMET_converge_band_SODA3_series = np.zeros(OHC_band_SODA3_series.shape,dtype=float)
+# for the points at boundary (S) (all the datasets are from south to north)
+OMET_converge_band_ORAS4_series[:,0] = OMET_ORAS4_series[:,0] - OMET_ORAS4_series[:,3]
+OMET_converge_band_GLORYS2V3_series[:,0] = OMET_GLORYS2V3_series[:,0] - OMET_GLORYS2V3_series[:,3]
+OMET_converge_band_SODA3_series[:,0] = OMET_SODA3_series[:,0] - OMET_SODA3_series[:,7]
+# for the rest
+OMET_converge_band_ORAS4_series[:,1:] = OMET_ORAS4_series[:,4::3] - OMET_ORAS4_series[:,6::3]
+OMET_converge_band_GLORYS2V3_series[:,1:] = OMET_GLORYS2V3_series[:,4::9] - OMET_GLORYS2V3_series[:,12::9]
+OMET_converge_band_SODA3_series[:,1:] = OMET_SODA3_series[:,8::9] - OMET_SODA3_series[:,16::9]
+# calculate the turbulent flux as residuals
+SFflux_band_ORAS4_series = np.zeros(OHC_band_ORAS4_series.shape,dtype=float)
+SFflux_band_GLORYS2V3_series = np.zeros(OHC_band_GLORYS2V3_series.shape,dtype=float)
+SFflux_band_SODA3_series = np.zeros(OHC_band_SODA3_series.shape,dtype=float)
+# positive points into the ocean
+SFflux_band_ORAS4_series = OHC_dt_band_ORAS4_series - OMET_converge_band_ORAS4_series
+SFflux_band_GLORYS2V3_series = OHC_dt_band_GLORYS2V3_series - OMET_converge_band_GLORYS2V3_series
+SFflux_band_SODA3_series = OHC_dt_band_SODA3_series - OMET_converge_band_SODA3_series
+print '*******************************************************************'
+print '*************************** whitening *****************************'
+print '*******************************************************************'
+month_ind = np.arange(12)
+# seasonal cycling
+seasonal_cycle_OHC_dt_band_ORAS4 = np.zeros((12,97),dtype=float)
+seasonal_cycle_OHC_dt_band_GLORYS2V3 = np.zeros((12,114),dtype=float)
+seasonal_cycle_OHC_dt_band_SODA3 = np.zeros((12,119),dtype=float)
+
+seasonal_cycle_OMET_converge_band_ORAS4 = np.zeros((12,97),dtype=float)
+seasonal_cycle_OMET_converge_band_GLORYS2V3 = np.zeros((12,114),dtype=float)
+seasonal_cycle_OMET_converge_band_SODA3 = np.zeros((12,119),dtype=float)
+
+seasonal_cycle_SFflux_band_ORAS4 = np.zeros((12,97),dtype=float)
+seasonal_cycle_SFflux_band_GLORYS2V3 = np.zeros((12,114),dtype=float)
+seasonal_cycle_SFflux_band_SODA3 = np.zeros((12,119),dtype=float)
+
+# white signal
+OHC_dt_band_ORAS4_white_series = np.zeros(OHC_dt_band_ORAS4_series.shape,dtype=float)
+OHC_dt_band_GLORYS2V3_white_series = np.zeros(OHC_dt_band_GLORYS2V3_series.shape,dtype=float)
+OHC_dt_band_SODA3_white_series = np.zeros(OHC_dt_band_SODA3_series.shape,dtype=float)
+
+OMET_converge_band_ORAS4_white_series = np.zeros(OMET_converge_band_ORAS4_series.shape,dtype=float)
+OMET_converge_band_GLORYS2V3_white_series = np.zeros(OMET_converge_band_GLORYS2V3_series.shape,dtype=float)
+OMET_converge_band_SODA3_white_series = np.zeros(OMET_converge_band_SODA3_series.shape,dtype=float)
+
+SFflux_band_ORAS4_white_series = np.zeros(SFflux_band_ORAS4_series.shape,dtype=float)
+SFflux_band_GLORYS2V3_white_series = np.zeros(SFflux_band_GLORYS2V3_series.shape,dtype=float)
+SFflux_band_SODA3_white_series = np.zeros(SFflux_band_SODA3_series.shape,dtype=float)
+
+for i in month_ind:
+    # calculate the monthly mean (seasonal cycling)
+    seasonal_cycle_OHC_dt_band_ORAS4[i,:] = np.mean(OHC_dt_band_ORAS4_series[i::12,:],axis=0)
+    seasonal_cycle_OHC_dt_band_GLORYS2V3[i,:] = np.mean(OHC_dt_band_GLORYS2V3_series[i::12,:],axis=0)
+    seasonal_cycle_OHC_dt_band_SODA3[i,:] = np.mean(OHC_dt_band_SODA3_series[i::12,:],axis=0)
+    seasonal_cycle_OMET_converge_band_ORAS4[i,:] = np.mean(OMET_converge_band_ORAS4_series[i::12,:],axis=0)
+    seasonal_cycle_OMET_converge_band_GLORYS2V3[i,:] = np.mean(OMET_converge_band_GLORYS2V3_series[i::12,:],axis=0)
+    seasonal_cycle_OMET_converge_band_SODA3[i,:] = np.mean(OMET_converge_band_SODA3_series[i::12,:],axis=0)
+    seasonal_cycle_SFflux_band_ORAS4[i,:] = np.mean(SFflux_band_ORAS4_series[i::12,:],axis=0)
+    seasonal_cycle_SFflux_band_GLORYS2V3[i,:] = np.mean(SFflux_band_GLORYS2V3_series[i::12,:],axis=0)
+    seasonal_cycle_SFflux_band_SODA3[i,:] = np.mean(SFflux_band_SODA3_series[i::12,:],axis=0)
+    OHC_dt_band_ORAS4_white_series[i::12,:] = OHC_dt_band_ORAS4_series[i::12,:] - seasonal_cycle_OHC_dt_band_ORAS4[i,:]
+    OHC_dt_band_GLORYS2V3_white_series[i::12,:] = OHC_dt_band_GLORYS2V3_series[i::12,:] - seasonal_cycle_OHC_dt_band_GLORYS2V3[i,:]
+    OHC_dt_band_SODA3_white_series[i::12,:] = OHC_dt_band_SODA3_series[i::12,:] - seasonal_cycle_OHC_dt_band_SODA3[i,:]
+    OMET_converge_band_ORAS4_white_series[i::12,:] = OMET_converge_band_ORAS4_series[i::12,:] - seasonal_cycle_OMET_converge_band_ORAS4[i,:]
+    OMET_converge_band_GLORYS2V3_white_series[i::12,:] = OMET_converge_band_GLORYS2V3_series[i::12,:] - seasonal_cycle_OMET_converge_band_GLORYS2V3[i,:]
+    OMET_converge_band_SODA3_white_series[i::12,:] = OMET_converge_band_SODA3_series[i::12,:] - seasonal_cycle_OMET_converge_band_SODA3[i,:]
+    SFflux_band_ORAS4_white_series[i::12,:] = SFflux_band_ORAS4_series[i::12,:] - seasonal_cycle_SFflux_band_ORAS4[i,:]
+    SFflux_band_GLORYS2V3_white_series[i::12,:] = SFflux_band_GLORYS2V3_series[i::12,:] - seasonal_cycle_SFflux_band_GLORYS2V3[i,:]
+    SFflux_band_SODA3_white_series[i::12,:] = SFflux_band_SODA3_series[i::12,:] - seasonal_cycle_SFflux_band_SODA3[i,:]
+
+print '*******************************************************************'
+print '******************    trend at each latitude    *******************'
+print '*******************************************************************'
+counter_ORAS4 = np.arange(len(year_ORAS4)*len(month_ind))
+counter_GLORYS2V3 = np.arange(len(year_GLORYS2V3)*len(month_ind))
+counter_SODA3 = np.arange(len(year_SODA3)*len(month_ind))
+
+# ORAS4
+# the calculation of trend are based on target climatolory after removing seasonal cycles
+# trend of OMET at each lat
+# create an array to store the slope coefficient and residual
+a_SFflux_ORAS4 = np.zeros((len(latitude_band_ORAS4)),dtype = float)
+b_SFflux_ORAS4 = np.zeros((len(latitude_band_ORAS4)),dtype = float)
+# the least square fit equation is y = ax + b
+# np.lstsq solves the equation ax=b, a & b are the input
+# thus the input file should be reformed for the function
+# we can rewrite the line y = Ap, with A = [x,1] and p = [[a],[b]]
+A_SFflux_ORAS4 = np.vstack([counter_ORAS4,np.ones(len(counter_ORAS4))]).T
+# start the least square fitting
+for i in np.arange(len(latitude_band_ORAS4)):
+        # return value: coefficient matrix a and b, where a is the slope
+        a_SFflux_ORAS4[i], b_SFflux_ORAS4[i] = np.linalg.lstsq(A_SFflux_ORAS4,SFflux_band_ORAS4_white_series[:,i])[0]
+
+a_OMET_converge_ORAS4 = np.zeros((len(latitude_band_ORAS4)),dtype = float)
+b_OMET_converge_ORAS4 = np.zeros((len(latitude_band_ORAS4)),dtype = float)
+A_OMET_converge_ORAS4 = np.vstack([counter_ORAS4,np.ones(len(counter_ORAS4))]).T
+for i in np.arange(len(latitude_band_ORAS4)):
+        a_OMET_converge_ORAS4[i], b_OMET_converge_ORAS4[i] = np.linalg.lstsq(A_OMET_converge_ORAS4,OMET_converge_band_ORAS4_white_series[:,i])[0]
+
+a_OHC_dt_ORAS4 = np.zeros((len(latitude_band_ORAS4)),dtype = float)
+b_OHC_dt_ORAS4 = np.zeros((len(latitude_band_ORAS4)),dtype = float)
+A_OHC_dt_ORAS4 = np.vstack([counter_ORAS4,np.ones(len(counter_ORAS4))]).T
+for i in np.arange(len(latitude_band_ORAS4)):
+        a_OHC_dt_ORAS4[i], b_OHC_dt_ORAS4[i] = np.linalg.lstsq(A_OHC_dt_ORAS4,OHC_dt_band_ORAS4_white_series[:,i])[0]
+
+# GLORYS2V3
+a_SFflux_GLORYS2V3 = np.zeros((len(latitude_band_GLORYS2V3)),dtype = float)
+b_SFflux_GLORYS2V3 = np.zeros((len(latitude_band_GLORYS2V3)),dtype = float)
+A_SFflux_GLORYS2V3 = np.vstack([counter_GLORYS2V3,np.ones(len(counter_GLORYS2V3))]).T
+for i in np.arange(len(latitude_band_GLORYS2V3)):
+        a_SFflux_GLORYS2V3[i], b_SFflux_GLORYS2V3[i] = np.linalg.lstsq(A_SFflux_GLORYS2V3,SFflux_band_GLORYS2V3_white_series[:,i])[0]
+
+a_OMET_converge_GLORYS2V3 = np.zeros((len(latitude_band_GLORYS2V3)),dtype = float)
+b_OMET_converge_GLORYS2V3 = np.zeros((len(latitude_band_GLORYS2V3)),dtype = float)
+A_OMET_converge_GLORYS2V3 = np.vstack([counter_GLORYS2V3,np.ones(len(counter_GLORYS2V3))]).T
+for i in np.arange(len(latitude_band_GLORYS2V3)):
+        a_OMET_converge_GLORYS2V3[i], b_OMET_converge_GLORYS2V3[i] = np.linalg.lstsq(A_OMET_converge_GLORYS2V3,OMET_converge_band_GLORYS2V3_white_series[:,i])[0]
+
+a_OHC_dt_GLORYS2V3 = np.zeros((len(latitude_band_GLORYS2V3)),dtype = float)
+b_OHC_dt_GLORYS2V3 = np.zeros((len(latitude_band_GLORYS2V3)),dtype = float)
+A_OHC_dt_GLORYS2V3 = np.vstack([counter_GLORYS2V3,np.ones(len(counter_GLORYS2V3))]).T
+for i in np.arange(len(latitude_band_GLORYS2V3)):
+        a_OHC_dt_GLORYS2V3[i], b_OHC_dt_GLORYS2V3[i] = np.linalg.lstsq(A_OHC_dt_GLORYS2V3,OHC_dt_band_GLORYS2V3_white_series[:,i])[0]
+
+a_SFflux_SODA3 = np.zeros((len(latitude_band_SODA3)),dtype = float)
+b_SFflux_SODA3 = np.zeros((len(latitude_band_SODA3)),dtype = float)
+A_SFflux_SODA3 = np.vstack([counter_SODA3,np.ones(len(counter_SODA3))]).T
+for i in np.arange(len(latitude_band_SODA3)):
+        a_SFflux_SODA3[i], b_SFflux_SODA3[i] = np.linalg.lstsq(A_SFflux_SODA3,SFflux_band_SODA3_white_series[:,i])[0]
+
+a_OMET_converge_SODA3 = np.zeros((len(latitude_band_SODA3)),dtype = float)
+b_OMET_converge_SODA3 = np.zeros((len(latitude_band_SODA3)),dtype = float)
+A_OMET_converge_SODA3 = np.vstack([counter_SODA3,np.ones(len(counter_SODA3))]).T
+for i in np.arange(len(latitude_band_SODA3)):
+        a_OMET_converge_SODA3[i], b_OMET_converge_SODA3[i] = np.linalg.lstsq(A_OMET_converge_SODA3,OMET_converge_band_SODA3_white_series[:,i])[0]
+
+a_OHC_dt_SODA3 = np.zeros((len(latitude_band_SODA3)),dtype = float)
+b_OHC_dt_SODA3 = np.zeros((len(latitude_band_SODA3)),dtype = float)
+A_OHC_dt_SODA3 = np.vstack([counter_SODA3,np.ones(len(counter_SODA3))]).T
+for i in np.arange(len(latitude_band_SODA3)):
+        a_OHC_dt_SODA3[i], b_OHC_dt_SODA3[i] = np.linalg.lstsq(A_OHC_dt_SODA3,OHC_dt_band_SODA3_white_series[:,i])[0]
+
+fig4 = plt.figure()
+plt.plot(latitude_band_ORAS4,a_SFflux_ORAS4*12,'c-',linewidth=1.0,label='ORAS4 SFflux')
+plt.plot(latitude_band_GLORYS2V3,a_SFflux_GLORYS2V3*12,'m-',linewidth=1.0,label='GLORYS2V3 SFflux')
+plt.plot(latitude_band_SODA3,a_SFflux_SODA3*12,'y-',linewidth=1.0,label='SODA3 SFflux')
+plt.plot(latitude_band_ORAS4,a_OMET_converge_ORAS4*12,'c--',linewidth=1.0,label='ORAS4 OMET')
+plt.plot(latitude_band_GLORYS2V3,a_OMET_converge_GLORYS2V3*12,'m--',linewidth=1.0,label='GLORYS2V3 OMET')
+plt.plot(latitude_band_SODA3,a_OMET_converge_SODA3*12,'y--',linewidth=1.0,label='SODA3 OMET')
+plt.plot(latitude_band_ORAS4,a_OHC_dt_ORAS4*12,'c:',linewidth=2.0,label='ORAS4 OHC')
+plt.plot(latitude_band_GLORYS2V3,a_OHC_dt_GLORYS2V3*12,'m:',linewidth=2.0,label='GLORYS2V3 OHC')
+plt.plot(latitude_band_SODA3,a_OHC_dt_SODA3*12,'y:',linewidth=2.0,label='SODA3 OHC')
+plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+#fig4.set_size_inches(12.5, 6)
+plt.xlabel("Latitude")
+plt.ylabel("Trend (PW/year)")
+plt.legend()
+plt.show()
+fig4.savefig(output_path + os.sep + 'band' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC.jpg', dpi = 400)
+
+# fig5 = plt.figure()
+# plt.plot(latitude_band_ORAS4,a_SFflux_ORAS4*12,'b-',linewidth=1.0,label='ORAS4 SFflux')
+# plt.plot(latitude_band_ORAS4,a_OMET_converge_ORAS4*12,'r--',linewidth=1.0,label='ORAS4 OMET')
+# plt.plot(latitude_band_ORAS4,a_OHC_dt_ORAS4*12,'g:',linewidth=1.0,label='ORAS4 OHC')
+# plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+# #fig4.set_size_inches(12.5, 6)
+# plt.xlabel("Latitude")
+# plt.ylabel("Trend (PW/year)")
+# plt.legend()
+# plt.show()
+# fig5.savefig(output_path + os.sep + 'band' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_ORAS4.jpg', dpi = 400)
+#
+# fig6 = plt.figure()
+# plt.plot(latitude_band_GLORYS2V3,a_SFflux_GLORYS2V3*12,'b-',linewidth=1.0,label='GLORYS2V3 SFflux')
+# plt.plot(latitude_band_GLORYS2V3,a_OMET_converge_GLORYS2V3*12,'r--',linewidth=1.0,label='GLORYS2V3 OMET')
+# plt.plot(latitude_band_GLORYS2V3,a_OHC_dt_GLORYS2V3*12,'g:',linewidth=1.0,label='GLORYS2V3 OHC')
+# plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+# #fig4.set_size_inches(12.5, 6)
+# plt.xlabel("Latitude")
+# plt.ylabel("Trend (PW/year)")
+# plt.legend()
+# plt.show()
+# fig6.savefig(output_path + os.sep + 'band' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_GLORYS2V3.jpg', dpi = 400)
+#
+# fig7 = plt.figure()
+# plt.plot(latitude_band_SODA3,a_SFflux_SODA3*12,'b-',linewidth=1.0,label='SODA3 SFflux')
+# plt.plot(latitude_band_SODA3,a_OMET_converge_SODA3*12,'r--',linewidth=1.0,label='SODA3 OMET')
+# plt.plot(latitude_band_SODA3,a_OHC_dt_SODA3*12,'g:',linewidth=1.0,label='SODA3 OHC')
+# plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+# #fig4.set_size_inches(12.5, 6)
+# plt.xlabel("Latitude")
+# plt.ylabel("Trend (PW/year)")
+# plt.legend()
+# plt.show()
+# fig7.savefig(output_path + os.sep + 'band' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_SODA3.jpg', dpi = 400)
+
+fig8 = plt.figure()
+plt.plot(latitude_band_ORAS4[67:],a_SFflux_ORAS4[67:]*12,'b-',linewidth=1.0,label='ORAS4 SFflux')
+plt.plot(latitude_band_ORAS4[67:],a_OMET_converge_ORAS4[67:]*12,'r--',linewidth=1.0,label='ORAS4 OMET')
+plt.plot(latitude_band_ORAS4[67:],a_OHC_dt_ORAS4[67:]*12,'g:',linewidth=2.0,label='ORAS4 OHC')
+plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+#fig4.set_size_inches(12.5, 6)
+plt.xlabel("Latitude")
+plt.ylabel("Trend (PW/year)")
+plt.legend()
+plt.show()
+fig8.savefig(output_path + os.sep + 'band' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_ORAS4_20N_90N.jpg', dpi = 400)
+
+fig9 = plt.figure()
+plt.plot(latitude_band_GLORYS2V3[74:],a_SFflux_GLORYS2V3[74:]*12,'b-',linewidth=1.0,label='GLORYS2V3 SFflux')
+plt.plot(latitude_band_GLORYS2V3[74:],a_OMET_converge_GLORYS2V3[74:]*12,'r--',linewidth=1.0,label='GLORYS2V3 OMET')
+plt.plot(latitude_band_GLORYS2V3[74:],a_OHC_dt_GLORYS2V3[74:]*12,'g:',linewidth=2.0,label='GLORYS2V3 OHC')
+plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+#fig4.set_size_inches(12.5, 6)
+plt.xlabel("Latitude")
+plt.ylabel("Trend (PW/year)")
+plt.legend()
+plt.show()
+fig9.savefig(output_path + os.sep + 'band' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_GLORYS2V3_20N_90N.jpg', dpi = 400)
+
+fig10 = plt.figure()
+plt.plot(latitude_band_SODA3[73:],a_SFflux_SODA3[73:]*12,'b-',linewidth=1.0,label='SODA3 SFflux')
+plt.plot(latitude_band_SODA3[73:],a_OMET_converge_SODA3[73:]*12,'r--',linewidth=1.0,label='SODA3 OMET')
+plt.plot(latitude_band_SODA3[73:],a_OHC_dt_SODA3[73:]*12,'g:',linewidth=2.0,label='SODA3 OHC')
+plt.title('Trend of Turbulent Flux, OHC tendency and OMET convergence')
+#fig4.set_size_inches(12.5, 6)
+plt.xlabel("Latitude")
+plt.ylabel("Trend (PW/year)")
+plt.legend()
+plt.show()
+fig10.savefig(output_path + os.sep + 'band' + os.sep + 'globe' + os.sep + 'Trend_SFflux_OMET_OHC_SODA3_20N_90N.jpg', dpi = 400)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
