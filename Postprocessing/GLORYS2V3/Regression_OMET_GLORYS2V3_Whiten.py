@@ -209,6 +209,7 @@ print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
 # running mean is calculated on time series
 # define the running window for the running mean
+#window = 12 # in month
 window = 60 # in month
 # calculate the running mean and sum of OMET
 OMET_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat_OMET)),dtype=float)
@@ -702,6 +703,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend[:,i,j])
             #slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend[49:,i,j])
+    p_value_original[mask_ci==True] = 1.0
     # plot regression coefficient
     fig16 = plt.figure()
     # setup north polar stereographic basemap
@@ -763,7 +765,6 @@ for c in np.arange(len(lat_interest_list)):
     cbar_labels = ['-100%','-50%','0%','50%','100%']
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
-    p_value[mask_ci==1] = 1.0
     i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
