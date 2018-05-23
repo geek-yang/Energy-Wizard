@@ -183,6 +183,14 @@ OMET_seansonal_cycle = np.mean(OMET,axis=0)
 OMET_white = np.zeros(OMET.shape,dtype=float)
 for i in month_ind:
     OMET_white[:,i,:] = OMET[:,i,:] - OMET_seansonal_cycle[i,:]
+
+print '*******************************************************************'
+print '*********************** prepare variables *************************'
+print '*******************************************************************'
+# take the time series of E
+OMET_series = OMET.reshape(len(year)*len(month_ind),len(lat_OMET))
+# take the time series of whitened OMET
+OMET_white_series = OMET_white.reshape(len(year)*len(month_ind),len(lat_OMET))
 print '*******************************************************************'
 print '***************************  Detrend  *****************************'
 print '*******************************************************************'
@@ -198,13 +206,16 @@ for i in np.arange(len(lat)):
 
 ci_white_detrend = np.zeros(ci_white.shape,dtype=float)
 ci_white_detrend = ci_white - poly_fit
-print '*******************************************************************'
-print '*********************** prepare variables *************************'
-print '*******************************************************************'
-# take the time series of E
-OMET_series = OMET.reshape(len(year)*len(month_ind),len(lat_OMET))
-# take the time series of whitened OMET
-OMET_white_series = OMET_white.reshape(len(year)*len(month_ind),len(lat_OMET))
+
+# detrend OMET
+poly_fit_OMET = np.zeros(OMET_white_series.shape,dtype=float)
+for i in np.arange(len(lat_OMET)):
+        polynomial_OMET = np.polyfit(np.arange(len(year)*len(month_ind)), OMET_white_series[:,i], 5)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET[:,i] = poly_OMET(np.arange(len(year)*len(month_ind)))
+
+OMET_white_detrend_series = np.zeros(ci_white.shape,dtype=float)
+OMET_white_detrend_series = OMET_white_series - poly_fit_OMET
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -223,6 +234,11 @@ OMET_white_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat_OM
 #OMET_running_sum = np.zeros(len(OMET_series)-window+1)
 for i in np.arange((len(year)*len(month_ind)-window+1)):
     OMET_white_running_mean[i] = np.mean(OMET_white_series[i:i+window,:],0)
+
+OMET_white_detrend_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat_OMET)),dtype=float)
+#OMET_running_sum = np.zeros(len(OMET_series)-window+1)
+for i in np.arange((len(year)*len(month_ind)-window+1)):
+    OMET_white_detrend_running_mean[i] = np.mean(OMET_white_detrend_series[i:i+window,:],0)
 
 SLP_white_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat),len(lon)),dtype=float)
 for i in np.arange(len(year)*len(month_ind)-window+1):
@@ -357,6 +373,23 @@ index_year = np.arange(1980,2016,1)
 # plt.ylabel("Power spectrum density (PW^2/month)")
 # plt.show()
 # fig6.savefig(output_path + os.sep + 'regression' + os.sep + 'OMET_anomaly_60N_FFT_running_mean_%d_1980_2014.jpg' % (window), dpi = 500)
+
+# testing figure for detrending OMET with time series excluding seasonal cycling
+# detrend - polynomial fitting
+fig00 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(index,OMET_white_series[:,lat_interest['SODA3'][4]],'b--',linewidth = 0.5,label='Anomalies')
+plt.plot(index,poly_fit_OMET[:,lat_interest['SODA3'][4]],'r-',linewidth = 2,label='Polynomial')
+plt.plot(index,OMET_white_detrend_series[:,lat_interest['SODA3'][4]],'g-',linewidth = 1,label='Detrend')
+plt.title('OMET Anomalies at 60N and the detrend OMET anomalies (1979-2016)')
+plt.legend()
+fig00.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 432, 37), index_year)
+plt.xticks(rotation=60)
+plt.ylabel("OMET PW")
+plt.show()
+fig00.savefig(output_path + os.sep + 'regression' + os.sep + 'Detrend_poly_OMET_white.jpg', dpi = 300)
 
 print '*******************************************************************'
 print '**************************** trend ********************************'
@@ -700,7 +733,7 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['SODA3'][c]],ci_white_detrend[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(OMET_white_detrend_series[:,lat_interest['SODA3'][c]],ci_white_detrend[:,i,j])
             #slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(OMET_white_series[107:,lat_interest['SODA3'][c]],ci_white_detrend[:,i,j])
     p_value_original[mask_ci==True] = 1.0
     # plot regression coefficient
@@ -737,7 +770,7 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_running_mean[:,lat_interest['SODA3'][c]],ci_white_detrend_running_mean[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_detrend_running_mean[:,lat_interest['SODA3'][c]],ci_white_detrend_running_mean[:,i,j])
             #slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_running_mean[107:,lat_interest['SODA3'][c]],ci_white_detrend_running_mean[:,i,j])
     # plot regression coefficient
     fig17 = plt.figure()
