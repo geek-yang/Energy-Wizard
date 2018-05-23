@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on OMET (GLORYS2V3) with whitening
 Author          : Yang Liu
 Date            : 2017.11.10
-Last Update     : 2018.05.09
+Last Update     : 2018.05.23
 Description     : The code aims to explore the association between climatological
                   variables with oceanic meridional energy transport (OMET).
                   The statistical method employed here is linear regression. A
@@ -129,7 +129,7 @@ SLP = dataset_y.variables['msl'][168:432,0:lat_y+1,:] # from 1993 - 2014
 SST = dataset_y.variables['sst'][168:432,0:lat_y+1,:]
 mask_SST = np.ma.getmaskarray(SST[0,:,:])
 # sea ice cover
-ci = dataset_y.variables['ci'][:432,0:lat_y+1,:]  # from 1979 - 2014
+ci = dataset_y.variables['ci'][168:432,0:lat_y+1,:]  # from 1979 - 2014
 mask_ci = np.ma.getmaskarray(ci[0,:,:])
 np.ma.set_fill_value(ci,0)
 # longitude
@@ -137,7 +137,7 @@ lon = dataset_y.variables['longitude'][:]
 # latitude
 lat = dataset_y.variables['latitude'][0:lat_y+1]
 # time (number of months)
-time = dataset_y.variables['time'][:432]
+time = dataset_y.variables['time'][168:432]
 
 print 'The type of SLP is', type(SLP)
 print 'The type of SST is', type(SST)
@@ -185,16 +185,18 @@ for i in month_ind:
 print '*******************************************************************'
 print '***************************  Detrend  *****************************'
 print '*******************************************************************'
-window_detrend = 120
-# exclude seasonal cycling
-ci_white_detrend = np.zeros((len(time)-window_detrend+1,len(lat),len(lon)),dtype=float)
-ci_white_detrend_running_mean = np.zeros(ci_white_detrend.shape,dtype=float)
-for i in np.arange(len(time)-window_detrend+1):
-    ci_white_detrend_running_mean[i,:,:] = np.mean(ci_white[i:i+window_detrend,:,:],0)
-    ci_white_detrend[i,:,:] = ci_white[i+window_detrend-1,:,:] - ci_white_detrend_running_mean[i,:,:]
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+poly_fit = np.zeros(ci_white.shape,dtype=float)
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        polynomial = np.polyfit(np.arange(len(time)), ci_white[:,i,j], 5)
+        poly = np.poly1d(polynomial)
+        poly_fit[:,i,j] = poly(np.arange(len(time)))
 
-# length for the detrend signal
-time_shrink = len(time)-window_detrend+1
+ci_white_detrend = np.zeros(ci_white.shape,dtype=float)
+ci_white_detrend = ci_white - poly_fit
 print '*******************************************************************'
 print '*********************** prepare variables *************************'
 print '*******************************************************************'
@@ -211,7 +213,7 @@ window = 60 # in month
 # calculate the running mean and sum of OMET
 OMET_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat_OMET)),dtype=float)
 #OMET_running_sum = np.zeros(len(OMET_series)-window+1)
-for i in np.arange((len(year)*len(month_ind)-window+1)):
+for i in np.arange(len(year)*len(month_ind)-window+1):
     OMET_running_mean[i,:] = np.mean(OMET_series[i:i+window,:],0)
 
 # calculate the running mean and sum of OMET after removing the seasonal cycling
@@ -232,8 +234,8 @@ ci_white_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat),len
 for i in np.arange(len(year)*len(month_ind)-window+1):
     ci_white_running_mean[i,:,:] = np.mean(ci_white[i:i+window,:,:],0)
 
-ci_white_detrend_running_mean = np.zeros((time_shrink-window+1,len(lat),len(lon)),dtype=float)
-for i in np.arange(time_shrink-window+1):
+ci_white_detrend_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat),len(lon)),dtype=float)
+for i in np.arange(len(year)*len(month_ind)-window+1):
     ci_white_detrend_running_mean[i,:,:] = np.mean(ci_white_detrend[i:i+window,:,:],0)
 
 print '*******************************************************************'
@@ -483,6 +485,14 @@ print OMET_white_std
 slope = np.zeros((lat_y+1,len(lon)),dtype = float)
 r_value = np.zeros((lat_y+1,len(lon)),dtype = float)
 p_value = np.zeros((lat_y+1,len(lon)),dtype = float)
+#######################################################################################################
+# Since running mean will make the points more correlated with each other
+# Apparently the T-test based on running mean time series will overestime the level of significance
+# However, it is difficult to determine the degress of freedom as the points are actually correlated
+# with space and time domain. As a compromise, we use the T-test results from the regression of SIC on
+# original time series.
+#######################################################################################################
+p_value_original = np.zeros((lat_y+1,len(lon)),dtype = float)
 
 for c in np.arange(len(lat_interest_list)):
     # linear regress SLP on OMET (anomalies)
@@ -690,7 +700,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend[49:,i,j])
+            slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend[:,i,j])
+            #slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_series[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend[49:,i,j])
     # plot regression coefficient
     fig16 = plt.figure()
     # setup north polar stereographic basemap
@@ -715,19 +726,20 @@ for c in np.arange(len(lat_interest_list)):
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
     p_value[mask_ci==1] = 1.0
-    i, j = np.where(p_value<=0.05)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of Detrend SIC Anomaly on OMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig16.savefig(output_path + os.sep + 'regression' + os.sep + 'SIC' + os.sep + 'Seasonal' + os.sep + "Regression_OMET_Ice_ERAI_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    fig16.savefig(output_path + os.sep + 'regression' + os.sep + 'SIC' + os.sep + 'Detrend' + os.sep + "Regression_OMET_Ice_ERAI_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi=400)
 
     # linear regress Sea Ice Concentration on OMET (anomalies)
     # plot correlation coefficient
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_running_mean[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend_running_mean[49:,i,j])
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_running_mean[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend_running_mean[:,i,j])
+            #slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(OMET_white_running_mean[:,lat_interest['GLORYS2V3'][c]],ci_white_detrend_running_mean[49:,i,j])
     # plot regression coefficient
     fig17 = plt.figure()
     # setup north polar stereographic basemap
@@ -752,7 +764,7 @@ for c in np.arange(len(lat_interest_list)):
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
     p_value[mask_ci==1] = 1.0
-    i, j = np.where(p_value<=0.05)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of Detrend SIC Anomaly on OMET Anomaly across %dN with a running mean of %d months' % (lat_interest_list[c],window),fontsize = 9, y=1.05)
