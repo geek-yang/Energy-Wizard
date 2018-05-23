@@ -3,8 +3,8 @@
 Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET and NEMO ORCA0083 run
 Author          : Yang Liu
-Date            : 2017.11.12
-Last Update     : 2018.05.14
+Date            : 2018.05.23
+Last Update     : 2018.05.23
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -114,6 +114,7 @@ lat_NEMO_30 = 377
 lat_ORAS4_30_cut = 12
 lat_GLORYS2V3_30_cut = 44
 lat_SODA3_30_cut = 44
+lat_NEMO_30_cut = 132
 
 # 40N
 lat_ERAI_40 = 67
@@ -128,6 +129,7 @@ lat_NEMO_40 = 522
 lat_ORAS4_40_cut = 24
 lat_GLORYS2V3_40_cut = 93
 lat_SODA3_40_cut = 93
+lat_NEMO_40_cut = 277
 
 # 50N
 lat_ERAI_50 = 53
@@ -142,6 +144,7 @@ lat_NEMO_50 = 685
 lat_ORAS4_50_cut = 38
 lat_GLORYS2V3_50_cut = 147
 lat_SODA3_50_cut = 150
+lat_NEMO_50_cut = 440
 
 # 60N
 lat_ERAI_60 = 40
@@ -156,6 +159,7 @@ lat_NEMO_60 = 871
 lat_ORAS4_60_cut = 53
 lat_GLORYS2V3_60_cut = 209
 lat_SODA3_60_cut = 220
+lat_NEMO_60_cut = 626
 
 # 70N
 lat_ERAI_70 = 27
@@ -170,6 +174,7 @@ lat_NEMO_70 = 1078
 lat_ORAS4_70_cut = 70
 lat_GLORYS2V3_70_cut = 278
 lat_SODA3_70_cut = 311
+lat_NEMO_70_cut = 833
 
 # 80N
 lat_ERAI_80 = 13
@@ -184,6 +189,7 @@ lat_NEMO_80 = 1303
 lat_ORAS4_80_cut = 89
 lat_GLORYS2V3_80_cut = 353
 lat_SODA3_80_cut = 405
+lat_NEMO_80_cut = 1058
 
 # make a dictionary for instereted sections (for process automation)
 lat_interest = {}
@@ -195,6 +201,7 @@ lat_interest['JRA55'] = [lat_JRA55_20,lat_JRA55_30,lat_JRA55_40,lat_JRA55_50,lat
 lat_interest['ORAS4'] = [lat_ORAS4_20_cut,lat_ORAS4_30_cut,lat_ORAS4_40_cut,lat_ORAS4_50_cut,lat_ORAS4_60_cut,lat_ORAS4_70_cut,lat_ORAS4_80_cut]
 lat_interest['GLORYS2V3'] = [lat_GLORYS2V3_20_cut,lat_GLORYS2V3_30_cut,lat_GLORYS2V3_40_cut,lat_GLORYS2V3_50_cut,lat_GLORYS2V3_60_cut,lat_GLORYS2V3_70_cut,lat_GLORYS2V3_80_cut]
 lat_interest['SODA3'] = [lat_SODA3_20_cut,lat_SODA3_30_cut,lat_SODA3_40_cut,lat_SODA3_50_cut,lat_SODA3_60_cut,lat_SODA3_70_cut,lat_SODA3_80_cut]
+lat_interest['NEMO'] = [lat_NEMO_20_cut,lat_NEMO_30_cut,lat_NEMO_40_cut,lat_NEMO_50_cut,lat_NEMO_60_cut,lat_NEMO_70_cut,lat_NEMO_80_cut]
 # mask path
 #mask_path = 'F:\DataBase\ORAS\ORAS4\Monthly\Model'
 ####################################################################################
