@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (ERA-Interim) with whitening
 Author          : Yang Liu
 Date            : 2017.08.18
-Last Update     : 2018.05.22
+Last Update     : 2018.05.23
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -893,6 +893,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['ERAI'][c]],ci_white_detrend_poly[:,i,j])
             #slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(AMET_white_series[window_detrend-1:,lat_interest['ERAI'][c]],ci_white_detrend_poly[:,i,j])
+    p_value_original[mask_ci==True] = 1.0
     # plot regression coefficient
     fig22 = plt.figure()
     # setup north polar stereographic basemap
