@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (MERRA2) with whitening
 Author          : Yang Liu
 Date            : 2017.11.28
-Last Update     : 2018.05.09
+Last Update     : 2018.05.23
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -175,24 +175,40 @@ ci_white_series = ci_white.reshape(len(year)*len(month_ind),len(lat),len(lon))
 print '*******************************************************************'
 print '***************************  Detrend  *****************************'
 print '*******************************************************************'
+####################################################
+######         detrend - running mean         ######
+####################################################
 window_detrend = 120
 # include seasonal cycling
-ci_detrend = np.zeros((len(year)*len(month_ind)-window_detrend+1,len(lat),len(lon)),dtype=float)
-ci_detrend_running_mean = np.zeros(ci_detrend.shape,dtype=float)
+ci_detrend_lowpass = np.zeros((len(year)*len(month_ind)-window_detrend+1,len(lat),len(lon)),dtype=float)
+ci_detrend_lowpass_running_mean = np.zeros(ci_detrend_lowpass.shape,dtype=float)
 
 for i in np.arange(len(year)*len(month_ind)-window_detrend+1):
-    ci_detrend_running_mean[i,:,:] = np.mean(ci_series[i:i+window_detrend,:,:],0)
-    ci_detrend[i,:,:] = ci_series[i+window_detrend-1,:,:] - ci_detrend_running_mean[i,:,:]
+    ci_detrend_lowpass_running_mean[i,:,:] = np.mean(ci_series[i:i+window_detrend,:,:],0)
+    ci_detrend_lowpass[i,:,:] = ci_series[i+window_detrend-1,:,:] - ci_detrend_lowpass_running_mean[i,:,:]
 
 # exclude seasonal cycling
-ci_white_detrend = np.zeros((len(year)*len(month_ind)-window_detrend+1,len(lat),len(lon)),dtype=float)
-ci_white_detrend_running_mean_inter = np.zeros(ci_white_detrend.shape,dtype=float)
+ci_white_detrend_lowpass = np.zeros((len(year)*len(month_ind)-window_detrend+1,len(lat),len(lon)),dtype=float)
+ci_white_detrend_lowpass_running_mean_inter = np.zeros(ci_white_detrend_lowpass.shape,dtype=float)
 for i in np.arange(len(year)*len(month_ind)-window_detrend+1):
-    ci_white_detrend_running_mean_inter[i,:,:] = np.mean(ci_white_series[i:i+window_detrend,:,:],0)
-    ci_white_detrend[i,:,:] = ci_white_series[i+window_detrend-1,:,:] - ci_white_detrend_running_mean_inter[i,:,:]
+    ci_white_detrend_lowpass_running_mean_inter[i,:,:] = np.mean(ci_white_series[i:i+window_detrend,:,:],0)
+    ci_white_detrend_lowpass[i,:,:] = ci_white_series[i+window_detrend-1,:,:] - ci_white_detrend_lowpass_running_mean_inter[i,:,:]
 
 # length for the detrend signal
 time_shrink = len(year)*len(month_ind)-window_detrend+1
+
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+poly_fit = np.zeros(ci_white_series.shape,dtype=float)
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        polynomial = np.polyfit(np.arange(len(year)*len(month_ind)), ci_white_series[:,i,j], 5)
+        poly = np.poly1d(polynomial)
+        poly_fit[:,i,j] = poly(np.arange(len(year)*len(month_ind)))
+
+ci_white_detrend_poly = np.zeros(ci_white_series.shape,dtype=float)
+ci_white_detrend_poly = ci_white_series - poly_fit
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -223,9 +239,13 @@ ci_white_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat),len
 for i in np.arange(len(year)*len(month_ind)-window+1):
     ci_white_running_mean[i,:,:] = np.mean(ci_white_series[i:i+window,:,:],0)
 
-ci_white_detrend_running_mean = np.zeros((time_shrink-window+1,len(lat),len(lon)),dtype=float)
+ci_white_detrend_lowpass_running_mean = np.zeros((time_shrink-window+1,len(lat),len(lon)),dtype=float)
 for i in np.arange(time_shrink-window+1):
-    ci_white_detrend_running_mean[i,:,:] = np.mean(ci_white_detrend[i:i+window,:,:],0)
+    ci_white_detrend_lowpass_running_mean[i,:,:] = np.mean(ci_white_detrend_lowpass[i:i+window,:,:],0)
+
+ci_white_detrend_poly_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat),len(lon)),dtype=float)
+for i in np.arange(len(year)*len(month_ind)-window+1):
+    ci_white_detrend_poly_running_mean[i,:,:] = np.mean(ci_white_detrend_poly[i:i+window,:,:],0)
 
 print '*******************************************************************'
 print '*************************** time series ***************************'
@@ -318,34 +338,51 @@ index_year = np.arange(1980,2017,1)
 fig000 = plt.figure()
 plt.axhline(y=0, color='k',ls='-')
 plt.plot(index,np.mean(np.mean(ci_series,2),1),'b--',linewidth = 0.5,label='Time series')
-plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_detrend_running_mean,2),1),'r-',linewidth = 2,label='Running mean')
-plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_detrend,2),1),'g-',linewidth = 1,label='Detrend')
+plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_detrend_lowpass_running_mean,2),1),'r-',linewidth = 2,label='Running mean')
+plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_detrend_lowpass,2),1),'g-',linewidth = 1,label='Detrend')
 plt.title('Sea Ice Concentration in the Arctic and the detrend SIC (1979-2016)')
 plt.legend()
 fig000.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456, 39), index_year)
+plt.xticks(np.linspace(0, 444, 38), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Sea Ice Concentration (Percentage)")
 plt.show()
-fig000.savefig(output_path + os.sep + 'Detrend_MERRA2_ice.jpg', dpi = 300)
+fig000.savefig(output_path + os.sep + 'Detrend_lowpass_MERRA2_ice.jpg', dpi = 300)
 
 # testing figure for detrending with time series excluding seasonal cycling
-fig000 = plt.figure()
+fig001 = plt.figure()
 plt.axhline(y=0, color='k',ls='-')
-
 plt.plot(index,np.mean(np.mean(ci_white_series,2),1),'b--',linewidth = 0.5,label='Anomalies')
-plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_detrend_running_mean_inter,2),1),'r-',linewidth = 2,label='Running mean anomalies')
-plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_detrend,2),1),'g-',linewidth = 1,label='Detrend anomalies')
+plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_detrend_lowpass_running_mean_inter,2),1),'r-',linewidth = 2,label='Running mean anomalies')
+plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_detrend_lowpass,2),1),'g-',linewidth = 1,label='Detrend anomalies')
 plt.title('Sea Ice Concentration Anomalies in the Arctic and the detrend SIC anomalies (1979-2016)')
 plt.legend()
-fig000.set_size_inches(12, 5)
+fig001.set_size_inches(12, 5)
 plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456, 39), index_year)
+plt.xticks(np.linspace(0, 444, 38), index_year)
 plt.xticks(rotation=60)
 plt.ylabel("Sea Ice Concentration (Percentage)")
 plt.show()
-fig000.savefig(output_path + os.sep + 'Detrend_MERRA2_ice_white.jpg', dpi = 300)
+fig001.savefig(output_path + os.sep + 'Detrend_lowpass_MERRA2_ice_white.jpg', dpi = 300)
+
+# testing figure for detrending with time series excluding seasonal cycling
+# detrend - polynomial fitting
+fig002 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(index,np.mean(np.mean(ci_white,2),1),'b--',linewidth = 0.5,label='Anomalies')
+plt.plot(index,np.mean(np.mean(poly_fit,2),1),'r-',linewidth = 2,label='Running mean anomalies')
+plt.plot(index,np.mean(np.mean(ci_white_detrend_poly,2),1),'g-',linewidth = 1,label='Detrend anomalies')
+#plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_test,2),1),'m-',linewidth = 1,label='xxx')
+plt.title('Sea Ice Concentration Anomalies in the Arctic and the detrend SIC anomalies (1979-2016)')
+plt.legend()
+fig002.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 444, 38), index_year)
+plt.xticks(rotation=60)
+plt.ylabel("Sea Ice Concentration (Percentage)")
+plt.show()
+fig002.savefig(output_path + os.sep + 'Detrend_poly_MERRA2_ice_white.jpg', dpi = 300)
 
 print '*******************************************************************'
 print '********************* Fourier transform ***************************'
@@ -522,7 +559,7 @@ A = np.vstack([index[window_detrend-1:],np.ones(len(index[window_detrend-1:]))])
 for i in np.arange(len(lat)):
     for j in np.arange(len(lon)):
         # return value: coefficient matrix a and b, where a is the slope
-        a[i,j], b[i,j] = np.linalg.lstsq(A,ci_white_detrend[:,i,j])[0]
+        a[i,j], b[i,j] = np.linalg.lstsq(A,ci_white_detrend_lowpass[:,i,j])[0]
 # visualization through basemap
 fig14 = plt.figure()
 m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
@@ -549,12 +586,46 @@ cbar.ax.set_xticklabels(cbar_labels)
 cbar.set_label('Percentage/Decade',fontsize = 8)
 plt.title('Trend of the Sea Ice Concentration Anomalies after Detrending (1979-2016)',fontsize = 9, y=1.05)
 plt.show()
-fig14.savefig(output_path + os.sep + "Trend_ERAI_Detrend_Ice.jpeg",dpi=400)
+fig14.savefig(output_path + os.sep + "Trend_ERAI_Detrend_lowpass_Ice.jpeg",dpi=400)
+
+# trend of Sea Ice concentration after detrending with polynomial fit
+A = np.vstack([index,np.ones(len(index))]).T
+# start the least square fitting
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        # return value: coefficient matrix a and b, where a is the slope
+        a[i,j], b[i,j] = np.linalg.lstsq(A,ci_white_detrend_poly[:,i,j])[0]
+# visualization through basemap
+fig15 = plt.figure()
+m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
+# draw coastlines
+m.drawcoastlines(linewidth=0.25)
+# fill continents, set lake color same as ocean color.
+# m.fillcontinents(color='coral',lake_color='aqua')
+# draw parallels and meridians
+m.drawparallels(np.arange(20,81,10),fontsize = 7,linewidth=0.75)
+m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75)
+# x,y coordinate - lon, lat
+xx, yy = np.meshgrid(lon,lat)
+XX, YY = m(xx, yy)
+# define color range for the contourf
+color = np.linspace(-0.15,0.15,21)
+# !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+cs = m.contourf(XX,YY,np.ma.masked_where(mask_SST,a*12*10),color,cmap='coolwarm')
+# add color bar
+cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.3f')
+cbar.ax.tick_params(labelsize=8)
+cbar.set_ticks(np.arange(-0.15,0.20,0.05))
+cbar_labels = ['-15%','-10%','-5%','0%','5%','10%','15%']
+cbar.ax.set_xticklabels(cbar_labels)
+cbar.set_label('Percentage/Decade',fontsize = 8)
+plt.title('Trend of the Sea Ice Concentration Anomalies after Detrending (1980-2016)',fontsize = 9, y=1.05)
+plt.show()
+fig15.savefig(output_path + os.sep + "Trend_MERRA2_Detrend_polyfit_Ice.jpeg",dpi=400)
 
 print '*******************************************************************'
 print '************************** regression *****************************'
 print '*******************************************************************'
-
 # calculate the standard deviation of AMET anomaly
 AMET_white_std = np.std(AMET_white_series)
 print 'The standard deviation of AMET anomaly is (in peta Watt):'
@@ -566,6 +637,56 @@ print AMET_white_std
 slope = np.zeros((len(lat),len(lon)),dtype = float)
 r_value = np.zeros((len(lat),len(lon)),dtype = float)
 p_value = np.zeros((len(lat),len(lon)),dtype = float)
+#######################################################################################################
+# Since running mean will make the points more correlated with each other
+# Apparently the T-test based on running mean time series will overestime the level of significance
+# However, it is difficult to determine the degress of freedom as the points are actually correlated
+# with space and time domain. As a compromise, we use the T-test results from the regression of SIC on
+# original time series.
+#######################################################################################################
+p_value_original = np.zeros((len(lat),len(lon)),dtype = float)
+
+# linear regress SLP on AMET (anomalies)
+# plot correlation coefficient
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        # return value: slope, intercept, r_value, p_value, stderr
+        slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(SLP_white_series[:,i,j],ci_white_detrend_poly[:,i,j])
+fig16 = plt.figure()
+# setup north polar stereographic basemap
+# resolution c(crude) l(low) i(intermidiate) h(high) f(full)
+# lon_0 is at 6 o'clock
+m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
+# draw coastlines
+m.drawcoastlines(linewidth=0.25)
+# fill continents, set lake color same as ocean color.
+# m.fillcontinents(color='coral',lake_color='aqua')
+# draw parallels and meridians
+m.drawparallels(np.arange(60,81,10),fontsize = 7,linewidth=0.75)
+m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75)
+# x,y coordinate - lon, lat
+xx, yy = np.meshgrid(lon,lat)
+XX, YY = m(xx, yy)
+# define color range for the contourf
+color = np.linspace(-0.10,0.10,21) # SLP_white
+# !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+cs = m.contourf(XX,YY,np.ma.masked_where(mask_SST,slope*1000),color,cmap='coolwarm',extend='both') # SLP_white
+# add color bar
+cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
+cbar.ax.tick_params(labelsize=8)
+cbar.set_label('Regression Coefficient Percentage/kPa',fontsize = 8)
+# fancy layout of maps
+# label of contour lines on the map
+#plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
+# draw significance stippling on the map
+# locate the indices of p_value matrix where error p<0.05 (99.5% confident)
+i, j = np.where(p_value<=0.05)
+# get the coordinate on the map (lon,lat) and plot scatter dots
+m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
+plt.title('Regression of detrend SIC Anomaly on SLP Anomaly' ,fontsize = 9, y=1.05)
+plt.show()
+fig16.savefig(output_path +os.sep + "Regression_SIC_SLP_MERRA2_white_regression_coef.jpeg",dpi=400)
+
 for c in np.arange(len(lat_interest_list)):
     # linear regress SLP on AMET (anomalies)
     # plot correlation coefficient
@@ -574,7 +695,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['MERRA2'][c]],SLP_white_series[:,i,j])
     # visualization through basemap
-    fig15 = plt.figure()
+    fig17 = plt.figure()
     # setup north polar stereographic basemap
     # resolution c(crude) l(low) i(intermidiate) h(high) f(full)
     # lon_0 is at 6 o'clock
@@ -607,10 +728,10 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SLP Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig15.savefig(output_path + os.sep + 'SLP' +os.sep + "Regression_AMET_SLP_MERRA2_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    fig17.savefig(output_path + os.sep + 'SLP' +os.sep + "Regression_AMET_SLP_MERRA2_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
 
     # plot regression coefficient
-    fig16 = plt.figure()
+    fig18 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -634,7 +755,7 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SLP Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig16.savefig(output_path + os.sep + 'SLP' + os.sep + "Regression_AMET_SLP_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
+    fig18.savefig(output_path + os.sep + 'SLP' + os.sep + "Regression_AMET_SLP_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
 
     # linear regress SST on AMET (anomalies)
     # plot correlation coefficient
@@ -643,7 +764,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['MERRA2'][c]],SST_white_series[:,i,j])
     # visualization through basemap
-    fig17 = plt.figure()
+    fig19 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -670,10 +791,10 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SST Anomaly on AMET Anomaly across %dN ' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig17.savefig(output_path + os.sep + 'SST' + os.sep + "Regression_AMET_SST_MERRA2_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
+    fig19.savefig(output_path + os.sep + 'SST' + os.sep + "Regression_AMET_SST_MERRA2_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
 
     # plot regression coefficient
-    fig18 = plt.figure()
+    fig20 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -697,7 +818,7 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SST Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig18.savefig(output_path + os.sep + 'SST' + os.sep + "Regression_AMET_SST_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
+    fig20.savefig(output_path + os.sep + 'SST' + os.sep + "Regression_AMET_SST_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
 
     # linear regress Sea Ice Concentration on AMET (anomalies)
     # plot correlation coefficient
@@ -706,7 +827,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['MERRA2'][c]],ci_white_series[:,i,j])
     # visualization through basemap
-    fig19 = plt.figure()
+    fig21 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -731,10 +852,10 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SIC Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig19.savefig(output_path + os.sep + 'SIC' + os.sep + 'LongTermTrend' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
+    fig21.savefig(output_path + os.sep + 'SIC' + os.sep + 'LongTermTrend' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
 
     # plot regression coefficient
-    fig20 = plt.figure()
+    fig23 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -761,16 +882,18 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SIC Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig20.savefig(output_path + os.sep + 'SIC' + os.sep + 'LongTermTrend' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
+    fig23.savefig(output_path + os.sep + 'SIC' + os.sep + 'LongTermTrend' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
 
     # linear regress Sea Ice Concentration on AMET (anomalies)
     # plot correlation coefficient
     for i in np.arange(len(lat)):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series[window_detrend-1:,lat_interest['MERRA2'][c]],ci_white_detrend[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['MERRA2'][c]],ci_white_detrend_poly[:,i,j])
+            #slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series[window_detrend-1:,lat_interest['MERRA2'][c]],ci_white_detrend[:,i,j])
+    #p_value_original[mask_SST == 0] = 1.0
     # plot regression coefficient
-    fig21 = plt.figure()
+    fig24 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -792,21 +915,22 @@ for c in np.arange(len(lat_interest_list)):
     cbar_labels = ['-20%','-10%','0%','10%','20%']
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
-    i, j = np.where(p_value<=0.05)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of Detrend SIC Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig21.savefig(output_path + os.sep + 'SIC' + os.sep + 'Seasonal' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
+    fig24.savefig(output_path + os.sep + 'SIC' + os.sep + 'Detrend' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi = 400)
 
     # linear regress Sea Ice Concentration on AMET (anomalies)
     # plot correlation coefficient
     for i in np.arange(len(lat)):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_running_mean[window_detrend-1:,lat_interest['MERRA2'][c]],ci_white_detrend_running_mean[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_running_mean[:,lat_interest['MERRA2'][c]],ci_white_detrend_poly_running_mean[:,i,j])
+            #slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_running_mean[window_detrend-1:,lat_interest['MERRA2'][c]],ci_white_detrend_running_mean[:,i,j])
     # plot regression coefficient
-    fig22 = plt.figure()
+    fig25 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -828,13 +952,13 @@ for c in np.arange(len(lat_interest_list)):
     cbar_labels = ['-20%','-10%','0%','10%','20%']
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
-    i, j = np.where(p_value<=0.05)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of Detrend SIC Anomaly on AMET Anomaly across %dN with a running mean of %d months' % (lat_interest_list[c],window),fontsize = 9, y=1.05)
     plt.show()
-    fig22.savefig(output_path + os.sep + 'SIC' + os.sep + 'Interannual' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_running_mean_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
-    fig22.savefig(output_path + os.sep + 'SIC' + os.sep + 'Annual' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_running_mean_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
+    fig25.savefig(output_path + os.sep + 'SIC' + os.sep + 'Interannual' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_running_mean_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
+    #fig25.savefig(output_path + os.sep + 'SIC' + os.sep + 'Annual' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_running_mean_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
 
 print '*******************************************************************'
 print '*********************   regression low pass    ********************'
@@ -847,7 +971,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_running_mean[:,lat_interest['MERRA2'][c]],ci_white_running_mean[:,i,j])
     # visualization through basemap
-    fig23 = plt.figure()
+    fig26 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -872,10 +996,10 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SIC Anomaly on AMET Anomaly across %dN with a running mean of %dm' % (lat_interest_list[c],window),fontsize = 9, y=1.05)
     plt.show()
-    fig23.savefig(output_path + os.sep + 'SIC' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
+    fig26.savefig(output_path + os.sep + 'SIC' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_lowpass_%dm_correlation_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
 
     # plot regression coefficient
-    fig24 = plt.figure()
+    fig27 = plt.figure()
     # setup north polar stereographic basemap
     m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
     # draw coastlines
@@ -902,6 +1026,6 @@ for c in np.arange(len(lat_interest_list)):
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SIC Anomaly on AMET Anomaly across %dN with a running mean of %dm' % (lat_interest_list[c],window),fontsize = 9, y=1.05)
     plt.show()
-    fig24.savefig(output_path + os.sep + 'SIC' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_lowpass_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
+    fig27.savefig(output_path + os.sep + 'SIC' + os.sep + "Regression_AMET_Ice_MERRA2_white_%dN_lowpass_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi = 400)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
