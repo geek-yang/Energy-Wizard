@@ -709,6 +709,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['JRA55'][c]],ci_white_detrend_poly[:,i,j])
             #slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(AMET_white_series[window_detrend-1:,lat_interest['ERAI'][c]],ci_white_detrend_poly[:,i,j])
+    p_value_original[mask_ci==True] = 1.0
     # plot regression coefficient
     fig22 = plt.figure()
     # setup north polar stereographic basemap
@@ -775,6 +776,5 @@ for c in np.arange(len(lat_interest_list)):
     plt.show()
     fig23.savefig(output_path + os.sep + 'SIC' + os.sep + 'Interannual'+ os.sep + "Regression_AMET_Ice_ERAI_white_%dN_running_mean_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi=400)
     #fig23.savefig(output_path + os.sep + 'SIC' + os.sep + 'Annual'+ os.sep + "Regression_AMET_Ice_ERAI_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi=400)
-
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
