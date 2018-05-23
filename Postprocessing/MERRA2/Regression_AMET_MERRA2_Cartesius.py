@@ -891,7 +891,7 @@ for c in np.arange(len(lat_interest_list)):
             # return value: slope, intercept, r_value, p_value, stderr
             slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['MERRA2'][c]],ci_white_detrend_poly[:,i,j])
             #slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series[window_detrend-1:,lat_interest['MERRA2'][c]],ci_white_detrend[:,i,j])
-    p_value_original[mask_SST == 0] = 1.0
+    #p_value_original[mask_SST == 0] = 1.0
     # plot regression coefficient
     fig24 = plt.figure()
     # setup north polar stereographic basemap
