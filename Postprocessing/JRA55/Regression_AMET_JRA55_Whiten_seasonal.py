@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (JRA55) with whitening
 Author          : Yang Liu
 Date            : 2018.05.28
-Last Update     : 2018.05.28
+Last Update     : 2018.05.29
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -132,9 +132,9 @@ ci_seasonal_mean = np.zeros((12,lat_y+1,len(lon))) # from 20N - 90N
 ci_white = np.zeros(ci.shape)
 for i in month_ind:
     # calculate the monthly mean (seasonal cycling)
-    ci_seasonal_mean[i,:,:] = np.mean(ci[i:-1:12,:,:].filled(),axis=0)
+    ci_seasonal_mean[i,:,:] = np.mean(ci[i::12,:,:].filled(),axis=0)
     # remove seasonal mean
-    ci_white[i:-1:12,:,:] = ci[i:-1:12,:,:].filled() - ci_seasonal_mean[i,:,:]
+    ci_white[i::12,:,:] = ci[i::12,:,:].filled() - ci_seasonal_mean[i,:,:]
 
 # remove the seasonal cycling of AMET at 60N
 # dimension of AMET[year,month]
@@ -142,25 +142,7 @@ AMET_seansonal_cycle = np.mean(AMET,axis=0)
 AMET_white = np.zeros(AMET.shape,dtype=float)
 for i in month_ind:
     AMET_white[:,i,:] = AMET[:,i,:] - AMET_seansonal_cycle[i,:]
-print '*******************************************************************'
-print '***************************  Detrend  *****************************'
-print '*******************************************************************'
-####################################################
-######         detrend - running mean         ######
-####################################################
 
-####################################################
-######      detrend - polynomial fitting      ######
-####################################################
-poly_fit = np.zeros(ci_white.shape,dtype=float)
-for i in np.arange(len(lat)):
-    for j in np.arange(len(lon)):
-        polynomial = np.polyfit(np.arange(len(time)), ci_white[:,i,j], 5)
-        poly = np.poly1d(polynomial)
-        poly_fit[:,i,j] = poly(np.arange(len(time)))
-
-ci_white_detrend_poly = np.zeros(ci_white.shape,dtype=float)
-ci_white_detrend_poly = ci_white - poly_fit
 print '*******************************************************************'
 print '*********************** prepare variables *************************'
 print '*******************************************************************'
@@ -186,15 +168,45 @@ AMET_white_series_winter[0::3,:] = AMET_white_series[0::12,:] # Jan
 AMET_white_series_winter[1::3,:] = AMET_white_series[1::12,:] # Feb
 
 # SIC after detrending
-ci_white_detrend_summer = np.zeros((len(year)*len(month_ind)/4,lat_y+1,len(lon)),dtype=float)
-ci_white_detrend_winter = np.zeros((len(year)*len(month_ind)/4,lat_y+1,len(lon)),dtype=float)
+ci_white_summer = np.zeros((len(year)*len(month_ind)/4,lat_y+1,len(lon)),dtype=float)
+ci_white_winter = np.zeros((len(year)*len(month_ind)/4,lat_y+1,len(lon)),dtype=float)
 
-ci_white_detrend_summer[0::3,:,:] = ci_white_detrend_poly[5::12,:,:] #June
-ci_white_detrend_summer[1::3,:,:] = ci_white_detrend_poly[6::12,:,:] #June
-ci_white_detrend_summer[2::3,:,:] = ci_white_detrend_poly[7::12,:,:] #June
-ci_white_detrend_winter[2::3,:,:] = ci_white_detrend_poly[11::12,:,:] #June
-ci_white_detrend_winter[0::3,:,:] = ci_white_detrend_poly[0::12,:,:] #June
-ci_white_detrend_winter[1::3,:,:] = ci_white_detrend_poly[1::12,:,:] #June
+ci_white_summer[0::3,:,:] = ci_white[5::12,:,:] #June
+ci_white_summer[1::3,:,:] = ci_white[6::12,:,:] #June
+ci_white_summer[2::3,:,:] = ci_white[7::12,:,:] #June
+ci_white_winter[2::3,:,:] = ci_white[11::12,:,:] #June
+ci_white_winter[0::3,:,:] = ci_white[0::12,:,:] #June
+ci_white_winter[1::3,:,:] = ci_white[1::12,:,:] #June
+print '*******************************************************************'
+print '***************************  Detrend  *****************************'
+print '*******************************************************************'
+####################################################
+######         detrend - running mean         ######
+####################################################
+
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+# summer
+poly_fit = np.zeros(ci_white_summer.shape,dtype=float)
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        polynomial = np.polyfit(np.arange(len(time)/4), ci_white_summer[:,i,j], 3)
+        poly = np.poly1d(polynomial)
+        poly_fit[:,i,j] = poly(np.arange(len(time)/4))
+
+ci_white_detrend_summer = np.zeros(ci_white_summer.shape,dtype=float)
+ci_white_detrend_summer = ci_white_summer - poly_fit
+# winter
+poly_fit = np.zeros(ci_white_winter.shape,dtype=float)
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        polynomial = np.polyfit(np.arange(len(time)/4), ci_white_winter[:,i,j], 3)
+        poly = np.poly1d(polynomial)
+        poly_fit[:,i,j] = poly(np.arange(len(time)/4))
+
+ci_white_detrend_winter = np.zeros(ci_white_winter.shape,dtype=float)
+ci_white_detrend_winter = ci_white_winter - poly_fit
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -383,7 +395,7 @@ for c in np.arange(len(lat_interest_list)):
     cbar_labels = ['-20%','-10%','0%','10%','20%']
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
-    i, j = np.where(p_value_original<=0.1)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SIC Anomaly on AMET Anomaly in summer across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
@@ -417,7 +429,7 @@ for c in np.arange(len(lat_interest_list)):
     cbar_labels = ['-20%','-10%','0%','10%','20%']
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
-    i, j = np.where(p_value_original<=0.1)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of Detrend SIC Anomaly on AMET Anomaly in summer across %dN with a running mean of %d years' % (lat_interest_list[c],window/3),fontsize = 9, y=1.05)
@@ -454,7 +466,7 @@ for c in np.arange(len(lat_interest_list)):
     cbar_labels = ['-20%','-10%','0%','10%','20%']
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
-    i, j = np.where(p_value_original<=0.1)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SIC Anomaly on AMET Anomaly in winter across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
@@ -488,7 +500,7 @@ for c in np.arange(len(lat_interest_list)):
     cbar_labels = ['-20%','-10%','0%','10%','20%']
     cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
-    i, j = np.where(p_value_original<=0.1)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of Detrend SIC Anomaly on AMET Anomaly in winter across %dN with a running mean of %d years' % (lat_interest_list[c],window/3),fontsize = 9, y=1.05)
