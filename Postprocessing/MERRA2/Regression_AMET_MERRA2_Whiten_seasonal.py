@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (MERRA2) with whitening
 Author          : Yang Liu
 Date            : 2018.05.28
-Last Update     : 2018.05.28
+Last Update     : 2018.05.29
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -143,25 +143,6 @@ AMET_white_series = AMET_white.reshape(len(year)*len(month_ind),len(lat_AMET))
 ci_series = ci.reshape(len(year)*len(month_ind),len(lat),len(lon))
 ci_white_series = ci_white.reshape(len(year)*len(month_ind),len(lat),len(lon))
 print '*******************************************************************'
-print '***************************  Detrend  *****************************'
-print '*******************************************************************'
-####################################################
-######         detrend - running mean         ######
-####################################################
-
-####################################################
-######      detrend - polynomial fitting      ######
-####################################################
-poly_fit = np.zeros(ci_white_series.shape,dtype=float)
-for i in np.arange(len(lat)):
-    for j in np.arange(len(lon)):
-        polynomial = np.polyfit(np.arange(len(year)*len(month_ind)), ci_white_series[:,i,j], 5)
-        poly = np.poly1d(polynomial)
-        poly_fit[:,i,j] = poly(np.arange(len(year)*len(month_ind)))
-
-ci_white_detrend_poly = np.zeros(ci_white_series.shape,dtype=float)
-ci_white_detrend_poly = ci_white_series - poly_fit
-print '*******************************************************************'
 print '***********************  summer / winter  *************************'
 print '*******************************************************************'
 # Summer and winter only
@@ -179,15 +160,45 @@ AMET_white_series_winter[0::3,:] = AMET_white_series[0::12,:] # Jan
 AMET_white_series_winter[1::3,:] = AMET_white_series[1::12,:] # Feb
 
 # SIC after detrending
-ci_white_detrend_summer = np.zeros((len(year)*len(month_ind)/4,len(lat),len(lon)),dtype=float)
-ci_white_detrend_winter = np.zeros((len(year)*len(month_ind)/4,len(lat),len(lon)),dtype=float)
+ci_white_series_summer = np.zeros((len(year)*len(month_ind)/4,len(lat),len(lon)),dtype=float)
+ci_white_series_winter = np.zeros((len(year)*len(month_ind)/4,len(lat),len(lon)),dtype=float)
 
-ci_white_detrend_summer[0::3,:,:] = ci_white_detrend_poly[5::12,:,:] #June
-ci_white_detrend_summer[1::3,:,:] = ci_white_detrend_poly[6::12,:,:] #June
-ci_white_detrend_summer[2::3,:,:] = ci_white_detrend_poly[7::12,:,:] #June
-ci_white_detrend_winter[2::3,:,:] = ci_white_detrend_poly[11::12,:,:] #June
-ci_white_detrend_winter[0::3,:,:] = ci_white_detrend_poly[0::12,:,:] #June
-ci_white_detrend_winter[1::3,:,:] = ci_white_detrend_poly[1::12,:,:] #June
+ci_white_series_summer[0::3,:,:] = ci_white_series[5::12,:,:] #June
+ci_white_series_summer[1::3,:,:] = ci_white_series[6::12,:,:] #June
+ci_white_series_summer[2::3,:,:] = ci_white_series[7::12,:,:] #June
+ci_white_series_winter[2::3,:,:] = ci_white_series[11::12,:,:] #June
+ci_white_series_winter[0::3,:,:] = ci_white_series[0::12,:,:] #June
+ci_white_series_winter[1::3,:,:] = ci_white_series[1::12,:,:] #June
+print '*******************************************************************'
+print '***************************  Detrend  *****************************'
+print '*******************************************************************'
+####################################################
+######         detrend - running mean         ######
+####################################################
+
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+# summer
+poly_fit = np.zeros(ci_white_series_summer.shape,dtype=float)
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        polynomial = np.polyfit(np.arange(len(year)*len(month_ind)/4), ci_white_series_summer[:,i,j], 3)
+        poly = np.poly1d(polynomial)
+        poly_fit[:,i,j] = poly(np.arange(len(year)*len(month_ind)/4))
+
+ci_white_detrend_summer = np.zeros(ci_white_series_summer.shape,dtype=float)
+ci_white_detrend_summer = ci_white_series_summer - poly_fit
+# winter
+poly_fit = np.zeros(ci_white_series_winter.shape,dtype=float)
+for i in np.arange(len(lat)):
+    for j in np.arange(len(lon)):
+        polynomial = np.polyfit(np.arange(len(year)*len(month_ind)/4), ci_white_series_winter[:,i,j], 3)
+        poly = np.poly1d(polynomial)
+        poly_fit[:,i,j] = poly(np.arange(len(year)*len(month_ind)/4))
+
+ci_white_detrend_winter = np.zeros(ci_white_series_winter.shape,dtype=float)
+ci_white_detrend_winter = ci_white_series_winter - poly_fit
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
