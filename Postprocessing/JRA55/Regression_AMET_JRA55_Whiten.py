@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (JRA55) with whitening
 Author          : Yang Liu
 Date            : 2018.01.09
-Last Update     : 2018.05.23
+Last Update     : 2018.05.29
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -14,6 +14,11 @@ Description     : The code aims to explore the assotiation between climatologica
                   will be projected on meridional energy transport. This will enhance
                   our understanding of climate change. Notice that the time series
                   of input data will be whitened (the seasonal cycles are removed)
+
+                  Regarding the detrending, as we want to remove linear trend as
+                  much as we can and keep the oscillation as much as we could, we
+                  only use the polynomial fitting upto 3rd order.
+
 Return Value    : Map of correlation
 Dependencies    : os, time, numpy, scipy, netCDF4, matplotlib, basemap
 variables       : Sea Surface Temperature                       SST
@@ -181,7 +186,7 @@ print '*******************************************************************'
 poly_fit = np.zeros(ci_white.shape,dtype=float)
 for i in np.arange(len(lat)):
     for j in np.arange(len(lon)):
-        polynomial = np.polyfit(np.arange(len(time)), ci_white[:,i,j], 5)
+        polynomial = np.polyfit(np.arange(len(time)), ci_white[:,i,j], 3)
         poly = np.poly1d(polynomial)
         poly_fit[:,i,j] = poly(np.arange(len(time)))
 
@@ -511,7 +516,7 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(lat_y+1):
         for j in np.arange(len(lon)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['JRA55'][c]],SLP_white[:,i,j])
+            slope[i,j],_,r_value[i,j],p_value_original[i,j],_ = stats.linregress(AMET_white_series[:,lat_interest['JRA55'][c]],SLP_white[:,i,j])
     # visualization through basemap
     fig14 = plt.figure()
     # setup north polar stereographic basemap
@@ -541,12 +546,12 @@ for c in np.arange(len(lat_interest_list)):
     #plt.clabel(cs,incline=True, format='%.1f', fontsize=12, colors='k')
     # draw significance stippling on the map
     # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
-    i, j = np.where(p_value<=0.05)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SLP Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig14.savefig(output_path + os.sep + 'SLP' + os.sep + "Regression_AMET_SLP_JRA55_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    fig14.savefig(output_path + os.sep + 'SLP' + os.sep + 'LongTermTrend' + os.sep + "Regression_AMET_SLP_JRA55_white_%dN_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
 
     # plot regression coefficient
     fig15 = plt.figure()
@@ -568,12 +573,44 @@ for c in np.arange(len(lat_interest_list)):
     cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
     cbar.ax.tick_params(labelsize=8)
     cbar.set_label('Regression Coefficient kPa/PW',fontsize = 8)
-    i, j = np.where(p_value<=0.05)
+    i, j = np.where(p_value_original<=0.05)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
     plt.title('Regression of SLP Anomaly on AMET Anomaly across %dN' % (lat_interest_list[c]),fontsize = 9, y=1.05)
     plt.show()
-    fig15.savefig(output_path + os.sep + 'SLP' + os.sep + "Regression_AMET_SLP_JRA55_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    fig15.savefig(output_path + os.sep + 'SLP' + os.sep + 'LongTermTrend' + os.sep + "Regression_AMET_SLP_JRA55_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+
+    for i in np.arange(lat_y+1):
+        for j in np.arange(len(lon)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope[i,j],_,r_value[i,j],p_value[i,j],_ = stats.linregress(AMET_white_running_mean[:,lat_interest['JRA55'][c]],SLP_white_running_mean[:,i,j])
+    # plot regression coefficient
+    fig151 = plt.figure()
+    # setup north polar stereographic basemap
+    m = Basemap(projection='npstere',boundinglat=60,round=True,lon_0=0,resolution='l')
+    # draw coastlines
+    m.drawcoastlines(linewidth=0.25)
+    # draw parallels and meridians
+    m.drawparallels(np.arange(60,81,10),fontsize = 7,linewidth=0.75)
+    m.drawmeridians(np.arange(0,360,30),labels=[1,1,1,1],fontsize = 7,linewidth=0.75)
+    # x,y coordinate - lon, lat
+    xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
+    XX, YY = m(xx, yy)
+    # define color range for the contourf
+    color = np.linspace(-0.5,0.5,21) # SLP_white
+    # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
+    cs = m.contourf(XX,YY,slope/1000,color,cmap='coolwarm',extend='both') # unit from Pa to kPa
+    # add color bar
+    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
+    cbar.ax.tick_params(labelsize=8)
+    cbar.set_label('Regression Coefficient kPa/PW',fontsize = 8)
+    i, j = np.where(p_value_original<=0.05)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    m.scatter(XX[i,j],YY[i,j],2.2,marker='.',color='g',alpha=0.6, edgecolor='none') # alpha bleding factor with map
+    plt.title('Regression of SLP Anomaly on AMET Anomaly across %dN with a running mean of %d months' % (lat_interest_list[c],window),fontsize = 9, y=1.05)
+    plt.show()
+    fig151.savefig(output_path + os.sep + 'SLP' + os.sep + 'Interannual' + os.sep + "Regression_AMET_SLP_JRA55_white_%dN_lowpass_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi=400)
+    #fig151.savefig(output_path + os.sep + 'SLP' + os.sep + 'Annual' + os.sep + "Regression_AMET_SLP_JRA55_white_%dN_lowpass_%m_regression_coef.jpeg" % (lat_interest_list[c],window),dpi=400)
 
     # linear regress SST on AMET (anomalies)
     # plot correlation coefficient
@@ -775,6 +812,6 @@ for c in np.arange(len(lat_interest_list)):
     plt.title('Regression of Detrend SIC Anomaly on AMET Anomaly across %dN with a running mean of %d months' % (lat_interest_list[c],window),fontsize = 9, y=1.05)
     plt.show()
     fig23.savefig(output_path + os.sep + 'SIC' + os.sep + 'Interannual'+ os.sep + "Regression_AMET_Ice_ERAI_white_%dN_running_mean_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi=400)
-    #fig23.savefig(output_path + os.sep + 'SIC' + os.sep + 'Annual'+ os.sep + "Regression_AMET_Ice_ERAI_white_%dN_regression_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    #fig23.savefig(output_path + os.sep + 'SIC' + os.sep + 'Annual'+ os.sep + "Regression_AMET_Ice_ERAI_white_%dN_running_mean_%dm_regression_coef.jpeg" % (lat_interest_list[c],window),dpi=400)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
