@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify stationary and transient eddy from atmospheric meridional energy transport (ERA-Interim)(HPC-cloud customised)
 Author          : Yang Liu
 Date            : 2018.05.02
-Last Update     : 2018.05.30
+Last Update     : 2018.05.31
 Description     : The code aims to calculate the time and space dependent components
                   of atmospheric meridional energy transport based on atmospheric
                   reanalysis dataset ERA-Interim from ECMWF. The complete procedure
@@ -134,10 +134,11 @@ B = np.array([
 
 ################################   Input zone  ######################################
 # specify data path
-#datapath = 'F:\DataBase\ERA_Interim\Subdaily'
 datapath = '/project/Reanalysis/ERA_Interim/Subdaily/Model'
 # mass correction baratropic wind
 uc_vc_datapath = '/project/Reanalysis/ERA_Interim/Subdaily/Model/HPC_Output/point'
+# temporal and spatial mean of fields
+mean_datapath = '/project/Reanalysis/ERA_Interim/Subdaily/Model/HPC_Output/eddy/v'
 # time of the data, which concerns with the name of input
 # starting time (year)
 start_year = 1979
@@ -171,7 +172,7 @@ def initialization(benchmark):
     period = np.arange(start_year,end_year+1,1)
     index_month = np.arange(1,13,1)
     # create dimensions for saving data
-    Dim_level = len(benchmark.variables['level'][:])
+    #Dim_level = len(benchmark.variables['level'][:])
     Dim_latitude = len(benchmark.variables['latitude'][:])
     Dim_longitude = len(benchmark.variables['longitude'][:])
     Dim_month = len(index_month)
@@ -180,13 +181,36 @@ def initialization(benchmark):
     #longitude = benchmark.variables['longitude'][:]
     #Dim_time = len(benchmark.variables['time'][:])
     # a list of the index of starting day in each month
-    month_day_length = [31,28,31,30,31,30,31,31,30,31,30,31]
+    month_day_length = [31,28,31,30,31,30,31,31,30,31,30,31] #! we ignore the last day of February for the leap year
     month_day_index = [0,31,59,90,120,151,181,212,243,273,304,334]
     # create variables
-    v_temporal_mean = np.zeros((365,len(lev_target),Dim_latitude,Dim_longitude),dtype=float) #! we ignore the last day of February for the leap year
+    v_temporal_sum = np.zeros((365,len(lev_target),Dim_latitude,Dim_longitude),dtype=float) #! we ignore the last day of February for the leap year
     v_spatial_mean = np.zeros((Dim_period,365,len(lev_target),Dim_latitude),dtype=float) #! we ignore the last day of February for the leap year
-    return period, index_month, Dim_level, Dim_latitude, Dim_longitude, Dim_month, Dim_period,\
+    return period, index_month, Dim_latitude, Dim_longitude, Dim_month, Dim_period,\
            month_day_length, month_day_index, v_temporal_sum, v_spatial_mean
+
+def initialization_eddy(mean_datapath):
+    print "Grab temporal and spatial mean for the following computation of eddies!"
+    datapath_temporal_spatial_mean = os.path.join(mean_datapath,'model_daily_075_v_mean_point.nc')
+    mean_key = Dataset(datapath_temporal_spatial_mean)
+    # Here we only use the temporal mean, for the spatial mean we will take it dynamically
+    # during the calculation of eddies, for the sake of memory usage.
+    v_temporal_mean = mean_key.variables['v_temporal_mean']
+    # create space for eddies
+    v_2_transient_pool = np.zeros((Dim_period,Dim_month,len(lev_target),Dim_latitude,Dim_longitude),dtype=float)
+    v_2_stationary_pool = np.zeros((Dim_period,Dim_month,len(lev_target),Dim_latitude,Dim_longitude),dtype=float)
+    # create space for overall momentum
+    v_2_overall_pool = np.zeros((Dim_period,Dim_month,len(lev_target),Dim_latitude,Dim_longitude),dtype=float)
+    # create space for deviations
+    #v_prime_pool = np.zeros((Dim_period,Dim_month,len(lev_target),Dim_latitude,Dim_longitude),dtype=float)
+    #v_star_pool = np.zeros((Dim_period,Dim_month,len(lev_target),Dim_latitude,Dim_longitude),dtype=float)
+    # calculate mean meridional circulation
+    v_2_mean = np.mean(v_temporal_mean,3) ** 2
+    v_2_mean_monthly_mean = np.zeros(12,len(lev_target),Dim_latitude)
+    for i in np.arange(Dim_month):
+        v_2_mean_monthly_mean[i,:,:] = np.mean(v_2_mean[month_day_index[i-1]:month_day_index[i-1]+month_day_length[i-1],:,:],0)
+
+    return v_temporal_mean, v_2_transient_pool, v_2_stationary_pool, v_2_overall_pool, v_2_mean_monthly_mean
 
 def pick_v(u_v_key):
     # validate time and location info
@@ -217,49 +241,67 @@ def pick_v(u_v_key):
         v_out = v_daily[:-1,:,:,:]
     else:
         v_out = v_daily
-
     print 'Extracting variables successfully!'
     logging.info("Extracting variables successfully!")
 
     return v_out
 
-# make plots
-def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_path,year):
-    print "Start making plots for the total meridional energy transport and each component."
-    logging.info("Start making plots for the total meridional energy transport and each component.")
-    # calculate monthly mean of total energy transport
-    # unit change from tera to peta (from 1E+12 to 1E+15)
+def compute_eddy(v_temporal_mean_select, v):
+    # shape of v[days,target_levels,lat,lon]
+    # calculate transient eddies
+    print "Calculate transient eddies!"
+    v_prime = v - v_temporal_mean_select
+    v_2_transient = v_prime * v_prime
+    # monthly mean
+    #v_prime_monthly_mean = np.mean(v_prime,0)
+    v_2_transient_monthly_mean = np.mean(v_2_transient,0)
+    # Calculate stationary eddies
+    print "Calculate stationary eddies!"
+    v_star = np.zeros(v.shape,dtype=float)
+    v_zonal_mean = np.mean(v,3)
+    v_zonal_mean_enlarge = np.repeat(v_zonal_mean[:,:,:,np.newaxis],Dim_longitude,3)
+    v_star = v - v_zonal_mean_enlarge
+    v_2_stationary = v_star * v_star
+    # monthly mean
+    #v_star_monthly_mean = np.mean(v_star,0)
+    v_2_stationary_monthly_mean = np.mean(v_2_stationary,0)
+    # calculate the overall momentum
+    v_2_overall = v * v
+    # monthly mean
+    v_2_overall_monthly_mean = np.mean(v_2_overall,0)
 
+    return v_2_transient_monthly_mean, v_2_stationary_monthly_mean, v_2_overall_monthly_mean
+
+# make plots
+def visualization(v2_overall,v2_transient,v2_stationary,v2_mean,output_path):
+    print "Start making plot for the meridional momentum transport by each component."
+    logging.info("Start making plot for the meridional momentum transport by each component.")
+    # calculate annual mean of momentum transport
+    v2_overall_mean = np.mean(np.mean(np.mean(v2_overall,4),1),0)
+    v2_transient_mean = np.mean(np.mean(np.mean(v2_transient,4),1),0)
+    v2_stationary_mean = np.mean(np.mean(np.mean(v2_stationary,4),1),0)
+    v2_mean_mean = np.mean(v2_mean,0)
     # take latitude data from benchmark variable
     Lat = benchmark.variables['latitude'][:]
-
     # Plot the total meridional energy transport against the latitude
-    fig1 = plt.figure()
-    plt.plot(Lat,E_total_monthly_mean,'b-',label='ECMWF')
-    plt.axhline(y=0, color='r',ls='--')
-    #plt.hold()
-    plt.title('Total Atmospheric Meridional Energy Transport %d' % (year))
-    #plt.legend()
-    plt.xlabel("Laitude")
-    plt.xticks(np.linspace(30,90,13))
-    plt.yticks(np.linspace(0,6,7))
-    plt.ylabel("Meridional Energy Transport (PW)")
-    #plt.show()
-    fig1.savefig(output_path + os.sep + 'era%d' % (year) + os.sep + 'Meridional_Energy_total_%d.png' % (year), dpi = 400)
-
-    # Plot the meridional internal energy transport against the latitude
-    fig2 = plt.figure()
-    plt.plot(Lat,E_internal_monthly_mean,'b-',label='ECMWF')
-    plt.axhline(y=0, color='r',ls='--')
-    #plt.hold()
-    plt.title('Atmospheric Meridional Internal Energy Transport %d' % (year))
-    #plt.legend()
-    plt.xlabel("Laitude")
-    plt.xticks(np.linspace(30,90,13))
-    plt.yticks(np.linspace(0,6,7))
-    plt.ylabel("Meridional Energy Transport (PW)")
-    #plt.show()
-    fig2.savefig(output_path + os.sep + 'era%d' % (year) + os.sep + 'Meridional_Energy_internal_%d.png' % (year), dpi = 400)
+    level_plot = [200,500,850]
+    for i in np.arange(len(lev_target)):
+        fig1 = plt.figure()
+        plt.axhline(y=0, color='k',ls='--')
+        plt.plot(Lat,v2_overall_mean[i,:],'y-',linewidth = 2.0, label='Overall')
+        plt.plot(Lat,v2_mean_mean,'g-',linewidth = 2.0, label='Steady Mean')
+        plt.plot(Lat,v2_transient_mean,'r-',linewidth = 2.0, label='Transient')
+        plt.plot(Lat,v2_stationary_mean,'b-',linewidth = 2.0, label='Stationary')
+        #plt.hold()
+        plt.title('Meridional Momentum Transport by different components at {}hPa'.format(level_plot[i]))
+        plt.legend()
+        plt.xlabel("Laitude")
+        plt.xticks(np.linspace(20,90,15))
+        #plt.yticks(np.linspace(0,6,7))
+        plt.ylabel("Meridional Momentum Transport (m2/s2)")
+        #plt.show()
+        fig1.savefig(output_path + os.sep + 'Meridional_Momentum_Transport_lev_{}_overall.png'.format(level_plot[i]), dpi = 400)
+        plt.close(fig1)
 
 # save output datasets
 def create_netcdf_point_mean (v_temporal_mean,v_spatial_mean,output_path):
@@ -314,6 +356,80 @@ def create_netcdf_point_mean (v_temporal_mean,v_spatial_mean,output_path):
     print "Create netcdf file successfully"
     logging.info("The generation of netcdf files for the temporal and spatial mean of velocity on each grid point is complete!!")
 
+def create_netcdf_point_eddy(v2_overall,v2_transient,v2_stationary,v2_mean,output_path):
+    # take the zonal mean
+    v2_overall_zonal = np.mean(v2_overall,4)
+    v2_transient_zonal = np.mean(v2_transient,4)
+    v2_stationary_zonal = np.mean(v2_stationary,4)
+    # create netCDF
+    print '*******************************************************************'
+    print '*********************** create netcdf file*************************'
+    print '*******************************************************************'
+    logging.info("Start creating netcdf file for stationary and transient eddies at each grid point.")
+    # wrap the datasets into netcdf file
+    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+    data_wrap = Dataset(os.path.join(output_path,'model_daily_075_v2_eddies_point.nc'),'w',format = 'NETCDF4')
+    # create dimensions for netcdf data
+    year_wrap_dim = data_wrap.createDimension('year',Dim_period)
+    month_wrap_dim = data_wrap.createDimension('month',Dim_month)
+    lev_wrap_dim = data_wrap.createDimension('level',len(lev_target))
+    lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
+    lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
+    # create coordinate variables for 1-dimensions
+    year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
+    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    lev_wrap_var = data_wrap.createVariable('level',np.int32,('level',))
+    lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+    lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
+    # create the 5-d variable
+    v2_overall_wrap_var = data_wrap.createVariable('v2_overall',np.float64,('year','month','level','latitude','longitude'),zlib=True)
+    v2_transient_wrap_var = data_wrap.createVariable('v2_transient',np.float64,('year','month','level','latitude','longitude'),zlib=True)
+    v2_stationary_wrap_var = data_wrap.createVariable('v2_stationary',np.float64,('year','month','level','latitude','longitude'),zlib=True)
+    # create the 4d variable
+    v2_overall_zonal_wrap_var = data_wrap.createVariable('v2_overall_zonal',np.float64,('year','month','level','latitude'),zlib=True)
+    v2_transient_zonal_wrap_var = data_wrap.createVariable('v2_transient_zonal',np.float64,('year','month','level','latitude'),zlib=True)
+    v2_stationary_zonal_wrap_var = data_wrap.createVariable('v2_stationary_zonal',np.float64,('year','month','level','latitude'),zlib=True)
+    # create the 2d variable
+    v2_mean_wrap_var = data_wrap.createVariable('v2_mean',np.float64,('month','level','latitude'),zlib=True)
+    # global attributes
+    data_wrap.description = 'Monthly stationary and transient eddies at each grid point'
+    # variable attributes
+    lat_wrap_var.units = 'degree_north'
+    lon_wrap_var.units = 'degree_east'
+    lev_wrap_var.units = 'hPa'
+    v2_overall_wrap_var.units = 'm2/s2'
+    v2_transient_wrap_var.units = 'm2/s2'
+    v2_stationary_wrap_var.units = 'm2/s2'
+    v2_overall_zonal_wrap_var.units = 'm2/s2'
+    v2_transient_zonal_wrap_var.units = 'm2/s2'
+    v2_stationary_zonal_wrap_var.units = 'm2/s2'
+    v2_mean_wrap_var.units = 'm2/s2'
+
+    lat_wrap_var.long_name = 'Latitude'
+    lon_wrap_var.long_name = 'Longitude'
+    lev_wrap_var.long_name = 'Pressure level'
+    v2_overall_wrap_var.long_name = 'Northward transport of momentum by all motions'
+    v2_transient_wrap_var.long_name = 'Northward transport of momentum by transient eddy'
+    v2_stationary_wrap_var.long_name = 'Northward transport of momentum by stationary eddy'
+    v2_overall_zonal_wrap_var.long_name = 'Zonal mean of northward transport of momentum by all motions'
+    v2_transient_zonal_wrap_var.long_name = 'Zonal mean of northward transport of momentum by transient eddy'
+    v2_stationary_zonal_wrap_var.long_name = 'Zonal mean of northward transport of momentum by stationary eddy'
+    v2_mean_wrap_var.long_name = 'Northward transport of momentum by steady mean meridional circulation'
+
+    # writing data
+    year_wrap_var[:] = period
+    month_wrap_var[:] = index_month
+    lev_wrap_var[:] = [200,500,850]
+    lat_wrap_var[:] = benchmark.variables['latitude'][:]
+    lon_wrap_var[:] = benchmark.variables['longitude'][:]
+    v2_overall_wrap_var[:] = v2_overall
+    v2_transient_wrap_var[:] = v2_transient
+    v2_stationary_wrap_var[:] = v2_stationary
+    v2_overall_zonal_wrap_var[:] = v2_overall_zonal
+    v2_transient_zonal_wrap_var[:] = v2_transient_zonal
+    v2_stationary_zonal_wrap_var[:] = v2_stationary_zonal
+    v2_mean_wrap_var[:] = v2_mean
+
 # pass argument to the main function
 def choice_parser():
     '''
@@ -323,6 +439,8 @@ def choice_parser():
     parser = argparse.ArgumentParser(description="Choose the function")
     parser.add_argument('--mean', action = 'store_true',
                         help='function switch for calculating the temporal & spatial mean')
+    parser.add_argument('--eddy', action = 'store_true',
+                        help='function switch for calculating the stationary & transient eddy')
     #get arguments
     choices = parser.parse_args()
     return choices
@@ -333,7 +451,7 @@ if __name__=="__main__":
     # calculate the time for the code execution
     start_time = tttt.time()
     # initialization
-    period, index_month, Dim_level, Dim_latitude, Dim_longitude, Dim_month, Dim_period,\
+    period, index_month, Dim_latitude, Dim_longitude, Dim_month, Dim_period,\
     month_day_length, month_day_index, v_temporal_sum, v_spatial_mean = initialization(benchmark)
     # get command line arguments and decide the function of this script
     args = choice_parser()
@@ -345,6 +463,7 @@ if __name__=="__main__":
             for j in index_month:
                 # get the key of each variable
                 u_v_key = var_key(datapath,i,j)
+                # take the daily mean of target fields at certain levels
                 v = pick_v(u_v_key)
                 # add daily field to the summation operator
                 v_temporal_sum[month_day_index[j-1]:month_day_index[j-1]+month_day_length[j-1],:,:,:] = \
@@ -356,11 +475,32 @@ if __name__=="__main__":
         v_temporal_mean = v_temporal_sum / Dim_period
         # create netcdf file for the output
         create_netcdf_point_mean(v_temporal_mean,v_spatial_mean,output_path)
-    else:
+    elif args.eddy:
+        del v_temporal_sum, v_spatial_mean
         print '*******************************************************************'
         print '**********  calculate the stationary and transient eddy  **********'
         print '*******************************************************************'
-
+        # Initialization
+        # Grab temporal & spatial mean
+        # The mean meridional circulation is calculated here
+        v_temporal_mean, v_2_transient_pool, v_2_stationary_pool, v_2_overall_pool,\
+        v_2_mean_monthly_mean = initialization_eddy(mean_datapath)
+        for i in period:
+            for j in index_month:
+                # get the key of each variable
+                u_v_key = var_key(datapath,i,j)
+                # take the daily mean of target fields at certain levels
+                v = pick_v(u_v_key)
+                v_temporal_mean_select = v_temporal_mean[month_day_index[j-1]:month_day_index[j-1]+month_day_length[j-1],:,:,:]
+                v_2_transient, v_2_stationary, v_2_overall = compute_eddy(v_temporal_mean_select, v)
+                # save output to the data pool for netCDF
+                v_2_overall_pool[i-start_year,j-1,:,:,:] = v_2_overall
+                v_2_transient_pool[i-start_year,j-1,:,:,:] = v_2_transient
+                v_2_stationary_pool[i-start_year,j-1,:,:,:] = v_2_stationary
+        create_netcdf_point_eddy(v_2_overall_pool,v_2_transient_pool,v_2_stationary_pool,v_2_mean_monthly_mean,output_path)
+        visualization(v_2_overall_pool,v_2_transient_pool,v_2_stationary_pool,v_2_mean_monthly_mean,output_path)
+    else:
+        print 'Please specify the function of the code!'
     print 'The full pipeline of the decomposition of meridional energy transport in the atmosphere is accomplished!'
     logging.info("The full pipeline of the decomposition of meridional energy transport in the atmosphere is accomplished!")
     print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
