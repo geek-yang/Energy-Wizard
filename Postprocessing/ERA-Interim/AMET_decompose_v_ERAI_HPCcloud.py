@@ -234,9 +234,10 @@ def pick_v(u_v_key):
     v[:,1,:,:] = u_v_key.variables['v'][:,39,:,:] # 500hPa
     v[:,2,:,:] = u_v_key.variables['v'][:,49,:,:] # 850hPa
     # daily mean
-    v_daily = np.zeros((len(time)/4,len(lev_target),len(latitude),len(longitude)),dtype=float)
-    for i in np.arange(len(time)/4):
-        v_daily[i,:,:,:] = np.mean(v[i:i+4,:,:,:],0)
+    # first we reshape the array
+    v_expand = v.reshape(len(time)/4,4,len(lev_target),len(latitude),len(longitude))
+    # Then we take daily mean
+    v_daily = np.mean(v_expand,1)
     if days == 29:
         v_out = v_daily[:-1,:,:,:]
     else:
@@ -247,8 +248,15 @@ def pick_v(u_v_key):
     return v_out
 
 def compute_eddy(v_temporal_mean_select, v):
+    '''
+    We follow the method given by Peixoto and Oort, 1983.
+    The equation is listed on page 89.
+    equation 4.9 and 4.10
+    The example is given on page 288.
+    '''
     # shape of v[days,target_levels,lat,lon]
     # calculate transient eddies
+    logging.info("Calculate eddies!")
     print "Calculate transient eddies!"
     v_prime = v - v_temporal_mean_select
     v_2_transient = v_prime * v_prime
@@ -257,18 +265,26 @@ def compute_eddy(v_temporal_mean_select, v):
     v_2_transient_monthly_mean = np.mean(v_2_transient,0)
     # Calculate stationary eddies
     print "Calculate stationary eddies!"
-    v_star = np.zeros(v.shape,dtype=float)
-    v_zonal_mean = np.mean(v,3)
-    v_zonal_mean_enlarge = np.repeat(v_zonal_mean[:,:,:,np.newaxis],Dim_longitude,3)
-    v_star = v - v_zonal_mean_enlarge
-    v_2_stationary = v_star * v_star
+    ################# tentative method ##################
+    #v_star = np.zeros(v.shape,dtype=float)
+    #v_zonal_mean = np.mean(v,3)
+    #v_zonal_mean_enlarge = np.repeat(v_zonal_mean[:,:,:,np.newaxis],Dim_longitude,3)
+    #v_star = v - v_zonal_mean_enlarge
+    #v_2_stationary = v_star * v_star
     # monthly mean
     #v_star_monthly_mean = np.mean(v_star,0)
-    v_2_stationary_monthly_mean = np.mean(v_2_stationary,0)
+    #v_2_stationary_monthly_mean = np.mean(v_2_stationary,0)
+    ################# tentative method ##################
+    v_monthly_mean = np.mean(v,0)
+    v_zonal_mean = np.mean(v_monthly_mean,2)
+    v_zonal_mean_enlarge = np.repeat(v_zonal_mean[:,:,np.newaxis],Dim_longitude,2)
+    v_star = v_monthly_mean - v_zonal_mean_enlarge
+    v_2_stationary_monthly_mean = v_star * v_star
     # calculate the overall momentum
     v_2_overall = v * v
     # monthly mean
     v_2_overall_monthly_mean = np.mean(v_2_overall,0)
+    logging.info("Finish the computation of eddies!")
 
     return v_2_transient_monthly_mean, v_2_stationary_monthly_mean, v_2_overall_monthly_mean
 
@@ -289,9 +305,9 @@ def visualization(v2_overall,v2_transient,v2_stationary,v2_mean,output_path):
         fig1 = plt.figure()
         plt.axhline(y=0, color='k',ls='--')
         plt.plot(Lat,v2_overall_mean[i,:],'y-',linewidth = 2.0, label='Overall')
-        plt.plot(Lat,v2_mean_mean,'g-',linewidth = 2.0, label='Steady Mean')
-        plt.plot(Lat,v2_transient_mean,'r-',linewidth = 2.0, label='Transient')
-        plt.plot(Lat,v2_stationary_mean,'b-',linewidth = 2.0, label='Stationary')
+        plt.plot(Lat,v2_mean_mean[i,:],'g-',linewidth = 2.0, label='Steady Mean')
+        plt.plot(Lat,v2_transient_mean[i,:],'r-',linewidth = 2.0, label='Transient')
+        plt.plot(Lat,v2_stationary_mean[i,:],'b-',linewidth = 2.0, label='Stationary')
         #plt.hold()
         plt.title('Meridional Momentum Transport by different components at {}hPa'.format(level_plot[i]))
         plt.legend()
