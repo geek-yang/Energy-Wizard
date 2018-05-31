@@ -83,7 +83,7 @@ print os.path
 
 # Redirect all the console output to a file
 #sys.stdout = open('F:\DataBase\ERA_Interim\console.out','w')
-sys.stdout = open('/project/Reanalysis/ERA_Interim/Subdaily/Model/console_E-decompose.out','w+')
+sys.stdout = open('/project/Reanalysis/ERA_Interim/Subdaily/Model/console_E_decompose.out','w+')
 
 # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
 #logging.basicConfig(filename = 'F:\DataBase\ERA_Interim\history.log', filemode = 'w',level = logging.DEBUG,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -206,7 +206,7 @@ def initialization_eddy(mean_datapath):
     #v_star_pool = np.zeros((Dim_period,Dim_month,len(lev_target),Dim_latitude,Dim_longitude),dtype=float)
     # calculate mean meridional circulation
     v_2_mean = np.mean(v_temporal_mean,3) ** 2
-    v_2_mean_monthly_mean = np.zeros(12,len(lev_target),Dim_latitude)
+    v_2_mean_monthly_mean = np.zeros((12,len(lev_target),Dim_latitude),dtype=float)
     for i in np.arange(Dim_month):
         v_2_mean_monthly_mean[i,:,:] = np.mean(v_2_mean[month_day_index[i-1]:month_day_index[i-1]+month_day_length[i-1],:,:],0)
 
