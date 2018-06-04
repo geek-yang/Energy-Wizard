@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.05.23
-Last Update     : 2018.05.23
+Last Update     : 2018.06.04
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF and
@@ -45,6 +45,8 @@ from scipy import stats
 
 # switch on the seaborn effect
 sns.set()
+sns.set_style("ticks")
+sns.despine()
 
 ################################   Input zone  ######################################
 # specify data path
@@ -197,15 +199,79 @@ for i in np.arange(len(AMET_E_JRA55_white_series)-window+1):
     AMET_E_JRA55_white_running_mean[i,:] = np.mean(AMET_E_JRA55_white_series[i:i+window,:],0)
 
 print '*******************************************************************'
+print '********************** standard deviation  ************************'
+print '*******************************************************************'
+# calculate the standard deviation of AMET
+# ERA-Interim
+AMET_E_ERAI_std = np.std(AMET_E_ERAI_series)
+print 'The standard deviation of AMET from ERA-Interim is (in peta Watt):'
+print AMET_E_ERAI_std
+# MERRA2
+AMET_E_MERRA2_std = np.std(AMET_E_MERRA2_series)
+print 'The standard deviation of AMET from MERRA2 is (in peta Watt):'
+print AMET_E_MERRA2_std
+# JRA55
+AMET_E_JRA55_std = np.std(AMET_E_JRA55_series)
+print 'The standard deviation of AMET from JRA55 is (in peta Watt):'
+print AMET_E_JRA55_std
+
+# calculate the standard deviation of AMET anomaly
+# ERA-Interim
+AMET_E_ERAI_white_running_mean_std = np.std(AMET_E_ERAI_white_running_mean)
+print 'The standard deviation of AMET anomaly from ERA-Interim is (in peta Watt):'
+print AMET_E_ERAI_white_running_mean_std
+# MERRA2
+AMET_E_MERRA2_white_running_mean_std = np.std(AMET_E_MERRA2_white_running_mean)
+print 'The standard deviation of AMET anomaly from MERRA2 is (in peta Watt):'
+print AMET_E_MERRA2_white_running_mean_std
+# JRA55
+AMET_E_JRA55_white_running_mean_std = np.std(AMET_E_JRA55_white_running_mean)
+print 'The standard deviation of AMET anomaly from JRA55 is (in peta Watt):'
+print AMET_E_JRA55_white_running_mean_std
+print '*******************************************************************'
+print '*************************** mean value  ***************************'
+print '*******************************************************************'
+# calculate the mean of AMET
+# ERA-Interim
+AMET_E_ERAI_mean = np.mean(AMET_E_ERAI)
+print 'The mean of AMET from ERA-Interim is (in peta Watt):'
+print AMET_E_ERAI_mean
+# MERRA2
+AMET_E_MERRA2_mean = np.mean(AMET_E_MERRA2)
+print 'The mean of AMET from MERRA2 is (in peta Watt):'
+print AMET_E_MERRA2_mean
+# JRA55
+AMET_E_JRA55_mean = np.mean(AMET_E_JRA55)
+print 'The mean of AMET from JRA55 is (in peta Watt):'
+print AMET_E_JRA55_mean
+
+# calculate the standard deviation of AMET anomaly
+# ERA-Interim
+AMET_E_ERAI_white_mean_running_mean = np.mean(AMET_E_ERAI_white_running_mean)
+print 'The mean of AMET anomaly from ERA-Interim is (in peta Watt):'
+print AMET_E_ERAI_white_mean_running_mean
+# MERRA2
+AMET_E_MERRA2_white_mean_running_mean = np.mean(AMET_E_MERRA2_white_running_mean)
+print 'The mean of AMET anomaly from MERRA2 is (in peta Watt):'
+print AMET_E_MERRA2_white_mean_running_mean
+# JRA55
+AMET_E_JRA55_white_mean_running_mean = np.mean(AMET_E_JRA55_white_running_mean)
+print 'The mean of AMET anomaly from JRA55 is (in peta Watt):'
+print AMET_E_JRA55_white_mean_running_mean
+
+print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
 index_1980_2016 = np.arange(13,457,1)
 index_1979_2016 = np.arange(1,457,1)
 index_1979_2015 = np.arange(1,445,1)
 index_1980_2015 = np.arange(1,433,1)
+index_year = np.arange(1980,year_ERAI[-1]+1,5)
 
 # plot the AMET with running mean
 # total energy transport
+text_content = '$\mu_{ERAI}=%.2f$   $\mu_{MERRA2}=%.2f$   $\mu_{JRA55}=%.2f$ \n $\sigma_{ERAI}=%.2f$   $\sigma_{MERRA2}=%.2f$   $\sigma_{JRA55}=%.2f$' \
+                % (AMET_E_ERAI_mean, AMET_E_MERRA2_mean, AMET_E_JRA55_mean, AMET_E_ERAI_std, AMET_E_MERRA2_std, AMET_E_JRA55_std)
 
 fig3 = plt.figure()
 plt.plot(index_1979_2016,AMET_E_ERAI_series[:,lat_interest['ERAI'][4]],'b-',linewidth=2.0,label='ERA-Interim')
@@ -214,27 +280,42 @@ plt.plot(index_1979_2015,AMET_E_JRA55_series[:,lat_interest['JRA55'][4]],'g-',li
 #plt.title('Running Mean of AMET at 60N with a window of 60 months' % (lat_interest_list[i],window))
 plt.legend()
 fig3.set_size_inches(12.5, 6)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456, 39), year_ERAI)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
+plt.xlabel("Time",fontsize=16)
+#plt.xticks(np.linspace(0, 456, 39), year_ERAI,fontsize=16)
+#plt.xticks(rotation=60)
+plt.xticks(np.arange(13,len(year_ERAI)*12+1,60), index_year,fontsize=16)
+plt.ylabel("Meridional Energy Transport (PW)",fontsize=16)
+plt.yticks(fontsize=16)
 plt.legend(frameon=True, loc=2, prop={'size': 16})
+# set up the text box
+props = dict(boxstyle='round', facecolor='white', alpha=0.5)
+ax = plt.gca()
+ax.text(0.5,0.15,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig3.savefig(output_path + os.sep + 'Comp_AMET_E_60N_running_mean_window_60m_comp.jpg', dpi = 400)
 plt.close(fig3)
 
+
+text_content = '$\mu_{ERAI}=%.2f$   $\mu_{MERRA2}=%.2f$   $\mu_{JRA55}=%.2f$ \n $\sigma_{ERAI}=%.2f$   $\sigma_{MERRA2}=%.2f$   $\sigma_{JRA55}=%.2f$' \
+                % (AMET_E_ERAI_white_mean_running_mean, AMET_E_MERRA2_white_mean_running_mean, AMET_E_JRA55_white_mean_running_mean, AMET_E_ERAI_white_running_mean_std, AMET_E_MERRA2_white_running_mean_std, AMET_E_JRA55_white_running_mean_std)
+
 # plot the AMET after removing the seasonal cycling with running mean
-fig8 = plt.figure()
+fig8= plt.figure()
 plt.plot(index_1979_2016[window-1:],AMET_E_ERAI_white_running_mean[:,lat_interest['ERAI'][4]],'b-',linewidth=2.0,label='ERA-Interim')
 plt.plot(index_1980_2016[window-1:],AMET_E_MERRA2_white_running_mean[:,lat_interest['MERRA2'][4]],'r-',linewidth=2.0,label='MERRA2')
 plt.plot(index_1979_2015[window-1:],AMET_E_JRA55_white_running_mean[:,lat_interest['JRA55'][4]],'g-',linewidth=2.0,label='JRA55')
 #plt.title('Running Mean of AMET Anomalies at %dN with a window of %d months' % (lat_interest_list[i],window))
 fig8.set_size_inches(12.5, 6)
-plt.xlabel("Time")
-plt.xticks(np.linspace(0, 456, 39), year_ERAI)
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
+plt.xlabel("Time",fontsize=16)
+#plt.xticks(np.linspace(0, 456, 39), year_ERAI)
+plt.xticks(np.arange(13,len(year_ERAI)*12+1,60), index_year,fontsize=16)
+#plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)",fontsize=16)
+plt.yticks(fontsize=16)
 plt.legend(frameon=True, loc=2, prop={'size': 16})
+props = dict(boxstyle='round',facecolor='white', alpha=0.5)
+ax = plt.gca()
+ax.text(0.5,0.15,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig8.savefig(output_path + os.sep + 'Comp_AMET_E_anomaly_60N_running_mean_window_60m_comp.jpg', dpi = 400)
 plt.close(fig8)
