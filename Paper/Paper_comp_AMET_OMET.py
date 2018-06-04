@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare AMET and OMET and NEMO ORCA0083 run
 Author          : Yang Liu
 Date            : 2018.05.23
-Last Update     : 2018.05.23
+Last Update     : 2018.06.04
 Description     : The code aims to plot and compare the meridional energy transport
                   in both the atmosphere and ocean. The atmospheric meridional energy
                   transport is calculated from reanalysis data ERA-Interim, MERRA2 and
@@ -60,6 +60,10 @@ print os.path
 
 # switch on the seaborn effect
 sns.set()
+#sns.set_style("whitegrid")
+#sns.set_style("darkgrid")
+sns.set_style("ticks")
+sns.despine()
 
 # calculate the time for the code execution
 start_time = tttt.time()
