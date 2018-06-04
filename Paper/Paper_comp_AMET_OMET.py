@@ -435,7 +435,7 @@ plt.fill_between(latitude_SODA3,OMET_SODA3_full_annual_mean_max,OMET_SODA3_full_
 plt.plot(latitude_NEMO,OMET_NEMO_mean,color='darkorange',linestyle='--',label='NEMO ORCA083')
 plt.fill_between(latitude_NEMO,OMET_NEMO_full_annual_mean_max,OMET_NEMO_full_annual_mean_min,alpha=0.3,edgecolor='lightyellow', facecolor='lightyellow')
 #plt.plot(latitude_AMET,AMET_mean + OMET_mean_interpolate,'g--',label='Total')
-plt.title('Mean AMET & OMET of entire time series from 20N to 90N')
+#plt.title('Mean AMET & OMET of entire time series from 20N to 90N')
 plt.legend()
 #fig1.set_size_inches(5, 5)
 plt.xlabel("Latitude")
