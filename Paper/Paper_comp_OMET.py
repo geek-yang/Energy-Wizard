@@ -3,8 +3,8 @@
 Copyright Netherlands eScience Center
 Function        : Compare oceanic meridional energy transport (ORAS4,GLORYS2V3,SODA3,NEMO)
 Author          : Yang Liu
-Date            : 2018.05.23
-Last Update     : 2018.05.23
+Date            : 2018.06.04
+Last Update     : 2018.06.04
 Description     : The code aims to compare the oceanic meridional energy transport
                   calculated from different oceanic reanalysis datasets. In this,
                   case, this includes GLORYS2V3 from Mercator Ocean, ORAS4 from ECMWF,
@@ -83,6 +83,8 @@ print os.path
 start_time = tttt.time()
 # switch on the seaborn effect
 sns.set()
+sns.set_style("ticks")
+sns.despine()
 
 ################################   Input zone  ######################################
 # specify data path
@@ -284,6 +286,84 @@ for i in np.arange(len(OMET_NEMO_white_series)-window+1):
         OMET_NEMO_white_series_running_mean[i,j] = np.mean(OMET_NEMO_white_series[i:i+window,j])
 
 print '*******************************************************************'
+print '********************** standard deviation  ************************'
+print '*******************************************************************'
+# calculate the standard deviation of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_series)
+print 'The standard deviation of OMET from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_std
+# ORAS4
+OMET_ORAS4_std = np.std(OMET_ORAS4_series)
+print 'The standard deviation of OMET from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_std
+# SODA3
+OMET_SODA3_std = np.std(OMET_SODA3_series)
+print 'The standard deviation of OMET from SODA3 is (in peta Watt):'
+print OMET_SODA3_std
+# NEMO
+OMET_NEMO_std = np.std(OMET_NEMO_series)
+print 'The standard deviation of OMET from NEMO is (in peta Watt):'
+print OMET_NEMO_std
+
+# calculate the standard deviation of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_white_running_mean_std = np.std(OMET_GLORYS2V3_white_series_running_mean)
+print 'The standard deviation of OMET anomaly from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_white_running_mean_std
+# ORAS4
+OMET_ORAS4_white_running_mean_std = np.std(OMET_ORAS4_white_series_running_mean)
+print 'The standard deviation of OMET anomaly from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_white_running_mean_std
+# SODA3
+OMET_SODA3_white_running_mean_std = np.std(OMET_SODA3_white_series_running_mean)
+print 'The standard deviation of OMET anomaly from SODA3 is (in peta Watt):'
+print OMET_SODA3_white_running_mean_std
+# SODA3
+OMET_NEMO_white_running_mean_std = np.std(OMET_NEMO_white_series_running_mean)
+print 'The standard deviation of OMET anomaly from NEMO is (in peta Watt):'
+print OMET_NEMO_white_running_mean_std
+
+print '*******************************************************************'
+print '*************************** mean value  ***************************'
+print '*******************************************************************'
+# calculate the mean of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_mean = np.mean(OMET_GLORYS2V3_series)
+print 'The mean of OMET from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_mean
+# ORAS4
+OMET_ORAS4_mean = np.mean(OMET_ORAS4_series)
+print 'The mean of OMET from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_mean
+# SODA3
+OMET_SODA3_mean = np.mean(OMET_SODA3_series)
+print 'The mean of OMET from SODA3 is (in peta Watt):'
+print OMET_SODA3_mean
+# NEMO
+OMET_NEMO_mean = np.mean(OMET_NEMO_series)
+print 'The mean of OMET from NEMO is (in peta Watt):'
+print OMET_NEMO_mean
+
+# calculate the standard deviation of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_white_running_mean_mean = np.mean(OMET_GLORYS2V3_white_series_running_mean)
+print 'The mean of OMET anomaly from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_white_running_mean_mean
+# ORAS4
+OMET_ORAS4_white_running_mean_mean = np.mean(OMET_ORAS4_white_series_running_mean)
+print 'The mean of OMET anomaly from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_white_running_mean_mean
+# ORAS4
+OMET_SODA3_white_running_mean_mean = np.mean(OMET_SODA3_white_series_running_mean)
+print 'The mean of OMET anomaly from SODA3 is (in peta Watt):'
+print OMET_SODA3_white_running_mean_mean
+# NEMO
+OMET_NEMO_white_running_mean_mean = np.mean(OMET_NEMO_white_series_running_mean)
+print 'The mean of OMET anomaly from NEMO is (in peta Watt):'
+print OMET_NEMO_white_running_mean_mean
+
+print '*******************************************************************'
 print '*************************** time series ***************************'
 print '*******************************************************************'
 # index and namelist of years for time series and running mean time series
@@ -305,6 +385,9 @@ index_year_full = np.arange(1979,2016,1)
 # index_running_mean_1979 = np.arange(1,433-window+1,1)
 # index_year_running_mean_1979 = np.arange(1979+window/12,2015,1)
 
+text_content = '$\mu_{ORAS4}=%.2f$   $\mu_{GLORYS2V3}=%.2f$   $\mu_{SODA3}=%.2f$ $\mu_{NEMO}=%.2f$ \n $\sigma_{ORAS4}=%.2f$   $\sigma_{GLORYS2V3}=%.2f$   $\sigma_{SODA3}=%.2f$ $\sigma_{NEMO}=%.2f$' \
+                % (OMET_ORAS4_white_running_mean_mean, OMET_GLORYS2V3_white_running_mean_mean, OMET_SODA3_white_running_mean_mean, OMET_NEMO_white_running_mean_mean, OMET_ORAS4_white_running_mean_std, OMET_GLORYS2V3_white_running_mean_std, OMET_SODA3_white_running_mean_std, OMET_NEMO_white_running_mean_std)
+
 # plot the OMET series before removing seasonal cycle
 fig1 = plt.figure()
 plt.plot(index_1979,OMET_ORAS4_series[:,lat_interest['ORAS4'][4]],'b-',linewidth=2.0,label='ORAS4')
@@ -318,10 +401,15 @@ plt.xticks(np.linspace(0, 444, 38), index_year_full)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend(frameon=True, loc=2, prop={'size': 16})
+props = dict(boxstyle='round', facecolor='white', alpha=0.8)
+ax = plt.gca()
+ax.text(0.02,0.12,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig1.savefig(output_path + os.sep + 'Comp_OMET_60N_time_series_1979_2015.jpg', dpi = 400)
 
 # plot the running mean of OMET after removing seasonal cycle
+text_content = '$\mu_{ORAS4}=%.2f$   $\mu_{GLORYS2V3}=%.2f$   $\mu_{SODA3}=%.2f$ $\mu_{NEMO}=%.2f$ \n $\sigma_{ORAS4}=%.2f$   $\sigma_{GLORYS2V3}=%.2f$   $\sigma_{SODA3}=%.2f$ $\sigma_{NEMO}=%.2f$' \
+                % (OMET_ORAS4_mean, OMET_GLORYS2V3_mean, OMET_SODA3_mean, OMET_NEMO_mean, OMET_ORAS4_std, OMET_GLORYS2V3_std, OMET_SODA3_std, OMET_NEMO_std)
 
 fig4 = plt.figure()
 plt.plot(index_1979[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][4]],'b-',linewidth=2.0,label='ORAS4')
@@ -335,5 +423,8 @@ plt.xticks(np.linspace(0, 444, 38), index_year_full)
 plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)")
 plt.legend(frameon=True, loc=2, prop={'size': 16})
+props = dict(boxstyle='round',facecolor='white', alpha=0.8)
+ax = plt.gca()
+ax.text(0.02,0.12,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig4.savefig(output_path + os.sep + 'Comp_OMET_anomaly_60N_running_mean_window_60m.jpg', dpi = 400)
