@@ -290,37 +290,37 @@ print '********************** standard deviation  ************************'
 print '*******************************************************************'
 # calculate the standard deviation of OMET anomaly
 # GLORYS2V3
-OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_series)
+OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][4]])
 print 'The standard deviation of OMET from GLORYS2V3 is (in peta Watt):'
 print OMET_GLORYS2V3_std
 # ORAS4
-OMET_ORAS4_std = np.std(OMET_ORAS4_series)
+OMET_ORAS4_std = np.std(OMET_ORAS4_series[:,lat_interest['ORAS4'][4]])
 print 'The standard deviation of OMET from ORAS4 is (in peta Watt):'
 print OMET_ORAS4_std
 # SODA3
-OMET_SODA3_std = np.std(OMET_SODA3_series)
+OMET_SODA3_std = np.std(OMET_SODA3_series[:,lat_interest['SODA3'][4]])
 print 'The standard deviation of OMET from SODA3 is (in peta Watt):'
 print OMET_SODA3_std
 # NEMO
-OMET_NEMO_std = np.std(OMET_NEMO_series)
+OMET_NEMO_std = np.std(OMET_NEMO_series[:,lat_interest['NEMO'][4]])
 print 'The standard deviation of OMET from NEMO is (in peta Watt):'
 print OMET_NEMO_std
 
 # calculate the standard deviation of OMET anomaly
 # GLORYS2V3
-OMET_GLORYS2V3_white_running_mean_std = np.std(OMET_GLORYS2V3_white_series_running_mean)
+OMET_GLORYS2V3_white_running_mean_std = np.std(OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][4]])
 print 'The standard deviation of OMET anomaly from GLORYS2V3 is (in peta Watt):'
 print OMET_GLORYS2V3_white_running_mean_std
 # ORAS4
-OMET_ORAS4_white_running_mean_std = np.std(OMET_ORAS4_white_series_running_mean)
+OMET_ORAS4_white_running_mean_std = np.std(OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][4]])
 print 'The standard deviation of OMET anomaly from ORAS4 is (in peta Watt):'
 print OMET_ORAS4_white_running_mean_std
 # SODA3
-OMET_SODA3_white_running_mean_std = np.std(OMET_SODA3_white_series_running_mean)
+OMET_SODA3_white_running_mean_std = np.std(OMET_SODA3_white_series_running_mean[:,lat_interest['SODA3'][4]])
 print 'The standard deviation of OMET anomaly from SODA3 is (in peta Watt):'
 print OMET_SODA3_white_running_mean_std
 # SODA3
-OMET_NEMO_white_running_mean_std = np.std(OMET_NEMO_white_series_running_mean)
+OMET_NEMO_white_running_mean_std = np.std(OMET_NEMO_white_series_running_mean[:,lat_interest['NEMO'][4]])
 print 'The standard deviation of OMET anomaly from NEMO is (in peta Watt):'
 print OMET_NEMO_white_running_mean_std
 
@@ -329,37 +329,37 @@ print '*************************** mean value  ***************************'
 print '*******************************************************************'
 # calculate the mean of OMET anomaly
 # GLORYS2V3
-OMET_GLORYS2V3_mean = np.mean(OMET_GLORYS2V3_series)
+OMET_GLORYS2V3_mean = np.mean(OMET_GLORYS2V3_series[:,lat_interest['GLORYS2V3'][4]])
 print 'The mean of OMET from GLORYS2V3 is (in peta Watt):'
 print OMET_GLORYS2V3_mean
 # ORAS4
-OMET_ORAS4_mean = np.mean(OMET_ORAS4_series)
+OMET_ORAS4_mean = np.mean(OMET_ORAS4_series[:,lat_interest['ORAS4'][4]])
 print 'The mean of OMET from ORAS4 is (in peta Watt):'
 print OMET_ORAS4_mean
 # SODA3
-OMET_SODA3_mean = np.mean(OMET_SODA3_series)
+OMET_SODA3_mean = np.mean(OMET_SODA3_series[:,lat_interest['SODA3'][4]])
 print 'The mean of OMET from SODA3 is (in peta Watt):'
 print OMET_SODA3_mean
 # NEMO
-OMET_NEMO_mean = np.mean(OMET_NEMO_series)
+OMET_NEMO_mean = np.mean(OMET_NEMO_series[:,lat_interest['NEMO'][4]])
 print 'The mean of OMET from NEMO is (in peta Watt):'
 print OMET_NEMO_mean
 
 # calculate the standard deviation of OMET anomaly
 # GLORYS2V3
-OMET_GLORYS2V3_white_running_mean_mean = np.mean(OMET_GLORYS2V3_white_series_running_mean)
+OMET_GLORYS2V3_white_running_mean_mean = np.mean(OMET_GLORYS2V3_white_series_running_mean[:,lat_interest['GLORYS2V3'][4]])
 print 'The mean of OMET anomaly from GLORYS2V3 is (in peta Watt):'
 print OMET_GLORYS2V3_white_running_mean_mean
 # ORAS4
-OMET_ORAS4_white_running_mean_mean = np.mean(OMET_ORAS4_white_series_running_mean)
+OMET_ORAS4_white_running_mean_mean = np.mean(OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][4]])
 print 'The mean of OMET anomaly from ORAS4 is (in peta Watt):'
 print OMET_ORAS4_white_running_mean_mean
 # ORAS4
-OMET_SODA3_white_running_mean_mean = np.mean(OMET_SODA3_white_series_running_mean)
+OMET_SODA3_white_running_mean_mean = np.mean(OMET_SODA3_white_series_running_mean[:,lat_interest['SODA3'][4]])
 print 'The mean of OMET anomaly from SODA3 is (in peta Watt):'
 print OMET_SODA3_white_running_mean_mean
 # NEMO
-OMET_NEMO_white_running_mean_mean = np.mean(OMET_NEMO_white_series_running_mean)
+OMET_NEMO_white_running_mean_mean = np.mean(OMET_NEMO_white_series_running_mean[:,lat_interest['NEMO'][4]])
 print 'The mean of OMET anomaly from NEMO is (in peta Watt):'
 print OMET_NEMO_white_running_mean_mean
 
@@ -388,7 +388,7 @@ index_year = np.arange(1980,year_ORAS4[-1]+2,5)
 # index_year_running_mean_1979 = np.arange(1979+window/12,2015,1)
 
 text_content = '$\mu_{ORAS4}=%.2f$   $\mu_{GLORYS2V3}=%.2f$   $\mu_{SODA3}=%.2f$ $\mu_{NEMO}=%.2f$ \n $\sigma_{ORAS4}=%.2f$   $\sigma_{GLORYS2V3}=%.2f$   $\sigma_{SODA3}=%.2f$ $\sigma_{NEMO}=%.2f$' \
-                % (OMET_ORAS4_white_running_mean_mean, OMET_GLORYS2V3_white_running_mean_mean, OMET_SODA3_white_running_mean_mean, OMET_NEMO_white_running_mean_mean, OMET_ORAS4_white_running_mean_std, OMET_GLORYS2V3_white_running_mean_std, OMET_SODA3_white_running_mean_std, OMET_NEMO_white_running_mean_std)
+                % (OMET_ORAS4_mean, OMET_GLORYS2V3_mean, OMET_SODA3_mean, OMET_NEMO_mean, OMET_ORAS4_std, OMET_GLORYS2V3_std, OMET_SODA3_std, OMET_NEMO_std)
 
 # plot the OMET series before removing seasonal cycle
 fig1 = plt.figure()
@@ -412,7 +412,7 @@ fig1.savefig(output_path + os.sep + 'Comp_OMET_60N_time_series_1979_2015.jpg', d
 
 # plot the running mean of OMET after removing seasonal cycle
 text_content = '$\mu_{ORAS4}=%.2f$   $\mu_{GLORYS2V3}=%.2f$   $\mu_{SODA3}=%.2f$ $\mu_{NEMO}=%.2f$ \n $\sigma_{ORAS4}=%.2f$   $\sigma_{GLORYS2V3}=%.2f$   $\sigma_{SODA3}=%.2f$ $\sigma_{NEMO}=%.2f$' \
-                % (OMET_ORAS4_mean, OMET_GLORYS2V3_mean, OMET_SODA3_mean, OMET_NEMO_mean, OMET_ORAS4_std, OMET_GLORYS2V3_std, OMET_SODA3_std, OMET_NEMO_std)
+                % (OMET_ORAS4_white_running_mean_mean, OMET_GLORYS2V3_white_running_mean_mean, OMET_SODA3_white_running_mean_mean, OMET_NEMO_white_running_mean_mean, OMET_ORAS4_white_running_mean_std, OMET_GLORYS2V3_white_running_mean_std, OMET_SODA3_white_running_mean_std, OMET_NEMO_white_running_mean_std)
 
 fig4 = plt.figure()
 plt.plot(index_1979[window-1:],OMET_ORAS4_white_series_running_mean[:,lat_interest['ORAS4'][4]],'b-',linewidth=2.0,label='ORAS4')
