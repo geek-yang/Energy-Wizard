@@ -327,29 +327,29 @@ print '********************** standard deviation  ************************'
 print '*******************************************************************'
 # calculate the standard deviation of AMET
 # ERA-Interim
-AMET_E_ERAI_std = np.std(AMET_E_ERAI_series)
+AMET_E_ERAI_std = np.std(AMET_E_ERAI_series[:,lat_interest['ERAI'][4]])
 print 'The standard deviation of AMET from ERA-Interim is (in peta Watt):'
 print AMET_E_ERAI_std
 # MERRA2
-AMET_E_MERRA2_std = np.std(AMET_E_MERRA2_series)
+AMET_E_MERRA2_std = np.std(AMET_E_MERRA2_series[:,lat_interest['MERRA2'][4]])
 print 'The standard deviation of AMET from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_std
 # JRA55
-AMET_E_JRA55_std = np.std(AMET_E_JRA55_series)
+AMET_E_JRA55_std = np.std(AMET_E_JRA55_series[:,lat_interest['JRA55'][4]])
 print 'The standard deviation of AMET from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_std
 
 # calculate the standard deviation of AMET anomaly
 # ERA-Interim
-AMET_E_ERAI_white_running_mean_std = np.std(AMET_E_ERAI_white_running_mean)
+AMET_E_ERAI_white_running_mean_std = np.std(AMET_E_ERAI_white_running_mean[:,lat_interest['ERAI'][4]])
 print 'The standard deviation of AMET anomaly from ERA-Interim is (in peta Watt):'
 print AMET_E_ERAI_white_running_mean_std
 # MERRA2
-AMET_E_MERRA2_white_running_mean_std = np.std(AMET_E_MERRA2_white_running_mean)
+AMET_E_MERRA2_white_running_mean_std = np.std(AMET_E_MERRA2_white_running_mean[:,lat_interest['MERRA2'][4]])
 print 'The standard deviation of AMET anomaly from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_white_running_mean_std
 # JRA55
-AMET_E_JRA55_white_running_mean_std = np.std(AMET_E_JRA55_white_running_mean)
+AMET_E_JRA55_white_running_mean_std = np.std(AMET_E_JRA55_white_running_mean[:,lat_interest['JRA55'][4]])
 print 'The standard deviation of AMET anomaly from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_white_running_mean_std
 print '*******************************************************************'
@@ -357,29 +357,29 @@ print '*************************** mean value  ***************************'
 print '*******************************************************************'
 # calculate the mean of AMET
 # ERA-Interim
-AMET_E_ERAI_mean = np.mean(AMET_E_ERAI)
+AMET_E_ERAI_mean = np.mean(AMET_E_ERAI_series[:,lat_interest['ERAI'][4]])
 print 'The mean of AMET from ERA-Interim is (in peta Watt):'
 print AMET_E_ERAI_mean
 # MERRA2
-AMET_E_MERRA2_mean = np.mean(AMET_E_MERRA2)
+AMET_E_MERRA2_mean = np.mean(AMET_E_MERRA2_series[:,lat_interest['MERRA2'][4]])
 print 'The mean of AMET from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_mean
 # JRA55
-AMET_E_JRA55_mean = np.mean(AMET_E_JRA55)
+AMET_E_JRA55_mean = np.mean(AMET_E_JRA55_series[:,lat_interest['JRA55'][4]])
 print 'The mean of AMET from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_mean
 
 # calculate the standard deviation of AMET anomaly
 # ERA-Interim
-AMET_E_ERAI_white_mean_running_mean = np.mean(AMET_E_ERAI_white_running_mean)
+AMET_E_ERAI_white_mean_running_mean = np.mean(AMET_E_ERAI_white_running_mean[:,lat_interest['ERAI'][4]])
 print 'The mean of AMET anomaly from ERA-Interim is (in peta Watt):'
 print AMET_E_ERAI_white_mean_running_mean
 # MERRA2
-AMET_E_MERRA2_white_mean_running_mean = np.mean(AMET_E_MERRA2_white_running_mean)
+AMET_E_MERRA2_white_mean_running_mean = np.mean(AMET_E_MERRA2_white_running_mean[:,lat_interest['MERRA2'][4]])
 print 'The mean of AMET anomaly from MERRA2 is (in peta Watt):'
 print AMET_E_MERRA2_white_mean_running_mean
 # JRA55
-AMET_E_JRA55_white_mean_running_mean = np.mean(AMET_E_JRA55_white_running_mean)
+AMET_E_JRA55_white_mean_running_mean = np.mean(AMET_E_JRA55_white_running_mean[:,lat_interest['JRA55'][4]])
 print 'The mean of AMET anomaly from JRA55 is (in peta Watt):'
 print AMET_E_JRA55_white_mean_running_mean
 
