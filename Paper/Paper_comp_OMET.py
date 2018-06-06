@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic meridional energy transport (ORAS4,GLORYS2V3,SODA3,NEMO)
 Author          : Yang Liu
 Date            : 2018.06.04
-Last Update     : 2018.06.04
+Last Update     : 2018.06.06
 Description     : The code aims to compare the oceanic meridional energy transport
                   calculated from different oceanic reanalysis datasets. In this,
                   case, this includes GLORYS2V3 from Mercator Ocean, ORAS4 from ECMWF,
