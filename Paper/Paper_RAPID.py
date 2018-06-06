@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare OMET of all reanalysis datasets from observation in the Atlantic
 Author          : Yang Liu
 Date            : 2018.05.23
-Last Update     : 2018.05.23
+Last Update     : 2018.06.06
 Description     : The code aims to plot and compare the meridional energy transport
                   in the ocean obtained from reanalysis data with direct observation
                   in the Atlantic Ocean. The oceanic meridional energy transport is
@@ -68,7 +68,8 @@ print os.path
 
 # switch on the seaborn effect
 sns.set()
-
+sns.set_style("ticks")
+sns.despine()
 # calculate the time for the code execution
 start_time = tttt.time()
 
@@ -320,10 +321,55 @@ OMET_SODA3_RAPID_series = OMET_SODA3_RAPID_int.reshape(len(year_SODA3)*12)
 # reshape the hindcast dataset
 OMET_hindcast_series = OMET_hindcast.reshape(55*12)
 
+print '*******************************************************************'
+print '********************** standard deviation  ************************'
+print '*******************************************************************'
+# calculate the standard deviation of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_RAPID_series)
+print 'The standard deviation of OMET from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_std
+# ORAS4
+OMET_ORAS4_std = np.std(OMET_ORAS4_RAPID_series)
+print 'The standard deviation of OMET from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_std
+# SODA3
+OMET_SODA3_std = np.std(OMET_SODA3_RAPID_series)
+print 'The standard deviation of OMET from SODA3 is (in peta Watt):'
+print OMET_SODA3_std
+# NEMO
+OMET_NEMO_std = np.std(OMET_hindcast_series)
+print 'The standard deviation of OMET from NEMO is (in peta Watt):'
+print OMET_NEMO_std
+
+print '*******************************************************************'
+print '*************************** mean value  ***************************'
+print '*******************************************************************'
+# calculate the mean of OMET anomaly
+# GLORYS2V3
+OMET_GLORYS2V3_mean = np.mean(OMET_GLORYS2V3_RAPID_series)
+print 'The mean of OMET from GLORYS2V3 is (in peta Watt):'
+print OMET_GLORYS2V3_mean
+# ORAS4
+OMET_ORAS4_mean = np.mean(OMET_ORAS4_RAPID_series)
+print 'The mean of OMET from ORAS4 is (in peta Watt):'
+print OMET_ORAS4_mean
+# SODA3
+OMET_SODA3_mean = np.mean(OMET_SODA3_RAPID_series)
+print 'The mean of OMET from SODA3 is (in peta Watt):'
+print OMET_SODA3_mean
+# NEMO
+OMET_NEMO_mean = np.mean(OMET_hindcast_series)
+print 'The mean of OMET from NEMO is (in peta Watt):'
+print OMET_NEMO_mean
+
 # index for axis
 index = np.arange(1,12*12+1,1) # 2004 - 2015
 index_RAPID = np.linspace(4,12*12-3,8398) # ignore the missing April 1st 2004 and the rest of the days in Oct 2015
 index_hindcast = np.arange(1,12*9+1,1) # 2004 - 2012
+
+text_content = '$\mu_{ORAS4}=%.2f$   $\mu_{GLORYS2V3}=%.2f$   $\mu_{SODA3}=%.2f$ $\mu_{NEMO}=%.2f$ \n $\sigma_{ORAS4}=%.2f$   $\sigma_{GLORYS2V3}=%.2f$   $\sigma_{SODA3}=%.2f$ $\sigma_{NEMO}=%.2f$' \
+                % (OMET_ORAS4_mean, OMET_GLORYS2V3_mean, OMET_SODA3_mean, OMET_NEMO_mean, OMET_ORAS4_std, OMET_GLORYS2V3_std, OMET_SODA3_std, OMET_NEMO_std)
 
 # meridional energy transport with hindcast on ORCA083
 fig4 = plt.figure()
@@ -335,9 +381,13 @@ plt.plot(index_hindcast[:],OMET_hindcast_series[46*12:],color='darkorange',lines
 #plt.title('Meridional Energy Transport in the ocean at 26.5 N (02/04/2004 - 12/10/2015)')
 plt.legend(frameon=True, loc=2, prop={'size': 14})
 fig4.set_size_inches(12.5, 6)
-plt.xlabel("Time")
+plt.xlabel("Time",fontsize = 16)
 plt.xticks(np.linspace(1, 12*12, 12), np.arange(2004,2016,1))
-plt.xticks(rotation=60)
-plt.ylabel("Meridional Energy Transport (PW)")
+#plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)",fontsize = 16)
+plt.yticks(fontsize=16)
+props = dict(boxstyle='round',facecolor='white', alpha=0.8)
+ax = plt.gca()
+ax.text(0.37,0.15,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig4.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_hindcast_time_series.jpg', dpi = 400)
