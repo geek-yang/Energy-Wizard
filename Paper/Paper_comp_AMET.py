@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.05.23
-Last Update     : 2018.06.04
+Last Update     : 2018.06.06
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF and
@@ -114,6 +114,22 @@ for k in dataset_MERRA2.variables:
 AMET_E_ERAI = dataset_ERAI.variables['E'][:]/1000 # from Tera Watt to Peta Watt
 AMET_E_MERRA2 = dataset_MERRA2.variables['E'][:]/1000 # from Tera Watt to Peta Watt
 AMET_E_JRA55 = dataset_JRA55.variables['E'][:,:,0:125]/1000 # from Tera Watt to Peta Watt
+# internal energy
+AMET_E_cpT_ERAI = dataset_ERAI.variables['E_cpT'][:]/1000
+AMET_E_cpT_MERRA2 = dataset_MERRA2.variables['E_cpT'][:]/1000
+AMET_E_cpT_JRA55 = dataset_JRA55.variables['E_cpT'][:,:,0:125]/1000
+# latent heat
+AMET_E_Lvq_ERAI = dataset_ERAI.variables['E_Lvq'][:]/1000
+AMET_E_Lvq_MERRA2 = dataset_MERRA2.variables['E_Lvq'][:]/1000
+AMET_E_Lvq_JRA55 = dataset_JRA55.variables['E_Lvq'][:,:,0:125]/1000
+# geopotential
+AMET_E_gz_ERAI = dataset_ERAI.variables['E_gz'][:]/1000
+AMET_E_gz_MERRA2 = dataset_MERRA2.variables['E_gz'][:]/1000
+AMET_E_gz_JRA55 = dataset_JRA55.variables['E_gz'][:,:,0:125]/1000
+# kinetic energy
+AMET_E_uv2_ERAI = dataset_ERAI.variables['E_uv2'][:]/1000
+AMET_E_uv2_MERRA2 = dataset_MERRA2.variables['E_uv2'][:]/1000
+AMET_E_uv2_JRA55 = dataset_JRA55.variables['E_uv2'][:,:,0:125]/1000
 
 year_ERAI = dataset_ERAI.variables['year'][:]        # from 1979 to 2016
 year_MERRA2 = dataset_MERRA2.variables['year'][:]    # from 1980 to 2016
@@ -148,6 +164,82 @@ for i in np.arange(len(year_JRA55)):
     for j in month_ind:
         AMET_E_JRA55_white[i,j,:] = AMET_E_JRA55[i,j,:] - AMET_E_JRA55_seansonal_cycle[j,:]
 
+# internal energy
+AMET_E_cpT_ERAI_seansonal_cycle = np.mean(AMET_E_cpT_ERAI,axis=0)
+AMET_E_cpT_ERAI_white = np.zeros(AMET_E_cpT_ERAI.shape,dtype=float)
+for i in np.arange(len(year_ERAI)):
+    for j in month_ind:
+        AMET_E_cpT_ERAI_white[i,j,:] = AMET_E_cpT_ERAI[i,j,:] - AMET_E_cpT_ERAI_seansonal_cycle[j,:]
+
+AMET_E_cpT_MERRA2_seansonal_cycle = np.mean(AMET_E_cpT_MERRA2,axis=0)
+AMET_E_cpT_MERRA2_white = np.zeros(AMET_E_cpT_MERRA2.shape,dtype=float)
+for i in np.arange(len(year_MERRA2)):
+    for j in month_ind:
+        AMET_E_cpT_MERRA2_white[i,j,:] = AMET_E_cpT_MERRA2[i,j,:] - AMET_E_cpT_MERRA2_seansonal_cycle[j,:]
+
+AMET_E_cpT_JRA55_seansonal_cycle = np.mean(AMET_E_cpT_JRA55,axis=0)
+AMET_E_cpT_JRA55_white = np.zeros(AMET_E_cpT_JRA55.shape,dtype=float)
+for i in np.arange(len(year_JRA55)):
+    for j in month_ind:
+        AMET_E_cpT_JRA55_white[i,j,:] = AMET_E_cpT_JRA55[i,j,:] - AMET_E_cpT_JRA55_seansonal_cycle[j,:]
+
+# latent heat
+AMET_E_Lvq_ERAI_seansonal_cycle = np.mean(AMET_E_Lvq_ERAI,axis=0)
+AMET_E_Lvq_ERAI_white = np.zeros(AMET_E_Lvq_ERAI.shape,dtype=float)
+for i in np.arange(len(year_ERAI)):
+    for j in month_ind:
+        AMET_E_Lvq_ERAI_white[i,j,:] = AMET_E_Lvq_ERAI[i,j,:] - AMET_E_Lvq_ERAI_seansonal_cycle[j,:]
+
+AMET_E_Lvq_MERRA2_seansonal_cycle = np.mean(AMET_E_Lvq_MERRA2,axis=0)
+AMET_E_Lvq_MERRA2_white = np.zeros(AMET_E_Lvq_MERRA2.shape,dtype=float)
+for i in np.arange(len(year_MERRA2)):
+    for j in month_ind:
+        AMET_E_Lvq_MERRA2_white[i,j,:] = AMET_E_Lvq_MERRA2[i,j,:] - AMET_E_Lvq_MERRA2_seansonal_cycle[j,:]
+
+AMET_E_Lvq_JRA55_seansonal_cycle = np.mean(AMET_E_Lvq_JRA55,axis=0)
+AMET_E_Lvq_JRA55_white = np.zeros(AMET_E_Lvq_JRA55.shape,dtype=float)
+for i in np.arange(len(year_JRA55)):
+    for j in month_ind:
+        AMET_E_Lvq_JRA55_white[i,j,:] = AMET_E_Lvq_JRA55[i,j,:] - AMET_E_Lvq_JRA55_seansonal_cycle[j,:]
+
+# geopotential
+AMET_E_gz_ERAI_seansonal_cycle = np.mean(AMET_E_gz_ERAI,axis=0)
+AMET_E_gz_ERAI_white = np.zeros(AMET_E_gz_ERAI.shape,dtype=float)
+for i in np.arange(len(year_ERAI)):
+    for j in month_ind:
+        AMET_E_gz_ERAI_white[i,j,:] = AMET_E_gz_ERAI[i,j,:] - AMET_E_gz_ERAI_seansonal_cycle[j,:]
+
+AMET_E_gz_MERRA2_seansonal_cycle = np.mean(AMET_E_gz_MERRA2,axis=0)
+AMET_E_gz_MERRA2_white = np.zeros(AMET_E_gz_MERRA2.shape,dtype=float)
+for i in np.arange(len(year_MERRA2)):
+    for j in month_ind:
+        AMET_E_gz_MERRA2_white[i,j,:] = AMET_E_gz_MERRA2[i,j,:] - AMET_E_gz_MERRA2_seansonal_cycle[j,:]
+
+AMET_E_gz_JRA55_seansonal_cycle = np.mean(AMET_E_gz_JRA55,axis=0)
+AMET_E_gz_JRA55_white = np.zeros(AMET_E_gz_JRA55.shape,dtype=float)
+for i in np.arange(len(year_JRA55)):
+    for j in month_ind:
+        AMET_E_gz_JRA55_white[i,j,:] = AMET_E_gz_JRA55[i,j,:] - AMET_E_gz_JRA55_seansonal_cycle[j,:]
+
+# kinetic energy
+AMET_E_uv2_ERAI_seansonal_cycle = np.mean(AMET_E_uv2_ERAI,axis=0)
+AMET_E_uv2_ERAI_white = np.zeros(AMET_E_uv2_ERAI.shape,dtype=float)
+for i in np.arange(len(year_ERAI)):
+    for j in month_ind:
+        AMET_E_uv2_ERAI_white[i,j,:] = AMET_E_uv2_ERAI[i,j,:] - AMET_E_uv2_ERAI_seansonal_cycle[j,:]
+
+AMET_E_uv2_MERRA2_seansonal_cycle = np.mean(AMET_E_uv2_MERRA2,axis=0)
+AMET_E_uv2_MERRA2_white = np.zeros(AMET_E_uv2_MERRA2.shape,dtype=float)
+for i in np.arange(len(year_MERRA2)):
+    for j in month_ind:
+        AMET_E_uv2_MERRA2_white[i,j,:] = AMET_E_uv2_MERRA2[i,j,:] - AMET_E_uv2_MERRA2_seansonal_cycle[j,:]
+
+AMET_E_uv2_JRA55_seansonal_cycle = np.mean(AMET_E_uv2_JRA55,axis=0)
+AMET_E_uv2_JRA55_white = np.zeros(AMET_E_uv2_JRA55.shape,dtype=float)
+for i in np.arange(len(year_JRA55)):
+    for j in month_ind:
+        AMET_E_uv2_JRA55_white[i,j,:] = AMET_E_uv2_JRA55[i,j,:] - AMET_E_uv2_JRA55_seansonal_cycle[j,:]
+
 print '*******************************************************************'
 print '*********************** prepare variables *************************'
 print '*******************************************************************'
@@ -156,11 +248,43 @@ print '*******************************************************************'
 AMET_E_ERAI_series = AMET_E_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
 AMET_E_MERRA2_series = AMET_E_MERRA2.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
 AMET_E_JRA55_series = AMET_E_JRA55.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# internal energy
+AMET_E_cpT_ERAI_series = AMET_E_cpT_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_cpT_MERRA2_series = AMET_E_cpT_MERRA2.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_cpT_JRA55_series = AMET_E_cpT_JRA55.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# latent heat
+AMET_E_Lvq_ERAI_series = AMET_E_Lvq_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_Lvq_MERRA2_series = AMET_E_Lvq_MERRA2.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_Lvq_JRA55_series = AMET_E_Lvq_JRA55.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# geopotential
+AMET_E_gz_ERAI_series = AMET_E_gz_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_gz_MERRA2_series = AMET_E_gz_MERRA2.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_gz_JRA55_series = AMET_E_gz_JRA55.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# kinetic energy
+AMET_E_uv2_ERAI_series = AMET_E_uv2_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_uv2_MERRA2_series = AMET_E_uv2_MERRA2.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_uv2_JRA55_series = AMET_E_uv2_JRA55.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
 
 # take the time series of anomalies
 AMET_E_ERAI_white_series = AMET_E_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
 AMET_E_MERRA2_white_series = AMET_E_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
 AMET_E_JRA55_white_series = AMET_E_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# internal energy
+AMET_E_cpT_ERAI_white_series = AMET_E_cpT_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_cpT_MERRA2_white_series = AMET_E_cpT_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_cpT_JRA55_white_series = AMET_E_cpT_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# latent heat
+AMET_E_Lvq_ERAI_white_series = AMET_E_Lvq_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_Lvq_MERRA2_white_series = AMET_E_Lvq_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_Lvq_JRA55_white_series = AMET_E_Lvq_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# geopotential
+AMET_E_gz_ERAI_white_series = AMET_E_gz_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_gz_MERRA2_white_series = AMET_E_gz_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_gz_JRA55_white_series = AMET_E_gz_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
+# kinetic energy
+AMET_E_uv2_ERAI_white_series = AMET_E_uv2_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
+AMET_E_uv2_MERRA2_white_series = AMET_E_uv2_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
+AMET_E_uv2_JRA55_white_series = AMET_E_uv2_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
 
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
@@ -288,9 +412,9 @@ plt.ylabel("Meridional Energy Transport (PW)",fontsize=16)
 plt.yticks(fontsize=16)
 plt.legend(frameon=True, loc=2, prop={'size': 16})
 # set up the text box
-props = dict(boxstyle='round', facecolor='white', alpha=0.5)
+props = dict(boxstyle='round', facecolor='white', alpha=0.8)
 ax = plt.gca()
-ax.text(0.5,0.15,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
+ax.text(0.54,0.15,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig3.savefig(output_path + os.sep + 'Comp_AMET_E_60N_running_mean_window_60m_comp.jpg', dpi = 400)
 plt.close(fig3)
@@ -313,9 +437,53 @@ plt.xticks(np.arange(13,len(year_ERAI)*12+1,60), index_year,fontsize=16)
 plt.ylabel("Meridional Energy Transport (PW)",fontsize=16)
 plt.yticks(fontsize=16)
 plt.legend(frameon=True, loc=2, prop={'size': 16})
-props = dict(boxstyle='round',facecolor='white', alpha=0.5)
+props = dict(boxstyle='round',facecolor='white', alpha=0.8)
 ax = plt.gca()
 ax.text(0.5,0.15,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig8.savefig(output_path + os.sep + 'Comp_AMET_E_anomaly_60N_running_mean_window_60m_comp.jpg', dpi = 400)
 plt.close(fig8)
+
+print '*******************************************************************'
+print '******************   highlight the difference   *******************'
+print '*******************************************************************'
+#calculate the differnce between datasets for each component
+#ERA-Interim minus MERRA2
+fig14 = plt.figure()
+plt.plot(index_1980_2016,AMET_E_ERAI_white_series[12:,lat_interest['ERAI'][4]] - AMET_E_MERRA2_white_series[:,lat_interest['MERRA2'][4]],'b-',linewidth=2.0,label='total')
+plt.plot(index_1980_2016,AMET_E_cpT_ERAI_white_series[12:,lat_interest['ERAI'][4]] - AMET_E_cpT_MERRA2_white_series[:,lat_interest['MERRA2'][4]],'r-',linewidth=1.5,label='cpT')
+plt.plot(index_1980_2016,AMET_E_Lvq_ERAI_white_series[12:,lat_interest['ERAI'][4]] - AMET_E_Lvq_MERRA2_white_series[:,lat_interest['MERRA2'][4]],'m-',linewidth=1.0,label='Lvq')
+plt.plot(index_1980_2016,AMET_E_gz_ERAI_white_series[12:,lat_interest['ERAI'][4]] - AMET_E_gz_MERRA2_white_series[:,lat_interest['MERRA2'][4]],'g-',linewidth=1.0,label='gz')
+plt.plot(index_1980_2016,AMET_E_uv2_ERAI_white_series[12:,lat_interest['ERAI'][4]] - AMET_E_uv2_MERRA2_white_series[:,lat_interest['MERRA2'][4]],'c-',linewidth=1.0,label='uv2')
+#plt.title('Difference between ERA-Interim and MERRA2 anomalies (time series) at 60N' )
+plt.legend()
+fig14.set_size_inches(12.5, 6)
+plt.xlabel("Time",fontsize=16)
+plt.xticks(np.arange(1,len(year_MERRA2)*12+1,60), index_year,fontsize=16)
+#plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
+#plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport residual (PW)",fontsize=16)
+plt.yticks(fontsize=16)
+plt.legend(frameon=True, prop={'size': 16})
+plt.show()
+fig14.savefig(output_path + os.sep +'Comp_AMET_ERAI_minus_MERRA2_anomaly_60N.jpg', dpi = 400)
+plt.close(fig14)
+
+#ERA-Interim minus JRA55
+fig16 = plt.figure()
+plt.plot(index_1979_2015,AMET_E_ERAI_white_series[:-12,lat_interest['ERAI'][4]] - AMET_E_JRA55_white_series[:,lat_interest['JRA55'][4]],'b-',linewidth=2.0,label='total')
+plt.plot(index_1979_2015,AMET_E_cpT_ERAI_white_series[:-12,lat_interest['ERAI'][4]] - AMET_E_cpT_JRA55_white_series[:,lat_interest['JRA55'][4]],'r-',linewidth=1.5,label='cpT')
+plt.plot(index_1979_2015,AMET_E_Lvq_ERAI_white_series[:-12,lat_interest['ERAI'][4]] - AMET_E_Lvq_JRA55_white_series[:,lat_interest['JRA55'][4]],'m-',linewidth=1.0,label='Lvq')
+plt.plot(index_1979_2015,AMET_E_gz_ERAI_white_series[:-12,lat_interest['ERAI'][4]] - AMET_E_gz_JRA55_white_series[:,lat_interest['JRA55'][4]],'g-',linewidth=1.0,label='gz')
+plt.plot(index_1979_2015,AMET_E_uv2_ERAI_white_series[:-12,lat_interest['ERAI'][4]] - AMET_E_uv2_JRA55_white_series[:,lat_interest['JRA55'][4]],'c-',linewidth=1.0,label='uv2')
+#plt.title('Difference between ERA-Interim and JRA55 anomalies (time series) at %dN' % (lat_interest_list[i]))
+plt.legend()
+fig16.set_size_inches(12.5, 6)
+plt.xlabel("Time",fontsize=16)
+plt.xticks(np.arange(13,len(year_ERAI)*12+1,60), index_year,fontsize=16)
+plt.yticks(fontsize=16)
+plt.ylabel("Meridional Energy Transport residual (PW)",fontsize=16)
+plt.legend(frameon=True, prop={'size': 16})
+plt.show()
+fig16.savefig(output_path + os.sep + 'Comp_AMET_ERAI_minus_JRA55_anomaly_60N.jpg', dpi = 400)
+plt.close(fig16)
