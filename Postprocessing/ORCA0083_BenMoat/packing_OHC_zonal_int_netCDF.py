@@ -14,7 +14,9 @@ Description     : The code aims to reorganize the output from Ben Moat
                   too large to handle. (memory error)
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, matplotlib, sys
-variables       : Ocean Heat Content from surface to bottom          OHC       [J]
+variables       : Ocean Heat Content from surface to bottom          OHC       [J/km2]
+                  !!! Due to the unit, we must change it to J/m2
+                  J/m2 = 1E6 J/km2
 
 Caveat!!        : The data is from 0 deg north to 90 deg north (North Hemisphere).
                   Latitude: North to South(90 to 0)
@@ -75,7 +77,7 @@ def pack_netcdf_zonal_int(E_zonal_int, latitude_aux, output_path):
     month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
     lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('latitude_aux',))
     # create the actual 3-d variable
-    OHC_wrap_var = data_wrap.createVariable('OHC_glo_vert',np.float64,('year','month','latitude_aux'),zlib=True)
+    OHC_wrap_var = data_wrap.createVariable('OHC_glo_zonal_int',np.float64,('year','month','latitude_aux'),zlib=True)
     # global attributes
     data_wrap.description = 'Monthly mean zonal integral of ocean heat content'
     # variable attributes
@@ -161,7 +163,7 @@ if __name__=="__main__":
         dataset_path = datapath + os.sep + 'OHC_ORCA0083_select_{}.nc'.format(i)
         print "read file OHC_ORCA0083_select_{}.nc".format(i)
         dataset = Dataset(dataset_path)
-        point = dataset.variables['OHC_bottom'][:,1494:,:] * e1v * e2v
+        point = dataset.variables['OHC_bottom'][:,1494:,:] * 1E+6 * e1v * e2v
         OHC_zonal_int[j,:,:] = np.sum(point,2)/1E+12 # change unit to tera joule
     print '*******************************************************************'
     print '*********************** create netcdf file*************************'
