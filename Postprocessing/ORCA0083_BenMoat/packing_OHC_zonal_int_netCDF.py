@@ -15,8 +15,8 @@ Description     : The code aims to reorganize the output from Ben Moat
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, matplotlib, sys
 variables       : Ocean Heat Content from surface to bottom          OHC       [J/km2]
-                  !!! Due to the unit, we must change it to J/m2
-                  J/m2 = 1E6 J/km2
+                  !!! The OHC data saved from NEMO ORCA083 has the unit J/km2. However,
+                  it is scaled with a factor of 1E12. We have to take it into account.
 
 Caveat!!        : The data is from 0 deg north to 90 deg north (North Hemisphere).
                   Latitude: North to South(90 to 0)
@@ -153,8 +153,8 @@ if __name__=="__main__":
     latitude_aux = latitude[:,1142]
     #longitude = dataset_mesh_NEMO.variables['glamv'][0,1494:,:]
     # grid width
-    e1v = dataset_mesh_NEMO.variables['e1v'][0,1494:,:]/1000
-    e2v = dataset_mesh_NEMO.variables['e2v'][0,1494:,:]/1000
+    e1v = dataset_mesh_NEMO.variables['e1v'][0,1494:,:]/1000 # unit km
+    e2v = dataset_mesh_NEMO.variables['e2v'][0,1494:,:]/1000 # unit km
     lev = level
     #E_point = np.zeros((len(period),12,1494,ji),dtype=float) #not enough memory
     OHC_zonal_int = np.zeros((len(period),12,1565),dtype=float)
@@ -163,7 +163,9 @@ if __name__=="__main__":
         dataset_path = datapath + os.sep + 'OHC_ORCA0083_select_{}.nc'.format(i)
         print "read file OHC_ORCA0083_select_{}.nc".format(i)
         dataset = Dataset(dataset_path)
-        point = dataset.variables['OHC_bottom'][:,1494:,:] * 1E+6 * e1v * e2v
+        point = dataset.variables['OHC_bottom'][:,1494:,:]
+        point[point<0] = 0
+        point = point * 1E+12 * e1v * e2v
         OHC_zonal_int[j,:,:] = np.sum(point,2)/1E+12 # change unit to tera joule
     print '*******************************************************************'
     print '*********************** create netcdf file*************************'
