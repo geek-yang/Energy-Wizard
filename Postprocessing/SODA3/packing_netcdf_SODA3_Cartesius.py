@@ -2,10 +2,10 @@
 """
 Copyright Netherlands eScience Center
 
-Function        : Packing netCDF files for the monthly output from Cartesius (JRA55)
+Function        : Packing netCDF files for the monthly output from Cartesius (SODA3)
 Author          : Yang Liu
 Date            : 2018.02.28
-Last Update     : 2018.04.20
+Last Update     : 2018.06.16
 Description     : The code aims to reorganize the output from the Cartesius
                   regarding the computation of oceanic meridional energy
                   transport based on SODA3 output. It also works with diagnostic
@@ -40,24 +40,28 @@ print os.path
 start_time = tttt.time()
 ################################   Input zone  ######################################
 # specify data path
-datapath_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int'
-datapath_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point'
+#datapath_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int'
+#datapath_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point'
 #datapath_OHC = '/projects/0/blueactn/reanalysis/SODA3/statistics/'
+datapath_psi = '/projects/0/blueactn/reanalysis/SODA3/statistics/'
 # time of the data, which concerns with the name of input
 # starting time (year)
 start_year = 1980
 # Ending time, if only for 1 year, then it should be the same as starting year
 end_year = 2015
 # specify output path for the netCDF4 file
-output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/postprocessing'
+#output_path = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/postprocessing'
 #output_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/'
+output_path_psi = '/projects/0/blueactn/reanalysis/SODA3/'
 # benchmark datasets for basic dimensions
-benchmark_path_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int/SODA3_model_5daily_mom5_E_zonal_int_201509.nc'
-benchmark_path_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point/SODA3_model_5daily_mom5_E_point_201509.nc'
+#benchmark_path_int = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/zonal_int/SODA3_model_5daily_mom5_E_zonal_int_201509.nc'
+#benchmark_path_point = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/SODA3/point/SODA3_model_5daily_mom5_E_point_201509.nc'
 #benchmark_path_OHC = '/projects/0/blueactn/reanalysis/SODA3/topog.nc'
-benchmark_int = Dataset(benchmark_path_int)
-benchmark_point = Dataset(benchmark_path_point)
+benchmark_path_psi = '/projects/0/blueactn/reanalysis/SODA3/topog.nc'
+#benchmark_int = Dataset(benchmark_path_int)
+#benchmark_point = Dataset(benchmark_path_point)
 #benchmark_OHC = Dataset(benchmark_path_OHC)
+benchmark_OHC = Dataset(benchmark_path_psi)
 ####################################################################################
 # dimension
 ji = 1440
@@ -243,7 +247,7 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
     print '*******************************************************************'
     # wrap the datasets into netcdf file
     # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_OHC.nc', 'w+',format = 'NETCDF4')
+    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_OHC.nc', 'w',format = 'NETCDF4')
     # create dimensions for netcdf data
     year_wrap_dim = data_wrap.createDimension('year',len(period))
     month_wrap_dim = data_wrap.createDimension('month',len(month))
@@ -340,10 +344,110 @@ def pack_netcdf_OHC(datapath,output_path,benchmark):
     # close the file
     data_wrap.close()
 
+# function for packing mass transport data
+def pack_netcdf_psi(datapath,output_path,benchmark):
+    print '*******************************************************************'
+    print '*********************** extract variables *************************'
+    print '*******************************************************************'
+    # create dimensions from an existing file
+    period = np.arange(start_year,end_year+1,1)
+    month = np.arange(1,13,1)
+    grid_y_C = benchmark.variables['grid_y_C'][:]
+    x_C = benchmark.variables['x_C'][:]              # Geographic Longitude of T-cell center
+    y_C = benchmark.variables['y_C'][:]
+    zt = benchmark.variables['zt'][:]
+    # horizontal integral
+    psi_pool_glo_zonal = np.zeros((len(period),len(month),level,jj),dtype = float)
+    psi_pool_atl_zonal = np.zeros((len(period),len(month),level,jj),dtype = float)
+    # vertical integral (horizontal profile)
+    psi_pool_glo_vert = np.zeros((len(period),len(month),jj,ji),dtype = float)
+    psi_pool_atl_vert = np.zeros((len(period),len(month),jj,ji),dtype = float)
+
+    for i in period:
+        j = i - 1980
+        for ii in np.arange(12):
+            dataset_path = datapath + os.sep + 'SODA3_model_5daily_mom5_psi_point_%d%s.nc' % (i,namelist_month[ii])
+            dataset = Dataset(dataset_path)
+            psi_pool_glo_zonal[j,ii,:,:] = dataset.variables['psi_glo_zonal'][:]
+            psi_pool_atl_zonal[j,ii,:,:] = dataset.variables['psi_atl_zonal'][:]
+            psi_pool_glo_vert[j,ii,:,:] = dataset.variables['psi_glo_vert'][:]
+            psi_pool_atl_vert[j,ii,:,:] = dataset.variables['psi_atl_vert'][:]
+
+    print '*******************************************************************'
+    print '*********************** create netcdf file*************************'
+    print '*******************************************************************'
+    # wrap the datasets into netcdf file
+    # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
+    data_wrap = Dataset(output_path+os.sep + 'OMET_SODA3_model_5daily_1980_2015_psi.nc', 'w',format = 'NETCDF4')
+    # create dimensions for netcdf data
+    year_wrap_dim = data_wrap.createDimension('year',len(period))
+    month_wrap_dim = data_wrap.createDimension('month',len(month))
+    lat_wrap_dim = data_wrap.createDimension('j',jj)
+    lon_wrap_dim = data_wrap.createDimension('i',ji)
+    lev_wrap_dim = data_wrap.createDimension('lev',level)
+    # create coordinate variables for 3-dimensions
+    year_wrap_var = data_wrap.createVariable('year',np.int32,('year',))
+    month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+    # 1D
+    lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('j',))
+    lev_wrap_var = data_wrap.createVariable('lev',np.float32,('lev',))
+    # 2D
+    gphit_wrap_var = data_wrap.createVariable('y_C',np.float32,('j','i'))
+    glamt_wrap_var = data_wrap.createVariable('x_C',np.float32,('j','i'))
+    # create target variables 4D
+    psi_glo_zonal_wrap_var = data_wrap.createVariable('psi_glo_zonal',np.float64,('year','month','lev','j'),zlib=True)
+    psi_atl_zonal_wrap_var = data_wrap.createVariable('psi_atl_zonal',np.float64,('year','month','lev','j'),zlib=True)
+
+    psi_glo_vert_wrap_var = data_wrap.createVariable('psi_glo_vert',np.float64,('year','month','j','i'),zlib=True)
+    psi_atl_vert_wrap_var = data_wrap.createVariable('psi_atl_vert',np.float64,('year','month','j','i'),zlib=True)
+
+    # global attributes
+    data_wrap.description = 'Monthly mean statistics of fields on MOM grid'
+    # variable attributes
+    lev_wrap_var.units = 'm'
+    gphit_wrap_var.units = 'MOM5_latitude_Cgrid'
+    glamt_wrap_var.units = 'MOM5_longitude_Cgrid'
+
+    psi_glo_zonal_wrap_var.units = 'Sv'
+    psi_atl_zonal_wrap_var.units = 'Sv'
+
+    psi_glo_vert_wrap_var.units = 'Sv'
+    psi_atl_vert_wrap_var.units = 'Sv'
+
+    lat_wrap_var.long_name = 'auxillary latitude'
+    lev_wrap_var.long_name = 'depth'
+    gphit_wrap_var.long_name = 'MOM5 Cgrid latitude'
+    glamt_wrap_var.long_name = 'MOM5 Cgrid longitude'
+
+    psi_glo_zonal_wrap_var.long_name = 'Global Meridional Mass Transport (zonal integral)'
+    psi_atl_zonal_wrap_var.long_name = 'Atlantic Meridional Mass Transport (zonal integral)'
+
+    psi_glo_vert_wrap_var.long_name = 'Global Meridional Mass Transport (vertical integral)'
+    psi_atl_vert_wrap_var.long_name = 'Atlantic Meridional Mass Transport (vertical integral)'
+
+    # writing data
+    year_wrap_var[:] = period
+    month_wrap_var[:] = month
+
+    lat_wrap_var[:] = grid_y_C
+    lev_wrap_var[:] = zt
+    gphit_wrap_var[:] = y_C
+    glamt_wrap_var[:] = x_C
+
+    psi_glo_zonal_wrap_var[:] = psi_pool_glo_zonal
+    psi_atl_zonal_wrap_var[:] = psi_pool_atl_zonal
+
+    psi_glo_vert_wrap_var[:] = psi_pool_glo_vert
+    psi_atl_vert_wrap_var[:] = psi_pool_atl_vert
+
+    # close the file
+    data_wrap.close()
+
 if __name__=="__main__":
-    pack_netcdf_zonal_int(datapath_int,output_path,benchmark_int)
-    pack_netcdf_point(datapath_point,output_path,benchmark_point)
+    #pack_netcdf_zonal_int(datapath_int,output_path,benchmark_int)
+    #pack_netcdf_point(datapath_point,output_path,benchmark_point)
     #pack_netcdf_OHC(datapath_OHC,output_path_OHC,benchmark_OHC)
+    pack_netcdf_psi(datapath_psi,output_path_psi,benchmark_psi)
     print 'Packing netcdf files complete!'
 
 print "Create netcdf file successfully"
