@@ -132,8 +132,8 @@ dataset_JRA55 = Dataset(datapath_JRA55 + os.sep + 'AMET_JRA55_model_daily_1979_2
 
 dataset_ERAI_fields = Dataset(datapath_ERAI_fields + os.sep + 'surface_ERAI_monthly_regress_1979_2016.nc')
 dataset_MERRA2_fields = Dataset(datapath_MERRA2_fields + os.sep + 'surface_MERRA2_monthly_regress_1980_2016.nc')
-#dataset_JRA55_fields = Dataset(datapath_JRA55_fields + os.sep + 'surface_JRA55_monthly_regress_1958_2013.nc')
-dataset_JRA55_fields = Dataset(datapath_JRA55_fields + os.sep + 'surface_JRA55_monthly_model_regress_1958_2013.nc')
+dataset_JRA55_fields = Dataset(datapath_JRA55_fields + os.sep + 'surface_JRA55_monthly_regress_1958_2013.nc')
+#dataset_JRA55_fields = Dataset(datapath_JRA55_fields + os.sep + 'surface_JRA55_monthly_model_regress_1958_2013.nc')
 
 dataset_ERAI_fields_extra = Dataset(datapath_ERAI_fields + os.sep + 'surface_ERAI_monthly_regress_1979_2016_extra.nc')
 
