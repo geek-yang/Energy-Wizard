@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare OMET of all reanalysis datasets from observation in the Atlantic
 Author          : Yang Liu
 Date            : 2018.05.23
-Last Update     : 2018.06.06
+Last Update     : 2018.07.05
 Description     : The code aims to plot and compare the meridional energy transport
                   in the ocean obtained from reanalysis data with direct observation
                   in the Atlantic Ocean. The oceanic meridional energy transport is
@@ -61,6 +61,8 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import iris
 import iris.plot as iplt
 import iris.quickplot as qplt
+# Taylor diagram
+import skill_metrics as sm
 
 # print the system structure and the path of the kernal
 print platform.architecture()
@@ -278,7 +280,30 @@ mask_SODA3 = dataset_mask_SODA3.variables['wet_c'][:]
 # meridional energy transport
 OMET_RAPID = dataset_RAPID.variables['Q_sum'][:]/1E+15
 # stream function
-Psi_RAPID = dataset_RAPID.variables['moc'][:]
+#Psi_RAPID = dataset_RAPID.variables['moc'][:]
+# calculate the monthly mean values of heat transport from RAPID ARRAY
+month_RAPID = dataset_RAPID.variables['month'][:]
+year_RAPID = dataset_RAPID.variables['year'][:]
+OMET_RAPID_monthly = np.zeros(139,dtype=float) # 12*12-3-2
+pool_sum = 0.0000000000001 # start with a float value
+month_counter = 4 # starts from April
+index_array = 0
+counter = 0
+for i in np.arange(len(month_RAPID)):
+    if i == len(month_RAPID)-1:
+        OMET_RAPID_monthly[index_array] = pool_sum / counter
+        print 'Obtain all the monthly mean of OMET from RAPID!'
+    elif  month_counter == month_RAPID[i]:
+        pool_sum = pool_sum + OMET_RAPID[i]
+        counter = counter + 1
+    else :
+        # take the mean of the measurements for the current month
+        OMET_RAPID_monthly[index_array] = pool_sum / counter
+        pool_sum = OMET_RAPID[i] # reset summation
+        month_counter = month_RAPID[i] # update the month_counter
+        index_array = index_array + 1  # update the array counter
+        counter = 1 # reset counter
+
 # hindcast
 # meridional energy transport
 OMET_hindcast = dataset_hindcast.variables['E'][:]
@@ -325,6 +350,10 @@ print '*******************************************************************'
 print '********************** standard deviation  ************************'
 print '*******************************************************************'
 # calculate the standard deviation of OMET anomaly
+# RAPID
+OMET_RAPID_std = np.std(OMET_RAPID_monthly)
+print 'The standard deviation of OMET from RAPID is (in peta Watt):'
+print OMET_RAPID_std
 # GLORYS2V3
 OMET_GLORYS2V3_std = np.std(OMET_GLORYS2V3_RAPID_series)
 print 'The standard deviation of OMET from GLORYS2V3 is (in peta Watt):'
@@ -346,6 +375,10 @@ print '*******************************************************************'
 print '*************************** mean value  ***************************'
 print '*******************************************************************'
 # calculate the mean of OMET anomaly
+# RAPID
+OMET_RAPID_mean = np.mean(OMET_RAPID_monthly)
+print 'The mean of OMET from RAPID is (in peta Watt):'
+print OMET_RAPID_mean
 # GLORYS2V3
 OMET_GLORYS2V3_mean = np.mean(OMET_GLORYS2V3_RAPID_series)
 print 'The mean of OMET from GLORYS2V3 is (in peta Watt):'
@@ -365,15 +398,17 @@ print OMET_NEMO_mean
 
 # index for axis
 index = np.arange(1,12*12+1,1) # 2004 - 2015
-index_RAPID = np.linspace(4,12*12-3,8398) # ignore the missing April 1st 2004 and the rest of the days in Oct 2015
+#index_RAPID_hourly = np.linspace(4,12*12-3,8398) # ignore the missing April 1st 2004 and the rest of the days in Oct 2015
+index_RAPID_monthly = np.arange(3,len(OMET_RAPID_monthly)+3,1)
 index_hindcast = np.arange(1,12*9+1,1) # 2004 - 2012
 
-text_content = '$\mu_{ORAS4}=%.2f$   $\mu_{GLORYS2V3}=%.2f$   $\mu_{SODA3}=%.2f$ $\mu_{NEMO}=%.2f$ \n $\sigma_{ORAS4}=%.2f$   $\sigma_{GLORYS2V3}=%.2f$   $\sigma_{SODA3}=%.2f$ $\sigma_{NEMO}=%.2f$' \
-                % (OMET_ORAS4_mean, OMET_GLORYS2V3_mean, OMET_SODA3_mean, OMET_NEMO_mean, OMET_ORAS4_std, OMET_GLORYS2V3_std, OMET_SODA3_std, OMET_NEMO_std)
+text_content = '$\mu_{RAPID}=%.2f$ $\mu_{ORAS4}=%.2f$   $\mu_{GLORYS2V3}=%.2f$   $\mu_{SODA3}=%.2f$ $\mu_{NEMO}=%.2f$ \n $\sigma_{RAPID}=%.2f$ $\sigma_{ORAS4}=%.2f$   $\sigma_{GLORYS2V3}=%.2f$   $\sigma_{SODA3}=%.2f$ $\sigma_{NEMO}=%.2f$' \
+                % (OMET_RAPID_mean, OMET_ORAS4_mean, OMET_GLORYS2V3_mean, OMET_SODA3_mean, OMET_NEMO_mean, OMET_RAPID_std, OMET_ORAS4_std, OMET_GLORYS2V3_std, OMET_SODA3_std, OMET_NEMO_std)
 
 # meridional energy transport with hindcast on ORCA083
 fig4 = plt.figure()
-plt.plot(index_RAPID[:],OMET_RAPID[:-23],color='gray',linestyle='-',linewidth=1.4,label='RAPID ARRAY')
+#plt.plot(index_RAPID[:],OMET_RAPID[:-23],color='gray',linestyle='-',linewidth=1.4,label='RAPID ARRAY')
+plt.plot(index_RAPID_monthly[:],OMET_RAPID_monthly[:],color='gray',linestyle='-',linewidth=2.4,label='RAPID ARRAY')
 plt.plot(index[:-12],OMET_ORAS4_RAPID_series[:],'b--',linewidth=2.0,label='ORAS4')
 plt.plot(index[:-12],OMET_GLORYS2V3_RAPID_series[:],'r--',linewidth=2.0,label='GLORYS2V3')
 plt.plot(index,OMET_SODA3_RAPID_series[:],'g--',linewidth=2.0,label='SODA3')
@@ -382,12 +417,75 @@ plt.plot(index_hindcast[:],OMET_hindcast_series[46*12:],color='darkorange',lines
 plt.legend(frameon=True, loc=2, prop={'size': 14})
 fig4.set_size_inches(12.5, 6)
 plt.xlabel("Time",fontsize = 16)
-plt.xticks(np.linspace(1, 12*12, 12), np.arange(2004,2016,1))
+plt.xticks(np.linspace(1, 12*12+1, 13), np.arange(2004,2017,1))
 #plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport (PW)",fontsize = 16)
 plt.yticks(fontsize=16)
 props = dict(boxstyle='round',facecolor='white', alpha=0.8)
 ax = plt.gca()
-ax.text(0.37,0.15,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
+ax.text(0.25,0.13,text_content,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
 plt.show()
 fig4.savefig(output_path + os.sep + 'Comp_OMET_26.5N_RAPID_hindcast_time_series.jpg', dpi = 400)
+
+print '*******************************************************************'
+print '**********************    Taylor Diagram    ***********************'
+print '*******************************************************************'
+# statistical operation inside skill_metrics function
+# the time series must have the same size
+# RAPID array observation is taken as reference
+taylor_stats1 = sm.taylor_statistics(OMET_RAPID_monthly,OMET_RAPID_monthly)
+taylor_stats2 = sm.taylor_statistics(OMET_ORAS4_RAPID_series[3:],OMET_RAPID_monthly[:-10])
+taylor_stats3 = sm.taylor_statistics(OMET_GLORYS2V3_RAPID_series[3:],OMET_RAPID_monthly[:-10])
+taylor_stats4 = sm.taylor_statistics(OMET_SODA3_RAPID_series[3:-2],OMET_RAPID_monthly)
+taylor_stats5 = sm.taylor_statistics(OMET_hindcast_series[46*12+3:],OMET_RAPID_monthly[:-34])
+# Store statistics in arrays
+# Specify labels for points in a cell array (M1 for model prediction 1,
+# etc.). Note that a label needs to be specified for the reference even
+# though it is not used.
+label = ['RAPID ARRAY Obs','RAPID ARRAY', 'ORAS4', 'GLORYS2V3', 'SODA3','NEMO ORCA']
+
+# Store statistics in arrays
+sdev = np.array([taylor_stats1['sdev'][0], taylor_stats1['sdev'][1],
+                 taylor_stats2['sdev'][1], taylor_stats3['sdev'][1],
+                 taylor_stats4['sdev'][1], taylor_stats5['sdev'][1]])
+crmsd = np.array([taylor_stats1['crmsd'][0], taylor_stats1['crmsd'][1],
+                  taylor_stats2['crmsd'][1], taylor_stats3['crmsd'][1],
+                  taylor_stats4['crmsd'][1], taylor_stats5['crmsd'][1]])
+ccoef = np.array([taylor_stats1['ccoef'][0], taylor_stats1['ccoef'][1],
+                  taylor_stats2['ccoef'][1], taylor_stats3['ccoef'][1],
+                  taylor_stats4['ccoef'][1], taylor_stats5['ccoef'][1]])
+'''
+Produce the Taylor diagram
+Label the points and change the axis options for SDEV, CRMSD, and CCOEF.
+Increase the upper limit for the SDEV axis and rotate the CRMSD contour
+labels (counter-clockwise from x-axis). Exchange color and line style
+choices for SDEV, CRMSD, and CCOEFF variables to show effect. Increase
+the line width of all lines. Suppress axes titles and add a legend.
+For an exhaustive list of options to customize your diagram,
+please call the function at a Python command line:
+>> taylor_diagram
+'''
+text_box = '  Bias \n $%.2f$ \n $%.2f$ \n $%.2f$ \n $%.2f$' \
+% (OMET_ORAS4_mean - OMET_RAPID_mean, OMET_GLORYS2V3_mean - OMET_RAPID_mean, OMET_SODA3_mean - OMET_RAPID_mean, OMET_NEMO_mean - OMET_RAPID_mean)
+props = dict(boxstyle='round',facecolor='white', alpha=0.1)
+
+plt.figure(figsize=(7,7))
+sm.taylor_diagram(sdev,crmsd,ccoef, alpha=1.0,axismax = 0.60,
+                  markerLabel = label,markerLabelColor = 'r',
+                  markerColor = 'r', markerLegend = 'on',
+                  markersize = 12,
+                  styleOBS='-',titleOBS='RAPID ARRAY',widthOBS = 1.5,
+                  tickRMS= [0.0,0.2,0.4,0.6], tickRMSangle = 115.0,colRMS = 'g',
+                  styleRMS = '--', widthRMS = 2.0, titleRMS = 'on',
+                  tickSTD= [0.0,0.2,0.4,0.6], colSTD = 'k',
+                  styleSTD = ':', widthSTD = 2.0, titleSTD = 'on',
+                  colCOR = 'b', styleCOR = '-.', widthCOR = 2.0,
+                  titleCOR = 'on')
+plt.yticks(fontsize=12)
+plt.xticks(fontsize=12)
+ax = plt.gca()
+ax.text(1.0,0.95,text_box,transform=ax.transAxes,fontsize=14,verticalalignment='top',bbox=props)
+# Write plot to file
+plt.savefig(output_path + os.sep + 'Taylor_RAPID.png',dpi=400)
+# Show plot
+plt.show()
