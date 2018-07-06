@@ -212,7 +212,7 @@ for i in np.arange(len(lat_OMET)):
         poly_OMET = np.poly1d(polynomial_OMET)
         poly_fit_OMET[:,i] = poly_OMET(np.arange(len(year)*len(month_ind)))
 
-OMET_white_detrend_series = np.zeros(ci_white.shape,dtype=float)
+OMET_white_detrend_series = np.zeros(OMET_white_series.shape,dtype=float)
 OMET_white_detrend_series = OMET_white_series - poly_fit_OMET
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
