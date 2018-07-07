@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
 Copyright Netherlands eScience Center
-Function        : Compare oceanic meridional energy transport (ORAS4,GLORYS2V3)
+Function        : Regress climate patterns on oceanic meridional energy transport (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2018.03.06
-Last Update     : 2018.03.26
+Last Update     : 2018.07.07
 Description     : The code aims to regress non-climatological fields on the oceanic
                   meridional energy transport calculated from different oceanic
                   reanalysis datasets. In this, case, this includes GLORYS2V3
@@ -13,7 +13,8 @@ Description     : The code aims to regress non-climatological fields on the ocea
 
                   The non-climatological fields include include Sea Level Pressure (SLP), Sea
                   Surface Tmperature (SST), Surface Skin Temperature (TS) and Sea
-                  Ice Concentration (SIC).
+                  Ice Concentration (SIC). This helps with the understanding of the connections
+                  of OMET with major climate patterns.
 
                   Since the ocean reanalysis included here are all driven by ERA-Interim,
                   we will take the non-climatological fields from ERA-Interim for regression.
@@ -244,11 +245,10 @@ print '*******************************************************************'
 print '*************************** whitening *****************************'
 print '*******************************************************************'
 month_ind = np.arange(12)
-
+# seasonal cycle of OMET
 seansonal_cycle_OMET_ORAS4 = np.mean(OMET_ORAS4,axis=0)
 seansonal_cycle_OMET_GLORYS2V3 = np.mean(OMET_GLORYS2V3,axis=0)
 seansonal_cycle_OMET_SODA3 = np.mean(OMET_SODA3,axis=0)
-
 
 seasonal_cycle_SLP_ERAI = np.zeros((12,len(latitude_ERAI_fields),len(longitude_ERAI_fields))) # from 20N - 90N
 seasonal_cycle_SST_ERAI = np.zeros((12,len(latitude_ERAI_fields),len(longitude_ERAI_fields))) # from 20N - 90N
@@ -303,6 +303,51 @@ OMET_GLORYS2V3_white_series = OMET_GLORYS2V3_white.reshape(len(year_GLORYS2V3)*l
 OMET_SODA3_white_series = OMET_SODA3_white.reshape(len(year_SODA3)*len(month_ind),len(latitude_SODA3))
 
 TS_ERAI_white_series = TS_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
+print '*******************************************************************'
+print '***************************  Detrend  *****************************'
+print '*******************************************************************'
+time_ERAI = np.arange(len(year_ERAI)*12)
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+poly_fit_SST_ERAI = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_ERAI_fields)):
+    for j in np.arange(len(longitude_ERAI_fields)):
+        polynomial = np.polyfit(np.arange(len(time_ERAI)), SST_ERAI_white_series[:,i,j], 2)
+        poly = np.poly1d(polynomial)
+        poly_fit_SST_ERAI[:,i,j] = poly(np.arange(len(time_ERAI)))
+
+SST_ERAI_white_detrend_poly = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+SST_ERAI_white_detrend_poly = SST_ERAI_white_series - poly_fit_SST_ERAI
+
+# detrend OMET
+# ORAS4
+poly_fit_OMET_ORAS4 = np.zeros(OMET_ORAS4_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_ORAS4)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_ORAS4)*len(month_ind)), OMET_ORAS4_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_ORAS4[:,i] = poly_OMET(np.arange(len(year_ORAS4)*len(month_ind)))
+
+OMET_ORAS4_white_detrend_series = np.zeros(OMET_ORAS4_white_series.shape,dtype=float)
+OMET_ORAS4_white_detrend_series = OMET_ORAS4_white_series - poly_fit_OMET_ORAS4
+# GLORYS2V3
+poly_fit_OMET_GLORYS2V3 = np.zeros(OMET_GLORYS2V3_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_GLORYS2V3)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_GLORYS2V3)*len(month_ind)), OMET_GLORYS2V3_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_GLORYS2V3[:,i] = poly_OMET(np.arange(len(year_GLORYS2V3)*len(month_ind)))
+
+OMET_GLORYS2V3_white_detrend_series = np.zeros(OMET_GLORYS2V3_white_series.shape,dtype=float)
+OMET_GLORYS2V3_white_detrend_series = OMET_GLORYS2V3_white_series - poly_fit_OMET_GLORYS2V3
+# SODA3
+poly_fit_OMET_SODA3 = np.zeros(OMET_SODA3_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_SODA3)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_SODA3)*len(month_ind)), OMET_SODA3_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_SODA3[:,i] = poly_OMET(np.arange(len(year_SODA3)*len(month_ind)))
+
+OMET_SODA3_white_detrend_series = np.zeros(OMET_SODA3_white_series.shape,dtype=float)
+OMET_SODA3_white_detrend_series = OMET_SODA3_white_series - poly_fit_OMET_SODA3
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -509,7 +554,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_series[:-24,i,j])
+            #slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_series[:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_detrend_poly[:-24,i,j])
     # figsize works for the size of the map, not the entire figure
     fig4 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -545,14 +591,16 @@ for c in np.arange(len(lat_interest_list)):
     ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
     # show and save plot
     plt.show()
-    fig4.savefig(output_path + os.sep + 'SST' + os.sep + 'OMET_ORAS4_fields_ERAI' + os.sep + "Regression_OMET_ORAS4_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    #fig4.savefig(output_path + os.sep + 'SST' + os.sep + 'OMET_ORAS4_fields_ERAI' + os.sep + "Regression_OMET_ORAS4_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    fig4.savefig(output_path + os.sep + 'SST' + os.sep + 'Detrend' + os.sep + 'OMET_ORAS4_fields_ERAI' + os.sep + "Regression_OMET_ORAS4_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
     plt.close(fig4)
 
     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      GLORYS2V3      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_series[168:-24,i,j])
+            #slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_series[168:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_detrend_poly[168:-24,i,j])
     # figsize works for the size of the map, not the entire figure
     fig5 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -586,14 +634,16 @@ for c in np.arange(len(lat_interest_list)):
     ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
     # show and save plot
     plt.show()
-    fig5.savefig(output_path + os.sep + 'SST' + os.sep + 'OMET_GLORYS2V3_fields_ERAI' + os.sep + "Regression_OMET_GLORYS2V3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    #fig5.savefig(output_path + os.sep + 'SST' + os.sep + 'OMET_GLORYS2V3_fields_ERAI' + os.sep + "Regression_OMET_GLORYS2V3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    fig5.savefig(output_path + os.sep + 'SST' + os.sep + 'Detrend' + os.sep + 'OMET_GLORYS2V3_fields_ERAI' + os.sep + "Regression_OMET_GLORYS2V3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
     plt.close(fig5)
 
     # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@       SODA3      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_series[12:-12,i,j])
+            #slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_series[12:-12,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_detrend_poly[12:-12,i,j])
     # figsize works for the size of the map, not the entire figure
     fig6 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -627,7 +677,8 @@ for c in np.arange(len(lat_interest_list)):
     ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
     # show and save plot
     plt.show()
-    fig6.savefig(output_path + os.sep + 'SST' + os.sep + 'OMET_SODA3_fields_ERAI' + os.sep + "Regression_OMET_SODA3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    #fig6.savefig(output_path + os.sep + 'SST' + os.sep + 'OMET_SODA3_fields_ERAI' + os.sep + "Regression_OMET_SODA3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
+    fig6.savefig(output_path + os.sep + 'SST' + os.sep + 'Detrend' + os.sep + 'OMET_SODA3_fields_ERAI' + os.sep + "Regression_OMET_SODA3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=300)
     plt.close(fig6)
 
 #***************************************************************************#
