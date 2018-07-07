@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Regress climate patterns on oceanic meridional energy transport (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2018.06.07
-Last Update     : 2018.06.07
+Last Update     : 2018.07.06
 Description     : The code aims to regress non-climatological fields on the oceanic
                   meridional energy transport calculated from different oceanic
                   reanalysis datasets. In this, case, this includes GLORYS2V3
@@ -294,15 +294,56 @@ print '*******************************************************************'
 OMET_ORAS4_series = OMET_ORAS4.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
 OMET_GLORYS2V3_series = OMET_GLORYS2V3.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
 OMET_SODA3_series = OMET_SODA3.reshape(len(year_SODA3)*len(month_ind),len(latitude_SODA3))
-
-TS_ERAI_series = TS_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
-
 # dataset without seasonal cycle - time series
 OMET_ORAS4_white_series = OMET_ORAS4_white.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
 OMET_GLORYS2V3_white_series = OMET_GLORYS2V3_white.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
 OMET_SODA3_white_series = OMET_SODA3_white.reshape(len(year_SODA3)*len(month_ind),len(latitude_SODA3))
+print '*******************************************************************'
+print '***************************  Detrend  *****************************'
+print '*******************************************************************'
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+# detrend sea ice
+poly_fit_SST_ERAI = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_ERAI_fields)):
+    for j in np.arange(len(longitude_ERAI_fields)):
+        polynomial = np.polyfit(np.arange(len(time_series)), SST_ERAI_white_series[:,i,j], 2)
+        poly = np.poly1d(polynomial)
+        poly_fit_SST_ERAI[:,i,j] = poly(np.arange(len(time_series)))
 
-TS_ERAI_white_series = TS_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
+SST_ERAI_white_detrend_poly = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+SST_ERAI_white_detrend_poly = SST_ERAI_white_series - poly_fit_SST_ERAI
+
+# detrend OMET
+poly_fit_OMET_GLORYS2V3 = np.zeros(OMET_GLORYS2V3_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_GLORYS2V3)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_GLORYS2V3)*len(month_ind)), OMET_GLORYS2V3_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_GLORYS2V3[:,i] = poly_OMET(np.arange(len(year_GLORYS2V3)*len(month_ind)))
+
+OMET_GLORYS2V3_white_detrend_series = np.zeros(OMET_GLORYS2V3_white_series.shape,dtype=float)
+OMET_GLORYS2V3_white_detrend_series = OMET_GLORYS2V3_white_series - poly_fit_OMET_GLORYS2V3
+
+# detrend OMET
+poly_fit_OMET_ORAS4 = np.zeros(OMET_ORAS4_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_ORAS4)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_ORAS4)*len(month_ind)), OMET_ORAS4_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_ORAS4[:,i] = poly_OMET(np.arange(len(year_ORAS4)*len(month_ind)))
+
+OMET_ORAS4_white_detrend_series = np.zeros(OMET_ORAS4_white_series.shape,dtype=float)
+OMET_ORAS4_white_detrend_series = OMET_ORAS4_white_series - poly_fit_OMET_ORAS4
+
+# detrend OMET
+poly_fit_OMET_SODA3 = np.zeros(OMET_SODA3_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_SODA3)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_SODA3)*len(month_ind)), OMET_SODA3_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_SODA3[:,i] = poly_OMET(np.arange(len(year_SODA3)*len(month_ind)))
+
+OMET_SODA3_white_detrend_series = np.zeros(OMET_SODA3_white_series.shape,dtype=float)
+OMET_SODA3_white_detrend_series = OMET_SODA3_white_series - poly_fit_OMET_SODA3
 print '*******************************************************************'
 print '**********************     regression     *************************'
 print '******************    original and anomalies   ********************'
@@ -315,7 +356,7 @@ print '*******************************************************************'
 # create an array to store the correlation coefficient
 slope_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
 r_value_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
-p_value_ERAI_fields= np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+p_value_ERAI_fields= np.ones((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
 
 latitude_ERAI_iris = iris.coords.DimCoord(latitude_ERAI_fields,standard_name='latitude',long_name='latitude',
                              var_name='lat',units='degrees')
@@ -333,7 +374,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_series[:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_detrend_poly[:-24,i,j])
+    p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig4 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -376,7 +418,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_series[168:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_detrend_poly[168:-24,i,j])
+    p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig5 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -417,7 +460,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_series[12:-12,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_detrend_poly[12:-12,i,j])
+    p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig6 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -453,6 +497,5 @@ for c in np.arange(len(lat_interest_list)):
     plt.show()
     fig6.savefig(output_path + os.sep + "Regression_OMET_SODA3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
     plt.close(fig6)
-
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
