@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on OMET (ORAS4) with whitening
 Author          : Yang Liu
 Date            : 2017.10.13
-Last Update     : 2018.05.23
+Last Update     : 2018.07.06
 Description     : The code aims to explore the association between climatological
                   variables with oceanic meridional energy transport (OMET).
                   The statistical method employed here is linear regression. A
@@ -215,7 +215,7 @@ for i in np.arange(len(lat_OMET)):
         poly_OMET = np.poly1d(polynomial_OMET)
         poly_fit_OMET[:,i] = poly_OMET(np.arange(len(year)*len(month_ind)))
 
-OMET_white_detrend_series = np.zeros(ci_white.shape,dtype=float)
+OMET_white_detrend_series = np.zeros(OMET_white_series.shape,dtype=float)
 OMET_white_detrend_series = OMET_white_series - poly_fit_OMET
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
@@ -755,12 +755,14 @@ for c in np.arange(len(lat_interest_list)):
     xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
     XX, YY = m(xx, yy)
     # define color range for the contourf
-    color = np.linspace(-0.40,0.40,17)
+    color = np.linspace(-1.0,1.0,41)
     # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
     cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci,slope),color,cmap='coolwarm',extend='both') # ci_white
     # add color bar
-    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
+    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f',ticks=[-1.0,-0.5,0,0.5,1.0])
     cbar.ax.tick_params(labelsize=8)
+    cbar_labels = ['-100%','-50%','0%','50%','100%']
+    cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
     # locate the indices of p_value matrix where p<0.05 (99.5% confident)
     i, j = np.where(p_value_original<=0.05)
@@ -788,12 +790,14 @@ for c in np.arange(len(lat_interest_list)):
     xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
     XX, YY = m(xx, yy)
     # define color range for the contourf
-    color = np.linspace(-0.40,0.40,17)
+    color = np.linspace(-1.0,1.0,41)
     # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
     cs = m.contourf(XX,YY,np.ma.masked_where(mask_ci,slope),color,cmap='coolwarm',extend='both') # ci_white
     # add color bar
-    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f')
+    cbar = m.colorbar(cs,location="bottom",size='4%',pad="8%",format='%.2f',ticks=[-1.0,-0.5,0,0.5,1.0])
     cbar.ax.tick_params(labelsize=8)
+    cbar_labels = ['-100%','-50%','0%','50%','100%']
+    cbar.ax.set_xticklabels(cbar_labels)
     cbar.set_label('Regression Coefficient Percentage/PW',fontsize = 8)
     # locate the indices of p_value matrix where p<0.05 (99.5% confident)
     i, j = np.where(p_value_original<=0.05)

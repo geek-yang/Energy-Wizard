@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on OMET (GLORYS2V3) with whitening
 Author          : Yang Liu
 Date            : 2017.11.10
-Last Update     : 2018.05.23
+Last Update     : 2018.07.06
 Description     : The code aims to explore the association between climatological
                   variables with oceanic meridional energy transport (OMET).
                   The statistical method employed here is linear regression. A
@@ -198,7 +198,7 @@ print '*******************************************************************'
 poly_fit = np.zeros(ci_white.shape,dtype=float)
 for i in np.arange(len(lat)):
     for j in np.arange(len(lon)):
-        polynomial = np.polyfit(np.arange(len(time)), ci_white[:,i,j], 5)
+        polynomial = np.polyfit(np.arange(len(time)), ci_white[:,i,j], 3)
         poly = np.poly1d(polynomial)
         poly_fit[:,i,j] = poly(np.arange(len(time)))
 
@@ -208,11 +208,11 @@ ci_white_detrend = ci_white - poly_fit
 # detrend OMET
 poly_fit_OMET = np.zeros(OMET_white_series.shape,dtype=float)
 for i in np.arange(len(lat_OMET)):
-        polynomial_OMET = np.polyfit(np.arange(len(year)*len(month_ind)), OMET_white_series[:,i], 5)
+        polynomial_OMET = np.polyfit(np.arange(len(year)*len(month_ind)), OMET_white_series[:,i], 2)
         poly_OMET = np.poly1d(polynomial_OMET)
         poly_fit_OMET[:,i] = poly_OMET(np.arange(len(year)*len(month_ind)))
 
-OMET_white_detrend_series = np.zeros(ci_white.shape,dtype=float)
+OMET_white_detrend_series = np.zeros(OMET_white_series.shape,dtype=float)
 OMET_white_detrend_series = OMET_white_series - poly_fit_OMET
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'

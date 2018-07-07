@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Investigate the correlation between AMET (MERRA2,ERA-Interim,JRA55) and all kinds of fields
 Author          : Yang Liu
 Date            : 2018.03.16
-Last Update     : 2018.04.07
+Last Update     : 2018.07.04
 Description     : The code aims to dig into the correlation between atmospheric meridional
                   energy transport and all kinds of climatological fields, as well as some
                   climate index.
@@ -17,6 +17,9 @@ Description     : The code aims to dig into the correlation between atmospheric 
                   The variable fields of insterest include Sea Level Pressure (SLP), Sea
                   Surface Tmperature (SST), Surface Skin Temperature (TS) and Sea
                   Ice Concentration (SIC).
+
+                  The first year (1980) of the fields from MERRA2 is quite suspicious.
+                  We will start with 1981.
 
 Return Value    : NetCFD4 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib
@@ -129,53 +132,60 @@ dataset_JRA55 = Dataset(datapath_JRA55 + os.sep + 'AMET_JRA55_model_daily_1979_2
 
 dataset_ERAI_fields = Dataset(datapath_ERAI_fields + os.sep + 'surface_ERAI_monthly_regress_1979_2016.nc')
 dataset_MERRA2_fields = Dataset(datapath_MERRA2_fields + os.sep + 'surface_MERRA2_monthly_regress_1980_2016.nc')
+dataset_JRA55_fields = Dataset(datapath_JRA55_fields + os.sep + 'surface_JRA55_monthly_regress_1958_2013.nc')
+#dataset_JRA55_fields = Dataset(datapath_JRA55_fields + os.sep + 'surface_JRA55_monthly_model_regress_1958_2013.nc')
 
 dataset_ERAI_fields_extra = Dataset(datapath_ERAI_fields + os.sep + 'surface_ERAI_monthly_regress_1979_2016_extra.nc')
 
 dataset_index = Dataset(datapath_index + os.sep + 'index_climate_monthly_regress_1950_2017.nc')
 
 AMET_ERAI = dataset_ERAI.variables['E'][:]/1000 # from Tera Watt to Peta Watt
-AMET_MERRA2 = dataset_MERRA2.variables['E'][:]/1000 # from Tera Watt to Peta Watt
-AMET_JRA55 = dataset_JRA55.variables['E'][:,:,0:125]/1000 # from Tera Watt to Peta Watt
+AMET_MERRA2 = dataset_MERRA2.variables['E'][1:,:,:]/1000 # from Tera Watt to Peta Watt
+AMET_JRA55 = dataset_JRA55.variables['E'][:-2,:,0:125]/1000 # from Tera Watt to Peta Watt
 
 year_ERAI = dataset_ERAI.variables['year'][:]             # from 1979 to 2016
-year_MERRA2 = dataset_MERRA2.variables['year'][:]         # from 1980 to 2016
-year_JRA55 = dataset_JRA55.variables['year'][:]           # from 1979 to 2015
+year_MERRA2 = dataset_MERRA2.variables['year'][1:]         # from 1980 to 2016
+year_JRA55 = dataset_JRA55.variables['year'][:-2]           # from 1979 to 2015
 
 latitude_ERAI = dataset_ERAI.variables['latitude'][:]
 latitude_MERRA2 = dataset_MERRA2.variables['latitude'][:]
 latitude_JRA55 = dataset_JRA55.variables['latitude'][0:125]
 
-SLP_ERAI_series = dataset_ERAI_fields.variables['msl'][:]   # dimension (time, lat, lon)
-SLP_MERRA2 = dataset_MERRA2_fields.variables['SLP'][:]      # dimension (year, month, lat, lon)
+SLP_ERAI_series = dataset_ERAI_fields.variables['msl'][:]       # dimension (time, lat, lon)
+SLP_MERRA2 = dataset_MERRA2_fields.variables['SLP'][1:,:,:,:]      # dimension (year, month, lat, lon)
+SLP_JRA55 = dataset_JRA55_fields.variables['SLP'][21:,:,:,:]      # dimension (year, month, lat, lon)
 
 SST_ERAI_series = dataset_ERAI_fields.variables['sst'][:]
 SST_ERAI_mask = np.ma.getmaskarray(SST_ERAI_series[0,:,:])
 #SST_MERRA2_ice = dataset_MERRA2_fields.variables['SST_ice'][:]
-SST_MERRA2 = dataset_MERRA2_fields.variables['SST_water'][:] # water surface temperature
+SST_MERRA2 = dataset_MERRA2_fields.variables['SST_water'][1:,:,:,:] # water surface temperature
 #SST_MERRA2_water[SST_MERRA2_water>1000] = 0
-SST_MERRA2 = np.ma.masked_where(SST_MERRA2>1000,SST_MERRA2)
+SST_MERRA2 = np.ma.masked_where(SST_MERRA2>10000,SST_MERRA2)
 SST_MERRA2_mask = np.ma.getmaskarray(SST_MERRA2[0,0,:,:])
+SST_JRA55 = dataset_JRA55_fields.variables['ST'][21:,:,:,:]     # surface temperature - here we apply mask and only take the ST over water
+SST_JRA55_mask = dataset_JRA55_fields.variables['mask'][:]
+SST_JRA55_mask_3D = np.repeat(SST_JRA55_mask[np.newaxis,:,:],12,0)
+SST_JRA55_mask_4D = np.repeat(SST_JRA55_mask_3D[np.newaxis,:,:,:],len(year_JRA55),0)
+SST_JRA55[SST_JRA55_mask_4D==True] = 0
 
 SIC_ERAI_series = dataset_ERAI_fields.variables['ci'][:]
 SIC_ERAI_mask = np.ma.getmaskarray(SIC_ERAI_series[0,:,:])
-SIC_MERRA2 = dataset_MERRA2_fields.variables['SIC'][:]
+SIC_MERRA2 = dataset_MERRA2_fields.variables['SIC'][1:,:,:,:]
 #SIC_MERRA2_mask = np.ma.getmaskarray(SIC_MERRA2[0,0,:,:]) # no mask from array
-
-TS_ERAI = dataset_ERAI_fields_extra.variables['ts'][:]
-TS_MERRA2 = dataset_MERRA2_fields.variables['ts'][:]
-
-T2M_ERAI = dataset_ERAI_fields_extra.variables['t2m'][:]
-T2M_MERRA2 = dataset_MERRA2_fields.variables['t2m'][:]
+SIC_JRA55 = dataset_JRA55_fields.variables['SIC'][21:,:,:,:]
+SIC_JRA55_mask = dataset_JRA55_fields.variables['mask'][:]
 
 latitude_ERAI_fields = dataset_ERAI_fields.variables['latitude'][:]
 latitude_MERRA2_fields = dataset_MERRA2_fields.variables['latitude'][:]
+latitude_JRA55_fields = dataset_JRA55_fields.variables['latitude'][:]
 
 longitude_ERAI_fields = dataset_ERAI_fields.variables['longitude'][:]
 longitude_MERRA2_fields = dataset_MERRA2_fields.variables['longitude'][:]
+longitude_JRA55_fields = dataset_JRA55_fields.variables['longitude'][:]
 
 year_ERAI_fields = year_ERAI
-year_MERRA2_fields = dataset_MERRA2_fields.variables['year'][:]
+year_MERRA2_fields = dataset_MERRA2_fields.variables['year'][1:]
+year_JRA55_fields = year_JRA55
 
 # index (originally from 1950 to 2017)
 # here we just take 1979 to 2016
@@ -253,29 +263,11 @@ for i in np.arange(len(year_MERRA2_fields)):
     for j in month_ind:
         SST_MERRA2_white[i,j,:,:] = SST_MERRA2[i,j,:,:] - seasonal_cycle_SST_MERRA2[j,:,:]
 
-seasonal_cycle_TS_ERAI = np.mean(TS_ERAI,axis=0)
-TS_ERAI_white = np.zeros(TS_ERAI.shape,dtype=float)
-for i in np.arange(len(year_ERAI_fields)):
+seasonal_cycle_SST_JRA55 = np.mean(SST_JRA55,axis=0)
+SST_JRA55_white = np.zeros(SST_JRA55.shape,dtype=float)
+for i in np.arange(len(year_JRA55_fields)):
     for j in month_ind:
-        TS_ERAI_white[i,j,:,:] = TS_ERAI[i,j,:,:] - seasonal_cycle_TS_ERAI[j,:,:]
-
-seasonal_cycle_TS_MERRA2 = np.mean(TS_MERRA2,axis=0)
-TS_MERRA2_white = np.zeros(TS_MERRA2.shape,dtype=float)
-for i in np.arange(len(year_MERRA2_fields)):
-    for j in month_ind:
-        TS_MERRA2_white[i,j,:,:] = TS_MERRA2[i,j,:,:] - seasonal_cycle_TS_MERRA2[j,:,:]
-
-seasonal_cycle_T2M_ERAI = np.mean(T2M_ERAI,axis=0)
-T2M_ERAI_white = np.zeros(T2M_ERAI.shape,dtype=float)
-for i in np.arange(len(year_ERAI_fields)):
-    for j in month_ind:
-        T2M_ERAI_white[i,j,:,:] = T2M_ERAI[i,j,:,:] - seasonal_cycle_T2M_ERAI[j,:,:]
-
-seasonal_cycle_T2M_MERRA2 = np.mean(T2M_MERRA2,axis=0)
-T2M_MERRA2_white = np.zeros(T2M_MERRA2.shape,dtype=float)
-for i in np.arange(len(year_MERRA2_fields)):
-    for j in month_ind:
-        T2M_MERRA2_white[i,j,:,:] = T2M_MERRA2[i,j,:,:] - seasonal_cycle_T2M_MERRA2[j,:,:]
+        SST_JRA55_white[i,j,:,:] = SST_JRA55[i,j,:,:] - seasonal_cycle_SST_JRA55[j,:,:]
 
 seasonal_cycle_SIC_MERRA2 = np.mean(SIC_MERRA2,axis=0)
 SIC_MERRA2_white = np.zeros(SIC_MERRA2.shape,dtype=float)
@@ -293,24 +285,50 @@ AMET_JRA55_series = AMET_JRA55.reshape(len(year_JRA55)*len(month_ind),len(latitu
 AMET_ERAI_white_series = AMET_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI))
 AMET_MERRA2_white_series = AMET_MERRA2_white.reshape(len(year_MERRA2)*len(month_ind),len(latitude_MERRA2))
 AMET_JRA55_white_series = AMET_JRA55_white.reshape(len(year_JRA55)*len(month_ind),len(latitude_JRA55))
-# fields with seasonal cycle - time series
-TS_ERAI_series = TS_ERAI.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
-T2M_ERAI_series = T2M_ERAI.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
-
-SLP_MERRA2_series = SLP_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
-SST_MERRA2_series = SST_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
-TS_MERRA2_series = TS_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
-T2M_MERRA2_series = T2M_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
-SIC_MERRA2_series = SIC_MERRA2.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
 # fields without seasonal cycle - time series
-TS_ERAI_white_series = TS_ERAI_white.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
-T2M_ERAI_white_series = T2M_ERAI_white.reshape(len(year_ERAI_fields)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
-
 SLP_MERRA2_white_series = SLP_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
 SST_MERRA2_white_series = SST_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
-TS_MERRA2_white_series = TS_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
-T2M_MERRA2_white_series = T2M_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
 SIC_MERRA2_white_series = SIC_MERRA2_white.reshape(len(year_MERRA2_fields)*len(month_ind),len(latitude_MERRA2_fields),len(longitude_MERRA2_fields))
+
+SST_JRA55_white_series = SST_JRA55_white.reshape(len(year_JRA55_fields)*len(month_ind),len(latitude_JRA55_fields),len(longitude_JRA55_fields))
+print '*******************************************************************'
+print '***************************  Detrend  *****************************'
+print '*******************************************************************'
+time_ERAI = np.arange(len(year_ERAI_fields)*12)
+time_MERRA2 = np.arange(len(year_MERRA2_fields)*12)
+time_JRA55 = np.arange(len(year_JRA55_fields)*12)
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+poly_fit_SST_ERAI = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_ERAI_fields)):
+    for j in np.arange(len(longitude_ERAI_fields)):
+        polynomial = np.polyfit(np.arange(len(time_ERAI)), SST_ERAI_white_series[:,i,j], 2)
+        poly = np.poly1d(polynomial)
+        poly_fit_SST_ERAI[:,i,j] = poly(np.arange(len(time_ERAI)))
+
+SST_ERAI_white_detrend_poly = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+SST_ERAI_white_detrend_poly = SST_ERAI_white_series - poly_fit_SST_ERAI
+
+poly_fit_SST_MERRA2 = np.zeros(SST_MERRA2_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_MERRA2_fields)):
+    for j in np.arange(len(longitude_MERRA2_fields)):
+        polynomial = np.polyfit(np.arange(len(time_MERRA2)), SST_MERRA2_white_series[:,i,j], 2)
+        poly = np.poly1d(polynomial)
+        poly_fit_SST_MERRA2[:,i,j] = poly(np.arange(len(time_MERRA2)))
+
+SST_MERRA2_white_detrend_poly = np.zeros(SST_MERRA2_white_series.shape,dtype=float)
+SST_MERRA2_white_detrend_poly = SST_MERRA2_white_series - poly_fit_SST_MERRA2
+
+poly_fit_SST_JRA55 = np.zeros(SST_JRA55_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_JRA55_fields)):
+    for j in np.arange(len(longitude_JRA55_fields)):
+        polynomial = np.polyfit(np.arange(len(time_JRA55)), SST_JRA55_white_series[:,i,j], 2)
+        poly = np.poly1d(polynomial)
+        poly_fit_SST_JRA55[:,i,j] = poly(np.arange(len(time_JRA55)))
+
+SST_JRA55_white_detrend_poly = np.zeros(SST_JRA55_white_series.shape,dtype=float)
+SST_JRA55_white_detrend_poly = SST_JRA55_white_series - poly_fit_SST_JRA55
 
 print '*******************************************************************'
 print '**********************     regression     *************************'
@@ -393,6 +411,117 @@ vmax_SIC_white = 0.12
 ticks_SIC_white = [-0.12, -0.10, -0.08, -0.06, -0.04, -0.02, 0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12]
 label_SIC_white = 'Regression coefficient percentage/PW'
 
+print '*******************************************************************'
+print '**********************     regression     *************************'
+print '**************     anomalies on dretrend fields     ***************'
+print '*******************************************************************'
+#***************************************************************************#
+#*****************   regress of ERA Interim SST fields   *******************#
+#*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
+#***************************************************************************#
+
+# create an array to store the correlation coefficient
+slope_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+r_value_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+p_value_ERAI_fields= np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+
+latitude_ERAI_iris = iris.coords.DimCoord(latitude_ERAI_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_ERAI_iris = iris.coords.DimCoord(longitude_ERAI_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             SST anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      ERA-Interim      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    # linear regress SST on AMET (anomalies)
+    # plot correlation coefficient
+    for i in np.arange(len(latitude_ERAI_fields)):
+        for j in np.arange(len(longitude_ERAI_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(AMET_ERAI_white_series[:,lat_interest['ERAI'][c]],SST_ERAI_white_detrend_poly[:,i,j])
+    cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_ERAI_iris, 0), (longitude_ERAI_iris, 1)])
+    cube_ERAI.coord('latitude').coord_system = coord_sys
+    cube_ERAI.coord('longitude').coord_system = coord_sys
+    title = 'Regression of detrended SST Anomaly on AMET Anomaly of ERA-Interim across %d N' % (lat_interest_list[c])
+    path = os.path.join(output_path,"Regression_AMET_ERAI_%dN_SST_white_detrend_correlation_coef.jpeg" % (lat_interest_list[c]))
+    figure_PlateCarree(cube_ERAI,title,vmin_SST_white,vmax_SST_white,label_SST_white,ticks_SST_white,
+                   p_value_ERAI_fields,longitude_ERAI_fields,latitude_ERAI_fields,path)
+
+#***************************************************************************#
+#******************     regress of MERRA2 SST fields     *******************#
+#*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
+#***************************************************************************#
+
+# create an array to store the correlation coefficient
+slope_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+r_value_MERRA2_fields = np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+p_value_MERRA2_fields= np.zeros((len(latitude_MERRA2_fields),len(longitude_MERRA2_fields)),dtype = float)
+
+latitude_MERRA2_iris = iris.coords.DimCoord(latitude_MERRA2_fields,standard_name='latitude',long_name='latitude',
+                             var_name='lat',units='degrees')
+longitude_MERRA2_iris = iris.coords.DimCoord(longitude_MERRA2_fields,standard_name='longitude',long_name='longitude',
+                             var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             SST anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      MERRA2      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_MERRA2_fields)):
+        for j in np.arange(len(longitude_MERRA2_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_MERRA2_fields[i,j],_,r_value_MERRA2_fields[i,j],p_value_MERRA2_fields[i,j],_ = stats.linregress(AMET_MERRA2_white_series[:,lat_interest['MERRA2'][c]],SST_MERRA2_white_detrend_poly[:,i,j])
+    cube_MERRA2 = iris.cube.Cube(np.ma.masked_where(SST_MERRA2_mask,r_value_MERRA2_fields),long_name='Correlation coefficient between SST and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_MERRA2_iris, 0), (longitude_MERRA2_iris, 1)])
+    cube_MERRA2.coord('latitude').coord_system = coord_sys
+    cube_MERRA2.coord('longitude').coord_system = coord_sys
+    title = 'Regression of SST Anomaly from MERRA2 on AMET Anomaly of MERRA2 across %d N' % (lat_interest_list[c])
+    path = os.path.join(output_path,'Regression_AMET_MERRA2_%dN_SST_white_detrend_correlation_coef.jpeg' % (lat_interest_list[c]))
+    figure_PlateCarree(cube_MERRA2,title,vmin_SST_white,vmax_SST_white,label_SST_white,ticks_SST_white,
+                       p_value_MERRA2_fields,longitude_MERRA2_fields,latitude_MERRA2_fields,path)
+
+#***************************************************************************#
+#******************     regress of JRA55 SST fields      *******************#
+#*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
+#***************************************************************************#
+# create an array to store the correlation coefficient
+slope_JRA55_fields = np.zeros((len(latitude_JRA55_fields),len(longitude_JRA55_fields)),dtype = float)
+r_value_JRA55_fields = np.zeros((len(latitude_JRA55_fields),len(longitude_JRA55_fields)),dtype = float)
+p_value_JRA55_fields= np.zeros((len(latitude_JRA55_fields),len(longitude_JRA55_fields)),dtype = float)
+
+latitude_JRA55_iris = iris.coords.DimCoord(latitude_JRA55_fields,standard_name='latitude',long_name='latitude',
+                       var_name='lat',units='degrees')
+longitude_JRA55_iris = iris.coords.DimCoord(longitude_JRA55_fields,standard_name='longitude',long_name='longitude',
+                        var_name='lon',units='degrees')
+# choose the coordinate system for Cube (for regrid module)
+coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+
+#*****************             SST anomalies             *******************#
+
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      JRA55      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_JRA55_fields)):
+        for j in np.arange(len(longitude_JRA55_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_JRA55_fields[i,j],_,r_value_JRA55_fields[i,j],p_value_JRA55_fields[i,j],_ = stats.linregress(AMET_JRA55_white_series[:,lat_interest['JRA55'][c]],SST_JRA55_white_detrend_poly[:,i,j])
+    cube_JRA55 = iris.cube.Cube(np.ma.masked_where(SST_JRA55_mask,r_value_JRA55_fields),long_name='Correlation coefficient between SST and AMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_JRA55_iris, 0), (longitude_JRA55_iris, 1)])
+    cube_JRA55.coord('latitude').coord_system = coord_sys
+    cube_JRA55.coord('longitude').coord_system = coord_sys
+    title = 'Regression of SST Anomaly from JRA55 on AMET Anomaly of JRA55 across %d N' % (lat_interest_list[c])
+    path = os.path.join(output_path,'Regression_AMET_JRA55_%dN_SST_white_detrend_correlation_coef.jpeg' % (lat_interest_list[c]))
+    figure_PlateCarree(cube_JRA55,title,vmin_SST_white,vmax_SST_white,label_SST_white,ticks_SST_white,
+                       p_value_JRA55_fields,longitude_JRA55_fields,latitude_JRA55_fields,path)
+
+print '*******************************************************************'
+print '**********************     regression     *************************'
+print '**************     anomalies on original fields     ***************'
+print '*******************************************************************'
 #***************************************************************************#
 #*****************   regress of ERA Interim SST fields   *******************#
 #*************   on AMET from ERA-Interim MERRA2 and JRA55   ***************#
@@ -462,7 +591,5 @@ for c in np.arange(len(lat_interest_list)):
     path = os.path.join(output_path,'Regression_AMET_MERRA2_%dN_SST_MERRA2_white_correlation_coef.jpeg' % (lat_interest_list[c]))
     figure_PlateCarree(cube_MERRA2,title,vmin_SST_white,vmax_SST_white,label_SST_white,ticks_SST_white,
                        p_value_MERRA2_fields,longitude_MERRA2_fields,latitude_MERRA2_fields,path)
-
-
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))

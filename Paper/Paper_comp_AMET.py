@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare atmospheric meridional energy transport (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.05.23
-Last Update     : 2018.06.06
+Last Update     : 2018.07.06
 Description     : The code aims to compare the atmospheric meridional energy transport
                   calculated from different atmospheric reanalysis datasets. In this,
                   case, this includes MERRA II from NASA, ERA-Interim from ECMWF and
@@ -459,7 +459,7 @@ plt.plot(index_1980_2016,AMET_E_uv2_ERAI_white_series[12:,lat_interest['ERAI'][4
 plt.legend()
 fig14.set_size_inches(12.5, 6)
 plt.xlabel("Time",fontsize=16)
-plt.xticks(np.arange(1,len(year_MERRA2)*12+1,60), index_year,fontsize=16)
+plt.xticks(np.arange(13,len(year_MERRA2)*12+1,60), index_year,fontsize=16)
 #plt.xticks(np.linspace(0, 444, 38), year_MERRA2)
 #plt.xticks(rotation=60)
 plt.ylabel("Meridional Energy Transport residual (PW)",fontsize=16)
