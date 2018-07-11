@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : SOM analysis of SLP and AMET
 Author          : Yang Liu
 Date            : 2018.07.04
-Last Update     : 2018.07.08
+Last Update     : 2018.07.09
 Description     : The code aims to analyze spatial distribution of several fields
                   through Self Organizing Map.
 
@@ -180,7 +180,7 @@ AMET_E_ERAI_select = np.take(AMET_E_ERAI_white_series, grab_index, axis=0)
 AMET_E_ERAI_select_mean = np.mean(AMET_E_ERAI_select,axis=0)
 # plot the relevant fields
 xx, yy = np.meshgrid(longitude_ERAI,latitude_ERAI)
-axes2 = plt.plot(projection=proj)
+axes2 = plt.axes(projection=proj)
 cs = axes2.contourf(xx,yy,AMET_E_ERAI_select_mean,levels=np.arange(-0.5,0.6,0.05),transform=ccrs.PlateCarree(),cmap='coolwarm')
 cbar = plt.colorbar(cs,ax=axes2, extend='both', shrink=0.8)
 cbar.ax.tick_params(labelsize = 5)
