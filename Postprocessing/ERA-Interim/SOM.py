@@ -34,6 +34,7 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import sompy
 # hitsmap
 from sompy.visualization.bmuhits import BmuHitsView
+from sompy.visualization.hitmap import HitMapView
 
 # print the system structure and the path of the kernal
 print platform.architecture()
@@ -65,7 +66,7 @@ latitude_ERAI = dataset_ERAI.variables['latitude'][:41]
 longitude_ERAI = dataset_ERAI.variables['longitude'][:]
 year_ERAI = dataset_ERAI.variables['year'][:]             # from 1979 to 2016
 
-SLP_ERAI_series = dataset_ERAI_fields.variables['msl'][:,:41,:]       # dimension (time, lat, lon)
+SLP_ERAI_series = dataset_ERAI_fields.variables['msl'][:,:41,:]/100       # dimension (time, lat, lon)
 latitude_ERAI_fields = dataset_ERAI_fields.variables['latitude'][:41]
 longitude_ERAI_fields = dataset_ERAI_fields.variables['longitude'][:]
 
@@ -92,8 +93,8 @@ AMET_E_ERAI_white = np.zeros(AMET_E_ERAI.shape,dtype=float)
 
 for i in np.arange(len(year_ERAI)):
     for j in month_ind:
-        AMET_Lvq_ERAI_white[i,j,:] = AMET_Lvq_ERAI[i,j,:] - seansonal_cycle_AMET_Lvq_ERAI[j,:]
-        AMET_E_ERAI_white[i,j,:] = AMET_E_ERAI[i,j,:] - seansonal_cycle_AMET_E_ERAI[j,:]
+        AMET_Lvq_ERAI_white[i,j,:,:] = AMET_Lvq_ERAI[i,j,:,:] - seansonal_cycle_AMET_Lvq_ERAI[j,:,:]
+        AMET_E_ERAI_white[i,j,:,:] = AMET_E_ERAI[i,j,:,:] - seansonal_cycle_AMET_E_ERAI[j,:,:]
 print '*******************************************************************'
 print '****************** prepare variables for plot *********************'
 print '*******************************************************************'
@@ -103,14 +104,17 @@ AMET_E_ERAI_white_series = AMET_E_ERAI_white.reshape(len(year_ERAI)*len(month_in
 print '*******************************************************************'
 print '*********************** reshape the input *************************'
 print '*******************************************************************'
-nt, ny, nx = AMET_E_ERAI_white_series.shape
-AMET_E_ERAI_2D = np.reshape(AMET_E_ERAI_white_series,[nt,ny*nx], order='F') # F means Fortran like index ordering
+#nt, ny, nx = AMET_E_ERAI_white_series.shape
+nt, ny, nx = SLP_ERAI_white_series.shape
+#AMET_E_ERAI_2D = np.reshape(AMET_E_ERAI_white_series,[nt,ny*nx], order='F') # F means Fortran like index ordering
+SLP_ERAI_2D = np.reshape(SLP_ERAI_white_series,[nt,ny*nx], order='F') # F means Fortran like index ordering
 print '*******************************************************************'
 print '********************** train neural network ***********************'
 print '*******************************************************************'
-som = sompy.SOMFactory().build(AMET_E_ERAI_2D,mapsize=(5,7),mask=None, mapshape='planar', lattice='rect', normalization=None,initialization='pca',neighborhood='gaussian',training='batch')
-#som.train(n_job=1,verbose='info', train_rough_len=20, train_finetune_len=10)
-som.train(n_job=1,verbose='info')
+#som = sompy.SOMFactory().build(AMET_E_ERAI_2D,mapsize=(5,7),mask=None, mapshape='planar', lattice='rect', normalization=None,initialization='pca',neighborhood='gaussian',training='batch')
+som = sompy.SOMFactory().build(SLP_ERAI_2D,mapsize=(6,7),mask=None, mapshape='planar', lattice='rect', normalization=None,initialization='pca',neighborhood='gaussian',training='batch')
+som.train(n_job=1,verbose='info', train_rough_len=30, train_finetune_len=10)
+#som.train(n_job=1,verbose='info')
 ###############################   cautious!   ##################################
 ########   we must monitor the topographic error and quantization error ########
 # The quantization error:
@@ -134,15 +138,16 @@ print '*******************************************************************'
 print '********************     output master SOM    *********************'
 print '*******************************************************************'
 codebook = som.codebook.matrix
-xx, yy = np.meshgrid(longitude_ERAI,latitude_ERAI)
-#xx, yy = np.meshgrid(longitude_ERAI_fields,latitude_ERAI_fields)
+#xx, yy = np.meshgrid(longitude_ERAI,latitude_ERAI)
+xx, yy = np.meshgrid(longitude_ERAI_fields,latitude_ERAI_fields)
 proj = ccrs.NorthPolarStereo()
-fig1, axes = plt.subplots(ncols=7,nrows=5, figsize=(16,12), subplot_kw=dict(projection=proj))
+#fig1, axes = plt.subplots(ncols=7,nrows=5, figsize=(16,12), subplot_kw=dict(projection=proj))
+fig1, axes = plt.subplots(ncols=7,nrows=6, figsize=(16,12), subplot_kw=dict(projection=proj))
 for i in range(som.codebook.nnodes):
     masterSOM = codebook[i,:].reshape(ny,nx,order='F')
-    cs = axes.flat[i].contourf(xx,yy,masterSOM,transform=ccrs.PlateCarree(),cmap='coolwarm')
-    #cs = axes.flat[i].contourf(xx,yy,masterSOM,levels=np.arange(950,1030,4),transform=ccrs.PlateCarree(),cmap='coolwarm')
-    cbar = fig1.colorbar(cs,ax=axes.flat[i], shrink=0.8)
+    #cs = axes.flat[i].contourf(xx,yy,masterSOM,levels=np.arange(-0.8,0.8,0.1),transform=ccrs.PlateCarree(),cmap='coolwarm')
+    cs = axes.flat[i].contourf(xx,yy,masterSOM,levels=np.arange(-12,10,1),transform=ccrs.PlateCarree(),cmap='coolwarm')
+    cbar = fig1.colorbar(cs,ax=axes.flat[i], extend='both', shrink=0.8)
     #cbar.set_label('PW',labelpad=-3,size = 7)
     cbar.ax.tick_params(labelsize = 5)
     # draw
@@ -153,18 +158,40 @@ for i in range(som.codebook.nnodes):
     verts = np.vstack([np.sin(theta), np.cos(theta)]).T
     circle = mpath.Path(verts * radius + center)
     axes.flat[i].set_boundary(circle, transform=axes.flat[i].transAxes)
-fig1.savefig(os.path.join(output_path,'SOM_AMET_E_ERAI.jpg'),dpi=400)
-#fig1.savefig(os.path.join(output_path,'SOM_SLP_ERAI.jpg'),dpi=400)
+#fig1.savefig(os.path.join(output_path,'SOM_AMET_E_ERAI.jpg'),dpi=400)
+fig1.savefig(os.path.join(output_path,'SOM_SLP_ERAI.jpg'),dpi=400)
 #plt.close(fig1)
 print '*******************************************************************'
 print '***************           plot hitsmap            *****************'
 print '***************   check the frequency of regimes  *****************'
 print '*******************************************************************'
-vhts = BmuHitsView(5,7,'Frequency',text_size=12,show_text=True)
-#vhts = sompy.hitmap.HitMapView(5,7,'Frequency',text_size=12,show_text=True)
+vhts = BmuHitsView(6,7,'Frequency',text_size=12,show_text=True)
+#vhts = BmuHitsView(5,7,'Frequency',text_size=12,show_text=True)
 vhts.show(som, anotate=True, onlyzeros=False, labelsize=12, cmap='RdBu_r',logaritmic=False)
-vhts.save(os.path.join(output_path,'vhts_AMET_E_ERAI.jpg'),dpi=400)
-#vhts.save(os.path.join(output_path,'vhts_SLP_ERAI.jpg'),dpi=400)
+#vhts.save(os.path.join(output_path,'vhts_AMET_E_ERAI.jpg'),dpi=400)
+vhts.save(os.path.join(output_path,'vhts_SLP_ERAI.jpg'),dpi=400)
+print '*******************************************************************'
+print '***********        post-processing with hits         **************'
+print '***********        find the relevant fields          **************'
+print '*******************************************************************'
+# get the target index
+grab_index = np.where(BMU_index[0,:]==0)[0]
+AMET_E_ERAI_select = np.take(AMET_E_ERAI_white_series, grab_index, axis=0)
+AMET_E_ERAI_select_mean = np.mean(AMET_E_ERAI_select,axis=0)
+# plot the relevant fields
+xx, yy = np.meshgrid(longitude_ERAI,latitude_ERAI)
+axes2 = plt.plot(projection=proj)
+cs = axes2.contourf(xx,yy,AMET_E_ERAI_select_mean,levels=np.arange(-0.5,0.6,0.05),transform=ccrs.PlateCarree(),cmap='coolwarm')
+cbar = plt.colorbar(cs,ax=axes2, extend='both', shrink=0.8)
+cbar.ax.tick_params(labelsize = 5)
+axes2.coastlines()
+gl = axes2.gridlines(linewidth=1, color='gray', alpha=0.5,linestyle='--')
+theta = np.linspace(0, 2*np.pi, 100)
+center, radius = [0.5, 0.5], 0.5
+verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+circle = mpath.Path(verts * radius + center)
+axes2.set_boundary(circle, transform=axes2.transAxes)
+plt.savefig(os.path.join(output_path,'Map_AMET_E_ERAI.jpg'),dpi=400)
 print '*******************************************************************'
 print '***************        K-means clustering         *****************'
 print '*******************************************************************'
@@ -172,16 +199,18 @@ print '*******************************************************************'
 # this is closely relate to physical aspect of view
 # for instance, if there are 4 weather regimes in the Arctic
 # then it is better to make 4 group
-som.cluster(n_clusters=4)
+cl = som.cluster(n_clusters=4)
 setattr(som,'cluster_labels',[0,1,2,3])
-hits = BmuHitsView(8,8,'Weather regimes clustering', text_size=12)
-hits.show(som,what='cluster')
+hits = HitMapView(5,7,'Weather regimes clustering', text_size=12)
+hits.show(som)
+hits.save(os.path.join(output_path,'K_AMET_E_ERAI.jpg'),dpi=400)
 print '*******************************************************************'
 print '***************      U matrix visualization       *****************'
 print '*******************************************************************'
-u = sompy.umatrix.UMatrixView(8,8,'U-Matrix of SLP', show_axis=True, text_size=12, show_text=True)
+u = sompy.umatrix.UMatrixView(5,7,'U-Matrix of SLP', show_axis=True, text_size=12, show_text=True)
 # U matrxi value
-UMat = u.build_u_matrix(som,distance2=1,row_normalized=False)
+UMat = u.build_u_matrix(som,distance=1,row_normalized=False)
 # visualization
 UMat = u.show(som,distance2=1,row_normalized=False,show_data=True,contooor=True,blob=False)
+u.save(os.path.join(output_path,'UMat_AMET_E_ERAI.jpg'),dpi=400)
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
