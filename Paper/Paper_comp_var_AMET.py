@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic variable fields (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.06.06
-Last Update     : 2018.07.07
+Last Update     : 2018.07.19
 Description     : The code aims to compare the spatial and temporal distribution of
                   different fields from difference atmospheric reanalysis datasets on pressure
                   level. In this,case, this includes ERA-Interim from ECMWF, MERRA2 from NASA
@@ -258,8 +258,8 @@ print '*******************************************************************'
 def contour_plot(fields,longitude,level,contour_level,contourf_level,title,c_label,output,cmap):
     fig0 = plt.figure()
     X , Y = np.meshgrid(longitude,level)
-    cs = plt.contour(X,Y,fields,contour_level,linewidth= 0.1, extend='both',color='k')
-    plt.clabel(cs, inline=1, fontsize=8)
+    cs = plt.contour(X,Y,fields,contour_level, linewidth= 0.1, extend='both',color='k')
+    #plt.clabel(cs, inline=1, format="%.1f", fontsize=8)
     cs = plt.contourf(X,Y,fields,contourf_level, linewidth= 0.2, extend='both',cmap=cmap)
     fig0.set_size_inches(6.5, 5)
     plt.xlabel("Longitude",fontsize = 10)
@@ -397,7 +397,7 @@ if __name__=="__main__":
     fields = np.ma.masked_where(T_ERAI_mask_slice,np.mean(T_ERAI_delta_v,0))
     title = 'Vertical profile of T(ERAI)*dv(ERAI-MERRA2) (1994-1998) at {}N'.format(lat_interest_list[c])
     output = os.path.join(output_path,"Comp_var_monthly_ERAI_T_delta_v_1994_1998_{}N.png".format(lat_interest_list[c]))
-    contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_vT[::4],contour_minus_vT,title,c_label_vT,output,cmap_coolwarm)
+    contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_vT[::12],contour_minus_vT,title,c_label_vT,output,cmap_coolwarm)
     # v * T from ERAI as reference
 
 
