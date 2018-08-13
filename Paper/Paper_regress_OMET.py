@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Regress climate patterns on oceanic meridional energy transport (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2018.06.07
-Last Update     : 2018.06.07
+Last Update     : 2018.07.19
 Description     : The code aims to regress non-climatological fields on the oceanic
                   meridional energy transport calculated from different oceanic
                   reanalysis datasets. In this, case, this includes GLORYS2V3
@@ -294,15 +294,66 @@ print '*******************************************************************'
 OMET_ORAS4_series = OMET_ORAS4.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
 OMET_GLORYS2V3_series = OMET_GLORYS2V3.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
 OMET_SODA3_series = OMET_SODA3.reshape(len(year_SODA3)*len(month_ind),len(latitude_SODA3))
-
-TS_ERAI_series = TS_ERAI.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
-
 # dataset without seasonal cycle - time series
 OMET_ORAS4_white_series = OMET_ORAS4_white.reshape(len(year_ORAS4)*len(month_ind),len(latitude_ORAS4))
 OMET_GLORYS2V3_white_series = OMET_GLORYS2V3_white.reshape(len(year_GLORYS2V3)*len(month_ind),len(latitude_GLORYS2V3))
 OMET_SODA3_white_series = OMET_SODA3_white.reshape(len(year_SODA3)*len(month_ind),len(latitude_SODA3))
+print '*******************************************************************'
+print '***************************  Detrend  *****************************'
+print '*******************************************************************'
+####################################################
+######      detrend - polynomial fitting      ######
+####################################################
+# detrend sea ice
+poly_fit_SST_ERAI = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_ERAI_fields)):
+    for j in np.arange(len(longitude_ERAI_fields)):
+        polynomial = np.polyfit(np.arange(len(time_series)), SST_ERAI_white_series[:,i,j], 2)
+        poly = np.poly1d(polynomial)
+        poly_fit_SST_ERAI[:,i,j] = poly(np.arange(len(time_series)))
 
-TS_ERAI_white_series = TS_ERAI_white.reshape(len(year_ERAI)*len(month_ind),len(latitude_ERAI_fields),len(longitude_ERAI_fields))
+SST_ERAI_white_detrend_poly = np.zeros(SST_ERAI_white_series.shape,dtype=float)
+SST_ERAI_white_detrend_poly = SST_ERAI_white_series - poly_fit_SST_ERAI
+
+# detrend OMET
+poly_fit_OMET_GLORYS2V3 = np.zeros(OMET_GLORYS2V3_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_GLORYS2V3)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_GLORYS2V3)*len(month_ind)), OMET_GLORYS2V3_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_GLORYS2V3[:,i] = poly_OMET(np.arange(len(year_GLORYS2V3)*len(month_ind)))
+
+OMET_GLORYS2V3_white_detrend_series = np.zeros(OMET_GLORYS2V3_white_series.shape,dtype=float)
+OMET_GLORYS2V3_white_detrend_series = OMET_GLORYS2V3_white_series - poly_fit_OMET_GLORYS2V3
+
+# detrend OMET
+poly_fit_OMET_ORAS4 = np.zeros(OMET_ORAS4_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_ORAS4)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_ORAS4)*len(month_ind)), OMET_ORAS4_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_ORAS4[:,i] = poly_OMET(np.arange(len(year_ORAS4)*len(month_ind)))
+
+OMET_ORAS4_white_detrend_series = np.zeros(OMET_ORAS4_white_series.shape,dtype=float)
+OMET_ORAS4_white_detrend_series = OMET_ORAS4_white_series - poly_fit_OMET_ORAS4
+
+# detrend OMET
+poly_fit_OMET_SODA3 = np.zeros(OMET_SODA3_white_series.shape,dtype=float)
+for i in np.arange(len(latitude_SODA3)):
+        polynomial_OMET = np.polyfit(np.arange(len(year_SODA3)*len(month_ind)), OMET_SODA3_white_series[:,i], 2)
+        poly_OMET = np.poly1d(polynomial_OMET)
+        poly_fit_OMET_SODA3[:,i] = poly_OMET(np.arange(len(year_SODA3)*len(month_ind)))
+
+OMET_SODA3_white_detrend_series = np.zeros(OMET_SODA3_white_series.shape,dtype=float)
+OMET_SODA3_white_detrend_series = OMET_SODA3_white_series - poly_fit_OMET_SODA3
+print '*******************************************************************'
+print '**********************     regression     *************************'
+print '**********************   autocorrelation  *************************'
+print '*******************************************************************'
+OMET_ORAS4_norm = np.sum(OMET_ORAS4_white_detrend_series[lat_interest['ORAS4'][0]]**2)
+auto_correlate = np.correlate(OMET_ORAS4_white_detrend_series[lat_interest['ORAS4'][0]],OMET_ORAS4_white_detrend_series[lat_interest['ORAS4'][0]],'full') / OMET_ORAS4_norm
+# use only second half
+auto_correlate = auto_correlate[len(auto_correlate)/2:]
+plt.plot(auto_correlate)
+plt.show()
 print '*******************************************************************'
 print '**********************     regression     *************************'
 print '******************    original and anomalies   ********************'
@@ -315,7 +366,7 @@ print '*******************************************************************'
 # create an array to store the correlation coefficient
 slope_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
 r_value_ERAI_fields = np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
-p_value_ERAI_fields= np.zeros((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
+p_value_ERAI_fields= np.ones((len(latitude_ERAI_fields),len(longitude_ERAI_fields)),dtype = float)
 
 latitude_ERAI_iris = iris.coords.DimCoord(latitude_ERAI_fields,standard_name='latitude',long_name='latitude',
                              var_name='lat',units='degrees')
@@ -333,7 +384,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_series[:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_detrend_poly[:-24,i,j])
+    p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig4 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -363,8 +415,8 @@ for c in np.arange(len(lat_interest_list)):
     cbar.set_clim(-0.50, 0.50)
     cbar.ax.tick_params(labelsize = 9)
     cbar.set_label('Correlation coefficient',size = 12)
-    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
-    ii, jj = np.where(p_value_ERAI_fields<=0.05)
+    # locate the indices of p_value matrix where error p<0.005 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.005)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
     # show and save plot
@@ -376,7 +428,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_series[168:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_detrend_poly[168:-24,i,j])
+    p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig5 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -404,8 +457,8 @@ for c in np.arange(len(lat_interest_list)):
     cbar.set_clim(-0.50, 0.50)
     cbar.ax.tick_params(labelsize = 9)
     cbar.set_label('Correlation coefficient',size = 12)
-    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
-    ii, jj = np.where(p_value_ERAI_fields<=0.05)
+    # locate the indices of p_value matrix where error p<0.005 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.005)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
     # show and save plot
@@ -417,7 +470,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_series[12:-12,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_detrend_poly[12:-12,i,j])
+    p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig6 = plt.figure()
     cube_ERAI = iris.cube.Cube(np.ma.masked_where(SST_ERAI_mask,r_value_ERAI_fields),long_name='Correlation coefficient between SST and OMET',
@@ -445,8 +499,8 @@ for c in np.arange(len(lat_interest_list)):
     cbar.set_clim(-0.50, 0.50)
     cbar.ax.tick_params(labelsize = 9)
     cbar.set_label('Correlation coefficient',size = 12)
-    # locate the indices of p_value matrix where error p<0.05 (99.5% confident)
-    ii, jj = np.where(p_value_ERAI_fields<=0.05)
+    # locate the indices of p_value matrix where error p<0.005 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.005)
     # get the coordinate on the map (lon,lat) and plot scatter dots
     ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
     # show and save plot
@@ -454,5 +508,130 @@ for c in np.arange(len(lat_interest_list)):
     fig6.savefig(output_path + os.sep + "Regression_OMET_SODA3_%dN_SST_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
     plt.close(fig6)
 
+#*****************             SLP anomalies             *******************#
+
+#***************************************************************************#
+#*****************   regress of ERA Interim SLP fields   *******************#
+#*************     on OMET from ORAS4, GLORYS2V3, SODA3      ***************#
+#***************************************************************************#
+
+#*****************             SLP anomalies             *******************#
+for c in np.arange(len(lat_interest_list)):
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      ORAS4      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    # linear regress SLP on OMET (anomalies)
+    # plot correlation coefficient
+    for i in np.arange(len(latitude_ERAI_fields)):
+        for j in np.arange(len(longitude_ERAI_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][c]],SLP_ERAI_white_series[:-24,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig7 = plt.figure()
+    cube_ERAI = iris.cube.Cube(r_value_ERAI_fields,long_name='Correlation coefficient between SLP and OMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_ERAI_iris, 0), (longitude_ERAI_iris, 1)])
+    cube_ERAI.coord('latitude').coord_system = coord_sys
+    cube_ERAI.coord('longitude').coord_system = coord_sys
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xlabel_style = {'size': 9, 'color': 'gray'}
+    gl.ylabel_style = {'size': 9, 'color': 'gray'}
+    # Load a Cynthia Brewer palette.
+    #brewer_cmap = mpl_cm.get_cmap('brewer_RdYlBu_11')
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.50,vmax=0.50)
+    cbar = fig7.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.50, -0.25, 0, 0.25, 0.50])
+    cbar.set_clim(-0.50, 0.50)
+    cbar.ax.tick_params(labelsize = 9)
+    cbar.set_label('Correlation coefficient',size = 12)
+    # locate the indices of p_value matrix where error p<0.005 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.005)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig7.savefig(output_path + os.sep + "Regression_OMET_ORAS4_%dN_SLP_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    plt.close(fig7)
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@      GLORYS2V3      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_ERAI_fields)):
+        for j in np.arange(len(longitude_ERAI_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][c]],SLP_ERAI_white_series[168:-24,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig8 = plt.figure()
+    cube_ERAI = iris.cube.Cube(r_value_ERAI_fields,long_name='Correlation coefficient between SLP and OMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_ERAI_iris, 0), (longitude_ERAI_iris, 1)])
+    cube_ERAI.coord('latitude').coord_system = coord_sys
+    cube_ERAI.coord('longitude').coord_system = coord_sys
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 9, 'color': 'gray'}
+    gl.ylabel_style = {'size': 9, 'color': 'gray'}
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.50,vmax=0.50)
+    cbar = fig8.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.50, -0.25, 0, 0.25, 0.50])
+    cbar.set_clim(-0.50, 0.50)
+    cbar.ax.tick_params(labelsize = 9)
+    cbar.set_label('Correlation coefficient',size = 12)
+    # locate the indices of p_value matrix where error p<0.005 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.005)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig8.savefig(output_path + os.sep + "Regression_OMET_GLORYS2V3_%dN_SLP_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    plt.close(fig8)
+
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@       SODA3      @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
+    for i in np.arange(len(latitude_ERAI_fields)):
+        for j in np.arange(len(longitude_ERAI_fields)):
+            # return value: slope, intercept, r_value, p_value, stderr
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][c]],SLP_ERAI_white_series[12:-12,i,j])
+    # figsize works for the size of the map, not the entire figure
+    fig9 = plt.figure()
+    cube_ERAI = iris.cube.Cube(r_value_ERAI_fields,long_name='Correlation coefficient between SLP and OMET',
+                               var_name='r',units='1',dim_coords_and_dims=[(latitude_ERAI_iris, 0), (longitude_ERAI_iris, 1)])
+    cube_ERAI.coord('latitude').coord_system = coord_sys
+    cube_ERAI.coord('longitude').coord_system = coord_sys
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.set_global()
+    #ax.set_aspect('auto')
+    ax.set_aspect('1.0')
+    ax.coastlines()
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
+    gl.xlabels_top = False
+    # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    # specify label styles
+    gl.xlabel_style = {'size': 9, 'color': 'gray'}
+    gl.ylabel_style = {'size': 9, 'color': 'gray'}
+    cs = iplt.pcolormesh(cube_ERAI,cmap='coolwarm',vmin=-0.50,vmax=0.50)
+    cbar = fig9.colorbar(cs,extend='both',orientation='horizontal',shrink =0.8,pad=0.1,format="%.2f")
+    cbar.set_ticks([-0.50, -0.25, 0, 0.25, 0.50])
+    cbar.set_clim(-0.50, 0.50)
+    cbar.ax.tick_params(labelsize = 9)
+    cbar.set_label('Correlation coefficient',size = 12)
+    # locate the indices of p_value matrix where error p<0.005 (99.5% confident)
+    ii, jj = np.where(p_value_ERAI_fields<=0.005)
+    # get the coordinate on the map (lon,lat) and plot scatter dots
+    ax.scatter(longitude_ERAI_fields[jj],latitude_ERAI_fields[ii],transform=ccrs.Geodetic(),s=0.1,c='g',alpha=0.3) # alpha bleding factor with map
+    # show and save plot
+    plt.show()
+    fig9.savefig(output_path + os.sep + "Regression_OMET_SODA3_%dN_SLP_ERAI_white_correlation_coef.jpeg" % (lat_interest_list[c]),dpi=400)
+    plt.close(fig9)
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))

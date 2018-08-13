@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Compare oceanic variable fields (MERRA2,ERA-Interim,JRA55)
 Author          : Yang Liu
 Date            : 2018.06.06
-Last Update     : 2018.06.06
+Last Update     : 2018.07.19
 Description     : The code aims to compare the spatial and temporal distribution of
                   different fields from difference atmospheric reanalysis datasets on pressure
                   level. In this,case, this includes ERA-Interim from ECMWF, MERRA2 from NASA
@@ -145,7 +145,6 @@ print '-------------------------------------------------------------------'
 
 print '*******************************************************************'
 print '************       Extract the invariant fields!      *************'
-
 # take the variable keys
 dataset_ERAI = Dataset(datapath_ERAI + os.sep + 'ERAI_1997_monthly_pressure.nc')
 dataset_MERRA2 = Dataset(datapath_MERRA2 + os.sep + 'MERRA2_200.instM_3d_asm_Np.199707.SUB.nc4')
@@ -173,7 +172,6 @@ v_MERRA2_mask = np.zeros((len(level_MERRA2),len(latitude_MERRA2),len(longitude_M
 for i in np.arange(len(level_MERRA2)):
     T_MERRA2_mask[i,:,:] = np.ma.getmaskarray(T_MERRA2_sample[i,:,:])
     v_MERRA2_mask[i,:,:] = np.ma.getmaskarray(v_MERRA2_sample[i,:,:])
-
 
 month_ind = np.arange(12)
 year_ind = np.arange(1994,1999,1)
@@ -260,8 +258,8 @@ print '*******************************************************************'
 def contour_plot(fields,longitude,level,contour_level,contourf_level,title,c_label,output,cmap):
     fig0 = plt.figure()
     X , Y = np.meshgrid(longitude,level)
-    cs = plt.contour(X,Y,fields,contour_level,linewidth= 0.1, extend='both',color='k')
-    plt.clabel(cs, inline=1, fontsize=8)
+    cs = plt.contour(X,Y,fields,contour_level, linewidth= 0.1, extend='both',color='k')
+    #plt.clabel(cs, inline=1, format="%.1f", fontsize=8)
     cs = plt.contourf(X,Y,fields,contourf_level, linewidth= 0.2, extend='both',cmap=cmap)
     fig0.set_size_inches(6.5, 5)
     plt.xlabel("Longitude",fontsize = 10)
@@ -310,9 +308,7 @@ if __name__=="__main__":
     print '*******************************************************************'
     print '*********************** vertical profile **************************'
     print '*******************************************************************'
-    # profile at different lat
-    c=4
-
+    c = 4 # we only need values at 60N
     print '*********      1994.01 - 1998.12 annual mean fields      **********'
     print '*********            MERRA2 minus ERA-Interim            **********'
     # take out vertical slice
@@ -346,6 +342,14 @@ if __name__=="__main__":
     v_MERRA2_minus_ERAI = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
     # for the temperature transport
     vT_MERRA2_minus_ERAI = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
+
+    # determine the comtribution from the difference between temperature or velocity
+    # the product of v * delta T and delta v * T
+    v_ERAI_delta_T = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
+    T_ERAI_delta_v = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
+    # reference v*T from ERAI
+    vT_ERAI = np.zeros((len(year_ind)*len(month_ind),len(slice_level_ERAI),len(longitude_ERAI)),dtype=float)
+
     for i in np.arange(len(year_ind)*len(month_ind)):
         for j in np.arange(len(slice_level_ERAI)):
             # interpolate MERRA2 on ERA-Interim
@@ -361,6 +365,10 @@ if __name__=="__main__":
             v_MERRA2_minus_ERAI[i,j,:] = v_MERRA2_interpolate - v_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:]
             vT_MERRA2_minus_ERAI[i,j,:] = T_MERRA2_interpolate * v_MERRA2_interpolate - T_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:]\
                                           * v_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:]
+            # diagnostic of the contribution
+            v_ERAI_delta_T[i,j,:] = v_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:] * T_MERRA2_minus_ERAI[i,j,:]
+            T_ERAI_delta_v[i,j,:] = T_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:] * v_MERRA2_minus_ERAI[i,j,:]
+            vT_ERAI[i,j,:] = v_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:] * T_ERAI[i,slice_level_ERAI[j],lat_interest['ERAI'][c],:]
     # correct the subtration due to the interpolation of filled values
     T_MERRA2_minus_ERAI[T_MERRA2_minus_ERAI>30] = 0
     T_MERRA2_minus_ERAI[T_MERRA2_minus_ERAI<-30] = 0
@@ -380,5 +388,17 @@ if __name__=="__main__":
     title = 'Vertical profile of the subtraction of meridional velocity (MERRA2-ERAI)(1994-1998) at {}N'.format(lat_interest_list[c])
     output = os.path.join(output_path,"Comp_var_monthly_MERRA2_minus_ERAI_v_1994_1998_{}N.png".format(lat_interest_list[c]))
     contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_v[::4],contour_minus_v,title,c_label_v,output,cmap_coolwarm)
+    # v * delta T
+    fields = np.ma.masked_where(T_ERAI_mask_slice,np.mean(v_ERAI_delta_T,0))
+    title = 'Vertical profile of v(ERAI)*dT(ERAI-MERRA2) (1994-1998) at {}N'.format(lat_interest_list[c])
+    output = os.path.join(output_path,"Comp_var_monthly_ERAI_v_delta_T_1994_1998_{}N.png".format(lat_interest_list[c]))
+    contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_vT[::4],contour_minus_vT,title,c_label_vT,output,cmap_coolwarm)
+    # delta v * T
+    fields = np.ma.masked_where(T_ERAI_mask_slice,np.mean(T_ERAI_delta_v,0))
+    title = 'Vertical profile of T(ERAI)*dv(ERAI-MERRA2) (1994-1998) at {}N'.format(lat_interest_list[c])
+    output = os.path.join(output_path,"Comp_var_monthly_ERAI_T_delta_v_1994_1998_{}N.png".format(lat_interest_list[c]))
+    contour_plot(fields,longitude_ERAI,level_ERAI_slice,contour_minus_vT[::12],contour_minus_vT,title,c_label_vT,output,cmap_coolwarm)
+    # v * T from ERAI as reference
+
 
 print ("--- %s minutes ---" % ((tttt.time() - start_time)/60))
