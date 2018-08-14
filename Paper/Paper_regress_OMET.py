@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Regress climate patterns on oceanic meridional energy transport (ORAS4,GLORYS2V3,SODA3)
 Author          : Yang Liu
 Date            : 2018.06.07
-Last Update     : 2018.07.19
+Last Update     : 2018.08.14
 Description     : The code aims to regress non-climatological fields on the oceanic
                   meridional energy transport calculated from different oceanic
                   reanalysis datasets. In this, case, this includes GLORYS2V3
@@ -241,6 +241,10 @@ longitude_ERAI_fields = dataset_ERAI_fields_SIC_SST_SLP.variables['longitude'][:
 time_series = dataset_ERAI_fields_SIC_SST_SLP.variables['time'][:]
 year_ERAI = dataset_ERAI_fields_TS_T2M.variables['year'][:]
 
+# set masked values to be 0 for the sake of autocorrelation
+#SST_ERAI_mask_3D = np.repeat(SST_ERAI_mask[np.newaxis,:,:],len(time_series),0)
+#SST_ERAI_series[SST_ERAI_mask_3D==True] = 0
+#del SST_ERAI_mask_3D
 print '*******************************************************************'
 print '*************************** whitening *****************************'
 print '*******************************************************************'
@@ -348,12 +352,44 @@ print '*******************************************************************'
 print '**********************     regression     *************************'
 print '**********************   autocorrelation  *************************'
 print '*******************************************************************'
-OMET_ORAS4_norm = np.sum(OMET_ORAS4_white_detrend_series[lat_interest['ORAS4'][0]]**2)
-auto_correlate = np.correlate(OMET_ORAS4_white_detrend_series[lat_interest['ORAS4'][0]],OMET_ORAS4_white_detrend_series[lat_interest['ORAS4'][0]],'full') / OMET_ORAS4_norm
+OMET_ORAS4_norm = np.sum(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][0]]**2)
+#SST_OMET_ORAS4_norm = np.sum(np.abs(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][0]]*np.mean(np.mean(SST_ERAI_white_detrend_poly[:-24,:,:],2),1)))/2
+auto_correlate_ORAS4 = np.correlate(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][0]],OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][0]],'full') / OMET_ORAS4_norm
+#auto_correlate = np.correlate(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][0]],np.mean(np.mean(SST_ERAI_white_detrend_poly[:-24,:,:],2),1),'full') / SST_OMET_ORAS4_norm
 # use only second half
-auto_correlate = auto_correlate[len(auto_correlate)/2:]
-plt.plot(auto_correlate)
+#auto_correlate_ORAS4 = auto_correlate_ORAS4 / np.amax(auto_correlate_ORAS4)
+#maxcorr = np.argmax(auto_correlate)
+fig = plt.figure()
+plt.plot(auto_correlate_ORAS4[len(auto_correlate_ORAS4)//2:])
 plt.show()
+fig.savefig(output_path + os.sep + 'autocorrelation' + os.sep + 'OMET_ORAS4_auto_correlate.jpg',dpi=300)
+#fig.savefig(output_path + os.sep + 'autocorrelation' + os.sep + 'SST_OMET_ORAS4_auto_correlate.jpg',dpi=300)
+
+OMET_GLORYS2V3_norm = np.sum(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][0]]**2)
+#SST_OMET_GLORYS2V3_norm = np.sum(np.abs(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][0]]*np.mean(np.mean(SST_ERAI_white_detrend_poly[:-24,:,:],2),1)))/2
+auto_correlate_GLORYS2V3 = np.correlate(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][0]],OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][0]],'full') / OMET_GLORYS2V3_norm
+#auto_correlate = np.correlate(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][0]],np.mean(np.mean(SST_ERAI_white_detrend_poly[:-24,:,:],2),1),'full') / SST_OMET_ORAS4_norm
+# use only second half
+#auto_correlate_GLORYS2V3 = auto_correlate_GLORYS2V3 / np.amax(auto_correlate_GLORYS2V3)
+#maxcorr = np.argmax(auto_correlate)
+fig = plt.figure()
+plt.plot(auto_correlate_GLORYS2V3[len(auto_correlate_GLORYS2V3)//2:])
+plt.show()
+fig.savefig(output_path + os.sep + 'autocorrelation' + os.sep + 'OMET_GLORYS2V3_auto_correlate.jpg',dpi=300)
+
+OMET_SODA3_norm = np.sum(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][0]]**2)
+#SST_OMET_SODA3_norm = np.sum(np.abs(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][0]]*np.mean(np.mean(SST_ERAI_white_detrend_poly[:-24,:,:],2),1)))/2
+auto_correlate_SODA3 = np.correlate(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][0]],OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][0]],'full') / OMET_SODA3_norm
+#auto_correlate = np.correlate(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][0]],np.mean(np.mean(SST_ERAI_white_detrend_poly[:-24,:,:],2),1),'full') / SST_OMET_ORAS4_norm
+#auto_correlate_SODA3 = auto_correlate_SODA3 / np.amax(auto_correlate_SODA3)
+#maxcorr = np.argmax(auto_correlate)
+fig = plt.figure()
+plt.plot(auto_correlate_SODA3[len(auto_correlate_SODA3)//2:])
+plt.show()
+fig.savefig(output_path + os.sep + 'autocorrelation' + os.sep + 'OMET_SODA3_auto_correlate.jpg',dpi=300)
+
+# !!! the auto-correlation of OMET from ORAS4 is 3 month when we take a correlation threshold lower than 0.7!!!
+# !!! the auto-correlation of OMET from SODA3 and GLORYS2V3 is 6 month when we take a correlation threshold lower than 0.7!!!
 print '*******************************************************************'
 print '**********************     regression     *************************'
 print '******************    original and anomalies   ********************'
@@ -384,7 +420,9 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_detrend_poly[:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],_,_ = stats.linregress(OMET_ORAS4_white_detrend_series[:,lat_interest['ORAS4'][c]],SST_ERAI_white_detrend_poly[:-24,i,j])
+            # return value: slope, intercept, r_value, p_value, stderr
+            _,_,_,p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_ORAS4_white_detrend_series[::2,lat_interest['ORAS4'][c]],SST_ERAI_white_detrend_poly[:-24:2,i,j])
     p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig4 = plt.figure()
@@ -428,7 +466,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_detrend_poly[168:-24,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],_,_ = stats.linregress(OMET_GLORYS2V3_white_detrend_series[:,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_detrend_poly[168:-24,i,j])
+            _,_,_,p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_GLORYS2V3_white_detrend_series[::2,lat_interest['GLORYS2V3'][c]],SST_ERAI_white_detrend_poly[168:-24:2,i,j])
     p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig5 = plt.figure()
@@ -470,7 +509,8 @@ for c in np.arange(len(lat_interest_list)):
     for i in np.arange(len(latitude_ERAI_fields)):
         for j in np.arange(len(longitude_ERAI_fields)):
             # return value: slope, intercept, r_value, p_value, stderr
-            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_detrend_poly[12:-12,i,j])
+            slope_ERAI_fields[i,j],_,r_value_ERAI_fields[i,j],_,_ = stats.linregress(OMET_SODA3_white_detrend_series[:,lat_interest['SODA3'][c]],SST_ERAI_white_detrend_poly[12:-12,i,j])
+            _,_,_,p_value_ERAI_fields[i,j],_ = stats.linregress(OMET_SODA3_white_detrend_series[::2,lat_interest['SODA3'][c]],SST_ERAI_white_detrend_poly[12:-12:2,i,j])
     p_value_ERAI_fields[SST_ERAI_mask==True] = 1.0
     # figsize works for the size of the map, not the entire figure
     fig6 = plt.figure()
@@ -538,6 +578,8 @@ for c in np.arange(len(lat_interest_list)):
     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,linewidth=1, color='gray', alpha=0.5,linestyle='--')
     gl.xlabels_top = False
     # use of formatter (fixed), only after this the style setup will work
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
     gl.xlabel_style = {'size': 9, 'color': 'gray'}
     gl.ylabel_style = {'size': 9, 'color': 'gray'}
     # Load a Cynthia Brewer palette.
