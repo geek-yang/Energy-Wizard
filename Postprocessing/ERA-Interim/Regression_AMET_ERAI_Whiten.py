@@ -5,7 +5,7 @@ Copyright Netherlands eScience Center
 Function        : Regression of climatological variable on AMET (ERA-Interim) with whitening
 Author          : Yang Liu
 Date            : 2017.08.18
-Last Update     : 2018.05.29
+Last Update     : 2018.08.14
 Description     : The code aims to explore the assotiation between climatological
                   variables with atmospheric meridional energy transport (AMET).
                   The statistical method employed here is linear regression. A
@@ -161,6 +161,12 @@ for i in month_ind:
     AMET_white[:,i,:] = AMET[:,i,:] - AMET_seansonal_cycle[i,:]
 
 print '*******************************************************************'
+print '*********************** prepare variables *************************'
+print '*******************************************************************'
+# take the time series of E
+AMET_series = AMET.reshape(len(year)*len(month_ind),len(lat_AMET))
+AMET_white_series = AMET_white.reshape(len(year)*len(month_ind),len(lat_AMET))
+print '*******************************************************************'
 print '***************************  Detrend  *****************************'
 print '*******************************************************************'
 ####################################################
@@ -209,12 +215,14 @@ for i in np.arange(len(lat)):
 
 ci_white_detrend_poly = np.zeros(ci_white.shape,dtype=float)
 ci_white_detrend_poly = ci_white - poly_fit
-print '*******************************************************************'
-print '*********************** prepare variables *************************'
-print '*******************************************************************'
-# take the time series of E
-AMET_series = AMET.reshape(len(year)*len(month_ind),len(lat_AMET))
-AMET_white_series = AMET_white.reshape(len(year)*len(month_ind),len(lat_AMET))
+
+poly_fit_AMET = np.zeros(AMET_white_series.shape,dtype=float)
+for i in np.arange(len(lat_AMET)):
+        polynomial_AMET = np.polyfit(np.arange(len(year)*12), AMET_white_series[:,i], 2)
+        poly_AMET = np.poly1d(polynomial_AMET)
+        poly_fit_AMET[:,i] = poly(np.arange(len(year)*12))
+
+AMET_white_series_detrend_poly = AMET_white_series - poly_fit_AMET
 print '*******************************************************************'
 print '********************** Running mean/sum ***************************'
 print '*******************************************************************'
@@ -254,7 +262,6 @@ for i in np.arange(time_shrink-window+1):
 ci_white_detrend_poly_running_mean = np.zeros((len(year)*len(month_ind)-window+1,len(lat),len(lon)),dtype=float)
 for i in np.arange(len(year)*len(month_ind)-window+1):
     ci_white_detrend_poly_running_mean[i,:,:] = np.mean(ci_white_detrend_poly[i:i+window,:,:],0)
-
 
 print '*******************************************************************'
 print '*************************** time series ***************************'
@@ -461,6 +468,22 @@ plt.xticks(rotation=60)
 plt.ylabel("Sea Ice Concentration (Percentage)")
 plt.show()
 fig002.savefig(output_path + os.sep + 'Detrend_poly_ERAI_ice_white.jpg', dpi = 300)
+
+fig003 = plt.figure()
+plt.axhline(y=0, color='k',ls='-')
+plt.plot(index,AMET_white_series[:,lat_interest['ERAI'][4]],'b--',linewidth = 0.5,label='Anomalies')
+plt.plot(index,poly_fit_AMET[:,lat_interest['ERAI'][4]],'r-',linewidth = 2,label='Fitting')
+plt.plot(index,AMET_white_series_detrend_poly[:,lat_interest['ERAI'][4]],'g-',linewidth = 1,label='Detrend anomalies')
+#plt.plot(index[window_detrend-1:],np.mean(np.mean(ci_white_test,2),1),'m-',linewidth = 1,label='xxx')
+plt.title('Sea Ice Concentration Anomalies in the Arctic and the detrend SIC anomalies (1979-2016)')
+plt.legend()
+fig003.set_size_inches(12, 5)
+plt.xlabel("Time")
+plt.xticks(np.linspace(0, 456, 39), index_year)
+plt.xticks(rotation=60)
+plt.ylabel("Meridional Energy Transport (PW)")
+plt.show()
+fig003.savefig(output_path + os.sep + 'Detrend_poly_ERAI_AMET_white.jpg', dpi = 300)
 
 print '*******************************************************************'
 print '**************************** trend ********************************'
@@ -727,7 +750,8 @@ for c in np.arange(len(lat_interest_list)):
     xx, yy = np.meshgrid(lon,lat[0:lat_y+1])
     XX, YY = m(xx, yy)
     # define color range for the contourf
-    color = np.linspace(-0.6,0.6,25) # SLP_white
+    #color = np.linspace(-0.6,0.6,25) # SLP_white
+    color = np.linspace(-0.5,0.5,21) # SLP_white
     # !!!!!take care about the coordinate of contourf(Longitude, Latitude, data(Lat,Lon))
     cs = m.contourf(XX,YY,slope/1000,color,cmap='coolwarm',extend='both') # unit from Pa to kPa
     # add color bar
